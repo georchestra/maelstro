@@ -1,0 +1,4 @@
+[submodule "docker/config"]
+	path = docker/config
+	url = git@github.com:georchestra/datadir.git
+    branch = docker-24.0

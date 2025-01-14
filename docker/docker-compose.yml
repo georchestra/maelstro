@@ -1,8 +1,13 @@
+
+include:
+  - geor-compose.yml
+  - geor-compose.override.yml
+
 services:
-  fastapi:
-    build: backend
+  maelstro-back:
+    build: ../backend
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     healthcheck:
       test: "/app/health_check.py"
       interval: 10s

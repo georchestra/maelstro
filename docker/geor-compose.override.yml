@@ -1,0 +1,24 @@
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "127.0.0.1:2019:2019"
+    environment:
+      - CADDY_ADMIN=0.0.0.0:2019
+    volumes:
+      - ./resources/ssl:/etc/certs:ro
+      - ./resources/caddy/etc:/etc/caddy:ro
+      - ./resources/caddy/data:/data/caddy
+      - ./resources/static:/usr/share/caddy/static:ro
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:2019/reverse_proxy/upstreams >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    env_file:
+      - .envs-common
+
