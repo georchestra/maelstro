@@ -26,6 +26,8 @@ services:
       - docker_dev
 
   check:
+    profiles:
+      - check
     build:
       context: ./backend
       target: check
