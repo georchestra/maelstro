@@ -10,12 +10,17 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard] (>=0.115.6,<0.116.0)",
     "requests (>=2.32.3,<3.0.0)",
-    "mypy (>=1.14.1,<2.0.0)",
-    "types-requests (>=2.32.0.20241016,<3.0.0.0)",
-    "pylint (>=3.3.3,<4.0.0)",
-    "pyflakes (>=3.2.0,<4.0.0)",
-    "black (>=24.10.0,<25.0.0)"
 ]
+
+[tool.poetry.group.check]
+optional = true
+
+[tool.poetry.group.check.dependencies]
+mypy=">=1.14.1,<2.0.0"
+types-requests=">=2.32.0.20241016,<3.0.0.0"
+pylint=">=3.3.3,<4.0.0"
+pyflakes=">=3.2.0,<4.0.0"
+black=">=24.10.0,<25.0.0"
 
 [tool.poetry.scripts]
 health_check = "maelstro.scripts.health_check:check"

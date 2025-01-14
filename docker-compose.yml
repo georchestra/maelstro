@@ -4,8 +4,10 @@ include:
   - georchestra/geor-compose.override.yml
 
 services:
-  maelstro-back:
-    build: ./backend
+  fastapi:
+    build:
+      context: ./backend
+      target: server
     volumes:
       - ./backend:/app
     healthcheck:
@@ -22,3 +24,10 @@ services:
       - poetry
       - run
       - docker_dev
+
+  check:
+    build:
+      context: ./backend
+      target: check
+    volumes:
+      - ./backend:/app

@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v1
 
       - name: build
-        run: docker compose build
+        run: docker compose build check
 
       - name: check
-        run: docker compose run --rm  fastapi /app/maelstro/scripts/code_check.sh
+        run: docker compose run --rm  check
