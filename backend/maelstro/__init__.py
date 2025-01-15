@@ -19,7 +19,7 @@ def dev():
         port=8000,
         reload=True,
         workers=None,
-        root_path="",
+        root_path="/maelstrob/",
         # proxy_headers=proxy_headers,
         log_config=get_uvicorn_log_config(),
     )
