@@ -5,7 +5,7 @@ Main backend app setup
 from fastapi import FastAPI, Response
 
 
-app = FastAPI()
+app = FastAPI(root_path='/maelstrob')
 
 app.state.health_countdown = 5
 
