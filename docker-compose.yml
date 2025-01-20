@@ -1,13 +1,13 @@
 
 include:
-  - geor-compose.yml
-  - geor-compose.override.yml
+  - georchestra/geor-compose.yml
+  - georchestra/geor-compose.override.yml
 
 services:
   maelstro-back:
-    build: ../backend
+    build: ./backend
     volumes:
-      - ../backend:/app
+      - ./backend:/app
     healthcheck:
       test: "/app/health_check.py"
       interval: 10s
