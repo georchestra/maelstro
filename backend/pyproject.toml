@@ -21,6 +21,7 @@ types-requests=">=2.32.0.20241016,<3.0.0.0"
 pylint=">=3.3.3,<4.0.0"
 pyflakes=">=3.2.0,<4.0.0"
 black=">=24.10.0,<25.0.0"
+pytest = "^8.3.4"
 
 [tool.poetry.scripts]
 health_check = "maelstro.scripts.health_check:check"

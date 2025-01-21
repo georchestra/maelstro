@@ -16,3 +16,6 @@ jobs:
 
       - name: check
         run: docker compose run --rm  check
+
+      - name: test
+        run: docker compose run --rm  check poetry run pytest tests/
