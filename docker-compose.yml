@@ -18,9 +18,7 @@ services:
       timeout: 10s
 
     command:
-      - poetry
-      - run
-      - docker_dev
+      - serve_docker_dev
 
   check:
     profiles:

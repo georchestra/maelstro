@@ -25,9 +25,9 @@ pytest = "^8.3.4"
 
 [tool.poetry.scripts]
 health_check = "maelstro.scripts.health_check:check"
-dev = "maelstro:dev"
-docker_dev = "maelstro:docker_dev"
-prod = "maelstro:prod"
+serve_dev = "maelstro:dev"
+serve_docker_dev = "maelstro:docker_dev"
+serve_prod = "maelstro:prod"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
