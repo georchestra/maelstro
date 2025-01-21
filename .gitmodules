@@ -1,4 +1,9 @@
-[submodule "docker/config"]
-	path = georchestra/config
-	url = git@github.com:georchestra/datadir.git
+[submodule "georchestra/config"]
+    path = georchestra/config
+    url = git@github.com:georchestra/datadir.git
     branch = docker-24.0
+
+[submodule "georchestra/geoutils"]
+    path = georchestra/geoutils
+    url = git@github.com:georchestra/geo-utils.git
+    branch = main
