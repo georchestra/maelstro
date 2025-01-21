@@ -20,16 +20,6 @@ def root_page():
     return {"Hello": "World"}
 
 
-@app.get("/auth")
-def auth_page(
-    sec_roles: Annotated[str, Header(include_in_schema=False)] = "",
-):
-    """
-    Check if the user is authorized for the maestro sync platform via the MAELSTRO role
-    """
-    return {"is_authorized": "ROLE_MAELSTRO" in sec_roles.split(";")}
-
-
 @app.get("/user")
 def user_page(
     sec_username: Annotated[str | None, Header(include_in_schema=False)] = None,
