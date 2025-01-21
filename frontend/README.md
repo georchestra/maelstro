@@ -16,7 +16,10 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
+Note that all command should be runned in `frontend` folder.
+
 ```sh
+nvm use
 npm install
 ```
 
