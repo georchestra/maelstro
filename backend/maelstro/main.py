@@ -54,8 +54,8 @@ def user_page(
 def debug_page(request: Request):
     """
     Display details of query including headers.
-    This may be useful in development to check all the headers procided by the gateway.
-    This entrypoint should be deactivaed in prod.
+    This may be useful in development to check all the headers provided by the gateway.
+    This entrypoint should be deactivated in prod.
     """
     return {
         **{
