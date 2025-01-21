@@ -1,0 +1,37 @@
+[project]
+name = "maelstro"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard] (>=0.115.6,<0.116.0)",
+    "requests (>=2.32.3,<3.0.0)",
+]
+
+[tool.poetry.group.check]
+optional = true
+
+[tool.poetry.group.check.dependencies]
+mypy=">=1.14.1,<2.0.0"
+types-requests=">=2.32.0.20241016,<3.0.0.0"
+pylint=">=3.3.3,<4.0.0"
+pyflakes=">=3.2.0,<4.0.0"
+black=">=24.10.0,<25.0.0"
+pytest = "^8.3.4"
+
+[tool.poetry.scripts]
+health_check = "maelstro.scripts.health_check:check"
+serve_dev = "maelstro:dev"
+serve_docker_dev = "maelstro:docker_dev"
+serve_prod = "maelstro:prod"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pylint.format]
+max-line-length = "88"

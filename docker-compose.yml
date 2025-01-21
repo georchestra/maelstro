@@ -5,22 +5,26 @@ include:
 
 services:
   maelstro-back:
-    build: ./backend
+    build:
+      context: ./backend
+      target: server
     volumes:
       - ./backend:/app
     healthcheck:
-      test: "/app/health_check.py"
+      test: "poetry run health_check"
       interval: 10s
       retries: 5
       start_period: 10s
       timeout: 10s
 
-    ports:
-      - 8000:8000
-
     command:
-      - fastapi
-      - dev
-      - --host
-      - 0.0.0.0
-      - main.py
+      - serve_docker_dev
+
+  check:
+    profiles:
+      - check
+    build:
+      context: ./backend
+      target: check
+    volumes:
+      - ./backend:/app

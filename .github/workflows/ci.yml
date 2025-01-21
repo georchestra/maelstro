@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: build
+        run: docker compose build check
+
+      - name: check
+        run: docker compose run --rm  check
+
+      - name: test
+        run: docker compose run --rm  check poetry run pytest tests/
