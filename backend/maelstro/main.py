@@ -51,7 +51,9 @@ def user_page(
 @app.patch("/debug")
 def debug_page(request: Request):
     """
-    Display details of query including headers
+    Display details of query including headers.
+    This may be useful in development to check all the headers procided by the gateway.
+    This entrypoint should be deactivaed in prod.
     """
     return {
         **{
