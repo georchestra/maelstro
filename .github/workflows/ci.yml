@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  check:
+  backend-check:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
 
@@ -15,12 +15,12 @@ jobs:
         run: docker compose build check
 
       - name: check
-        run: docker compose run --rm  check
+        run: docker compose run --rm check
 
       - name: test
-        run: docker compose run --rm  check poetry run pytest tests/
+        run: docker compose run --rm check pytest tests/
 
-  frontend:
+  frontend-check:
     runs-on: ubuntu-22.04
     name: Front Build and Tests
     steps:
@@ -54,3 +54,12 @@ jobs:
       - name: Build
         working-directory: ./frontend
         run: npm run build
+
+  build:
+    runs-on: ubuntu-22.04
+    name: Build Docker images
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: docker compose build maelstro-backend maelstro-frontend
