@@ -49,7 +49,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - postgresql_data:/var/lib/postgresql/data
-    restart: always
+    restart: no
 
   ldap:
     image: georchestra/ldap:24.0.x
@@ -74,21 +74,66 @@ services:
     volumes:
       - ldap_data:/var/lib/ldap
       - ldap_config:/etc/ldap
-    restart: always
+    restart: no
 
-  gateway:
-    image: georchestra/gateway:1.1.x
+#  gateway:
+#    image: georchestra/gateway:1.1.x
+#    depends_on:
+#      - database
+#    volumes:
+#      - georchestra_datadir:/etc/georchestra
+#    environment:
+#      - JAVA_TOOL_OPTIONS=-Dgeorchestra.datadir=/etc/georchestra
+#    env_file:
+#      - .envs-common
+#      - .envs-ldap
+#      - .envs-hosts
+#      - .envs-database-georchestra
+  proxy:
+    image: georchestra/security-proxy:24.0.x
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:8080/_static/bootstrap_3.0.0/css/bootstrap-theme.min.css >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
     depends_on:
-      - database
+      ldap:
+        condition: service_healthy
+      database:
+        condition: service_healthy
     volumes:
       - georchestra_datadir:/etc/georchestra
     environment:
-      - JAVA_TOOL_OPTIONS=-Dgeorchestra.datadir=/etc/georchestra
+      - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
+      - XMS=256M
+      - XMX=1G
     env_file:
       - .envs-common
       - .envs-ldap
       - .envs-hosts
       - .envs-database-georchestra
+    restart: no
+  cas:
+    image: georchestra/cas:latest
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s -f http://localhost:8080/cas/login >/dev/null || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      ldap:
+        condition: service_healthy
+    volumes:
+      - georchestra_datadir:/etc/georchestra
+    environment:
+      - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
+      - XMS=256M
+      - XMX=1G
+    env_file:
+      - .envs-common
+      - .envs-ldap
+      - .envs-database-georchestra
+    restart: no
 
   geoserver:
     image: georchestra/geoserver:24.0.x
@@ -116,7 +161,7 @@ services:
     env_file:
       - .envs-database-georchestra
       - .envs-database-datafeeder
-    restart: always
+    restart: no
 
   console:
     image: georchestra/console:24.0.x
@@ -141,7 +186,7 @@ services:
       - .envs-ldap
       - .envs-database-georchestra
       - .envs-hosts
-    restart: always
+    restart: no
 
   geonetwork:
     image: georchestra/geonetwork:24.0.x
@@ -167,7 +212,7 @@ services:
     env_file:
       - .envs-hosts
       - .envs-database-georchestra
-    restart: always
+    restart: no
 
   postgis:
     # used by datafeeder to ingest uploaded user datasets into
@@ -184,7 +229,7 @@ services:
       - .envs-database-datafeeder
     volumes:
       - datafeeder_postgis_data:/var/lib/postgresql/data
-    restart: always
+    restart: no
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.21
@@ -205,6 +250,6 @@ services:
     environment:
       discovery.type: single-node
       ES_JAVA_OPTS: -Xms512m -Xmx512m
-    restart: always
+    restart: no
 
 
