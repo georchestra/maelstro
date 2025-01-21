@@ -2,20 +2,75 @@
 Main backend app setup
 """
 
-from fastapi import FastAPI, Response
+from typing import Annotated
+from fastapi import FastAPI, Request, Response, Header
 
 
-app = FastAPI(root_path='/maelstrob')
+app = FastAPI(root_path="/maelstrob")
 
 app.state.health_countdown = 5
 
 
+@app.head("/")
 @app.get("/")
 def root_page():
     """
     Hello world dummy route
     """
     return {"Hello": "World"}
+
+
+@app.get("/user")
+def user_page(
+    sec_username: Annotated[str | None, Header()] = None,
+    sec_org: Annotated[str | None, Header()] = None,
+    sec_roles: Annotated[str | None, Header()] = None,
+    sec_external_authentication: Annotated[str | None, Header()] = None,
+    sec_proxy: Annotated[str | None, Header()] = None,
+    sec_orgname: Annotated[str | None, Header()] = None,
+):
+    """
+    Display user information provided by gateway
+    """
+    return {
+        "username": sec_username,
+        "org": sec_org,
+        "roles": sec_roles,
+        "external-authentication": sec_external_authentication,
+        "proxy": sec_proxy,
+        "orgname": sec_orgname,
+    }
+
+
+@app.head("/debug")
+@app.get("/debug")
+@app.put("/debug")
+@app.post("/debug")
+@app.delete("/debug")
+@app.options("/debug")
+@app.patch("/debug")
+def debug_page(request: Request):
+    """
+    Display details of query including headers
+    """
+    return {
+        **{
+            k: request[k]
+            for k in [
+                "type",
+                "asgi",
+                "http_version",
+                "server",
+                "client",
+                "scheme",
+                "root_path",
+            ]
+        },
+        "method": request.method,
+        "url": request.url,
+        "headers": dict(request.headers),
+        "query_params": request.query_params.multi_items(),
+    }
 
 
 @app.get("/health")

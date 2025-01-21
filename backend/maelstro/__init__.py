@@ -19,7 +19,7 @@ def dev():
         port=8000,
         reload=True,
         workers=None,
-        root_path="/maelstrob/",
+        root_path="",
         # proxy_headers=proxy_headers,
         log_config=get_uvicorn_log_config(),
     )
@@ -56,3 +56,7 @@ def prod():
         # proxy_headers=proxy_headers,
         log_config=get_uvicorn_log_config(),
     )
+
+
+if __name__ == "__main__":
+    docker_dev()
