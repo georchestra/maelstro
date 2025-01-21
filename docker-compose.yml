@@ -1,0 +1,26 @@
+
+include:
+  - georchestra/geor-compose.yml
+  - georchestra/geor-compose.override.yml
+
+services:
+  maelstro-back:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: "/app/health_check.py"
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+
+    ports:
+      - 8000:8000
+
+    command:
+      - fastapi
+      - dev
+      - --host
+      - 0.0.0.0
+      - main.py
