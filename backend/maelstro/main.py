@@ -22,12 +22,14 @@ def root_page():
 
 @app.get("/user")
 def user_page(
-    sec_username: Annotated[str | None, Header()] = None,
-    sec_org: Annotated[str | None, Header()] = None,
-    sec_roles: Annotated[str | None, Header()] = None,
-    sec_external_authentication: Annotated[str | None, Header()] = None,
-    sec_proxy: Annotated[str | None, Header()] = None,
-    sec_orgname: Annotated[str | None, Header()] = None,
+    sec_username: Annotated[str | None, Header(include_in_schema=False)] = None,
+    sec_org: Annotated[str | None, Header(include_in_schema=False)] = None,
+    sec_roles: Annotated[str | None, Header(include_in_schema=False)] = None,
+    sec_external_authentication: Annotated[
+        str | None, Header(include_in_schema=False)
+    ] = None,
+    sec_proxy: Annotated[str | None, Header(include_in_schema=False)] = None,
+    sec_orgname: Annotated[str | None, Header(include_in_schema=False)] = None,
 ):
     """
     Display user information provided by gateway
