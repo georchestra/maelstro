@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import FastAPI, Request, Response, Header
 
 
-app = FastAPI(root_path="/maelstrob")
+app = FastAPI(root_path="/maelstro-backend")
 
 app.state.health_countdown = 5
 

@@ -14,7 +14,7 @@ The folder [backend](backend) contains the API written with FastAPI.
 ### Access
 
 In the global dev composition, the backend is accessible via the https gateway:
-https://georchestra-127-0-0-1.nip.io/maelstrob/
+https://georchestra-127-0-0-1.nip.io/maelstro-backend/
 
 ### SwaggerUI
 
