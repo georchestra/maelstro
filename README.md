@@ -6,7 +6,20 @@ geOrchestra Maelstro is an application which helps synchronise geonetwork and ge
 Refer to documentation from https://github.com/georchestra/docker/tree/master?tab=readme-ov-file#on-linux to trust caddy certificate
 
 Also you need to run few commands before to start documented here : [georchestra/README.md](georchestra/README.md)
- 
+
+## Frontend
+
+The folder [frontend](frontend) contains the SPA written with VueJS.
+
+### Access
+
+In the global dev composition, the backend is accessible via the https gateway:
+https://georchestra-127-0-0-1.nip.io/maelstro/
+
+### Development
+
+Refer to documentation in [frontend/README.md](frontend/README.md)
+
 ## Backend
  
 The folder [backend](backend) contains the API written with FastAPI.
@@ -19,7 +32,7 @@ https://georchestra-127-0-0-1.nip.io/maelstro-backend/
 ### SwaggerUI
 
 FastAPI automatically builds a swagger API web interface which can be found at
-https://georchestra-127-0-0-1.nip.io/maelstrob/docs
+https://georchestra-127-0-0-1.nip.io/maelstro-backend/docs
 
 Here the various API entrypoints can be tested
 
