@@ -12,9 +12,14 @@ COPY ./ .
 RUN npm run build
 
 
-FROM nginx AS server
+FROM nginx:1.27-alpine AS server
 
 RUN mkdir /app
-
+ENV CUSTOM_SCRIPTS_DIRECTORY ""
 COPY --from=builder /app/dist /app
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY ./docker-entrypoint.sh /
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "/docker-entrypoint.sh", "nginx", "-g", "daemon off;"]
