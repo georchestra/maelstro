@@ -3,7 +3,7 @@
 cd "$(dirname "$0")"/..
 
 poetry run black --check . && \
-poetry run mypy . && \
+poetry run mypy --strict . && \
 poetry run pyflakes . && \
 poetry run pylint .
 
