@@ -1,22 +1,24 @@
-From 190d88ace0d5a4c40b986ba2a92b44edea7e6f40 Mon Sep 17 00:00:00 2001
+From 9ca643b752f183b3970136f1d0793d8ca2c64495 Mon Sep 17 00:00:00 2001
 From: Jean-Michel Crepel <jean-michel.crepel@camptocamp.com>
 Date: Wed, 22 Jan 2025 10:14:15 +0100
 Subject: [PATCH] tweat gateway and security-proxy config to host maelstro
  backend service
 
 ---
- gateway/gateway.yaml                      | 13 +++++++++++++
- gateway/routes.yaml                       | 16 +++++++++++++++-
- security-proxy/security-mappings.xml      |  2 ++
- security-proxy/security-proxy.properties  |  2 +-
- security-proxy/targets-mapping.properties |  2 ++
- 5 files changed, 33 insertions(+), 2 deletions(-)
+ gateway/gateway.yaml                        | 13 +++++++++++++
+ gateway/routes.yaml                         | 16 +++++++++++++++-
+ maelstro/scripts/add-header-webcomponent.sh | 15 +++++++++++++++
+ security-proxy/security-mappings.xml        |  2 ++
+ security-proxy/security-proxy.properties    |  2 +-
+ security-proxy/targets-mapping.properties   |  2 ++
+ 6 files changed, 48 insertions(+), 2 deletions(-)
+ create mode 100755 maelstro/scripts/add-header-webcomponent.sh
 
 diff --git a/gateway/gateway.yaml b/gateway/gateway.yaml
-index 607a7f9..fe3e6d9 100644
+index 607a7f9..d42d129 100644
 --- a/gateway/gateway.yaml
 +++ b/gateway/gateway.yaml
-@@ -84,3 +84,15 @@ georchestra:
+@@ -84,3 +84,16 @@ georchestra:
            json-user: true
        geoserver:
          target: ${georchestra.gateway.services.geoserver.target}
@@ -32,8 +34,9 @@ index 607a7f9..fe3e6d9 100644
 +          - intercept-url: /maelstro/**
 +            anonymous: false
 +            allowed-roles: MAELSTRO
++
 diff --git a/gateway/routes.yaml b/gateway/routes.yaml
-index 86c25b9..d1772c4 100644
+index 86c25b9..884300a 100644
 --- a/gateway/routes.yaml
 +++ b/gateway/routes.yaml
 @@ -10,7 +10,7 @@ spring:
@@ -45,7 +48,7 @@ index 86c25b9..d1772c4 100644
        - id: header
          uri: ${georchestra.gateway.services.header.target}
          predicates:
-@@ -59,6 +59,16 @@ spring:
+@@ -59,6 +59,18 @@ spring:
          uri: ${georchestra.gateway.services.ogc-api-records.target}
          predicates:
          - Path=/ogc-api-records/**
@@ -59,16 +62,39 @@ index 86c25b9..d1772c4 100644
 +        uri: ${georchestra.gateway.services.maelstro.target}
 +        predicates:
 +        - Path=/maelstro/**
++        filters:
++        - RewritePath=/maelstro/(?<segment>.*),/$\{segment}
  
  georchestra.gateway.services:
    console.target: http://${CONSOLE_HOST}:8080/console/
-@@ -71,3 +81,5 @@ georchestra.gateway.services:
+@@ -71,3 +83,5 @@ georchestra.gateway.services:
    import.target: http://${IMPORT_HOST}:80/
    mapstore.target: http://${MAPSTORE_HOST}:8080/mapstore/
    ogc-api-records.target: http://${OGC_API_RECORDS_HOST}:8080/ogc-api-records/
 +  maelstro-back.target: http://${MAELSTRO_HOST}:8000/
-+  maelstro.target: http://${MAELSTRO_FRONT_HOST}:8080/maelstro/
++  maelstro.target: http://${MAELSTRO_FRONT_HOST}:8080/
 \ No newline at end of file
+diff --git a/maelstro/scripts/add-header-webcomponent.sh b/maelstro/scripts/add-header-webcomponent.sh
+new file mode 100755
+index 0000000..c1f0604
+--- /dev/null
++++ b/maelstro/scripts/add-header-webcomponent.sh
+@@ -0,0 +1,15 @@
++#!/bin/sh
++
++# To be properl executed by datahub initialization need the +x flag 
++# so you need to add it with chmod and commit/push it
++
++MAELSTRO_DIR=${1:-/app}
++SNIPPET="<script src='https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js'></script><geor-header active-app='maelstro' style='height:90px'></geor-header>"
++
++if grep -q "${SNIPPET}" "${MAELSTRO_DIR}/index.html"; then
++  echo "[INFO] geOrchestra: header already present."
++  exit 0
++fi
++
++echo "[INFO] geOrchestra: adding header in the main page..."
++sed -i "s#<body>#<body>${SNIPPET}#" ${MAELSTRO_DIR}/index.html
 diff --git a/security-proxy/security-mappings.xml b/security-proxy/security-mappings.xml
 index 72274be..f43fba1 100644
 --- a/security-proxy/security-mappings.xml

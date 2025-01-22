@@ -14,20 +14,30 @@ services:
       retries: 5
       start_period: 10s
       timeout: 10s
+    volumes:
+      - georchestra_datadir:/etc/georchestra
+    environment:
+      CUSTOM_SCRIPTS_DIRECTORY: /etc/georchestra/maelstro/scripts
+    depends_on:
+      envsubst:
+        condition: service_completed_successfully
 
   maelstro-back:
     build:
       context: ./backend
       target: server
+    depends_on:
+      envsubst:
+        condition: service_completed_successfully
     volumes:
       - ./backend:/app
+      - georchestra_datadir:/etc/georchestra
     healthcheck:
       test: "health_check"
       interval: 10s
       retries: 5
       start_period: 10s
       timeout: 10s
-
     command:
       - serve_docker_dev
 
