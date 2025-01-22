@@ -4,6 +4,17 @@ include:
   - georchestra/geor-compose.override.yml
 
 services:
+  maelstro-front:
+    build:
+      context: ./frontend
+      target: server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/maelstro/"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+
   maelstro-back:
     build:
       context: ./backend
@@ -11,7 +22,7 @@ services:
     volumes:
       - ./backend:/app
     healthcheck:
-      test: "poetry run health_check"
+      test: "health_check"
       interval: 10s
       retries: 5
       start_period: 10s

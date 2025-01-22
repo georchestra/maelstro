@@ -1,22 +1,22 @@
-From 7ffbad4355f6064cca15d2af234886c3b9cbdae3 Mon Sep 17 00:00:00 2001
+From 190d88ace0d5a4c40b986ba2a92b44edea7e6f40 Mon Sep 17 00:00:00 2001
 From: Jean-Michel Crepel <jean-michel.crepel@camptocamp.com>
-Date: Tue, 21 Jan 2025 10:17:24 +0100
+Date: Wed, 22 Jan 2025 10:14:15 +0100
 Subject: [PATCH] tweat gateway and security-proxy config to host maelstro
  backend service
 
 ---
- gateway/gateway.yaml                      |  7 +++++++
- gateway/routes.yaml                       | 10 +++++++++-
- security-proxy/security-mappings.xml      |  1 +
+ gateway/gateway.yaml                      | 13 +++++++++++++
+ gateway/routes.yaml                       | 16 +++++++++++++++-
+ security-proxy/security-mappings.xml      |  2 ++
  security-proxy/security-proxy.properties  |  2 +-
- security-proxy/targets-mapping.properties |  1 +
- 5 files changed, 19 insertions(+), 2 deletions(-)
+ security-proxy/targets-mapping.properties |  2 ++
+ 5 files changed, 33 insertions(+), 2 deletions(-)
 
 diff --git a/gateway/gateway.yaml b/gateway/gateway.yaml
-index 607a7f9..18bc18d 100644
+index 607a7f9..fe3e6d9 100644
 --- a/gateway/gateway.yaml
 +++ b/gateway/gateway.yaml
-@@ -84,3 +84,10 @@ georchestra:
+@@ -84,3 +84,15 @@ georchestra:
            json-user: true
        geoserver:
          target: ${georchestra.gateway.services.geoserver.target}
@@ -26,9 +26,14 @@ index 607a7f9..18bc18d 100644
 +          - intercept-url: /maelstro-backend/**
 +            anonymous: false
 +            allowed-roles: MAELSTRO
-+
++      maelstro:
++        target: ${georchestra.gateway.services.maelstro.target}
++        access-rules:
++          - intercept-url: /maelstro/**
++            anonymous: false
++            allowed-roles: MAELSTRO
 diff --git a/gateway/routes.yaml b/gateway/routes.yaml
-index 86c25b9..3ca3c2f 100644
+index 86c25b9..d1772c4 100644
 --- a/gateway/routes.yaml
 +++ b/gateway/routes.yaml
 @@ -10,7 +10,7 @@ spring:
@@ -40,7 +45,7 @@ index 86c25b9..3ca3c2f 100644
        - id: header
          uri: ${georchestra.gateway.services.header.target}
          predicates:
-@@ -59,6 +59,13 @@ spring:
+@@ -59,6 +59,16 @@ spring:
          uri: ${georchestra.gateway.services.ogc-api-records.target}
          predicates:
          - Path=/ogc-api-records/**
@@ -50,24 +55,30 @@ index 86c25b9..3ca3c2f 100644
 +        - Path=/maelstro-backend/**
 +        filters:
 +        - RewritePath=/maelstro-backend/(?<segment>.*),/$\{segment}
-+
++      - id: maelstro
++        uri: ${georchestra.gateway.services.maelstro.target}
++        predicates:
++        - Path=/maelstro/**
  
  georchestra.gateway.services:
    console.target: http://${CONSOLE_HOST}:8080/console/
-@@ -71,3 +78,4 @@ georchestra.gateway.services:
+@@ -71,3 +81,5 @@ georchestra.gateway.services:
    import.target: http://${IMPORT_HOST}:80/
    mapstore.target: http://${MAPSTORE_HOST}:8080/mapstore/
    ogc-api-records.target: http://${OGC_API_RECORDS_HOST}:8080/ogc-api-records/
 +  maelstro-back.target: http://${MAELSTRO_HOST}:8000/
++  maelstro.target: http://${MAELSTRO_FRONT_HOST}:8080/maelstro/
+\ No newline at end of file
 diff --git a/security-proxy/security-mappings.xml b/security-proxy/security-mappings.xml
-index 72274be..ab6dff0 100644
+index 72274be..f43fba1 100644
 --- a/security-proxy/security-mappings.xml
 +++ b/security-proxy/security-mappings.xml
-@@ -31,5 +31,6 @@
+@@ -31,5 +31,7 @@
    <intercept-url pattern=".*/ogcproxy/.*" access="ROLE_NO_ONE" />
    <intercept-url pattern="/datafeeder/.*" access="IS_AUTHENTICATED_FULLY" />
    <intercept-url pattern="/import/.*" access="IS_AUTHENTICATED_FULLY" />
 +  <intercept-url pattern="/maelstro-backend.*" access="ROLE_MAELSTRO" />
++  <intercept-url pattern="/maelstro.*" access="ROLE_MAELSTRO" />
    <intercept-url pattern=".*" access="IS_AUTHENTICATED_ANONYMOUSLY,ROLE_USER,ROLE_GN_EDITOR,ROLE_GN_REVIEWER,ROLE_GN_ADMIN,ROLE_ADMINISTRATOR,ROLE_SUPERUSER,ROLE_ORGADMIN" />
  </http>
 diff --git a/security-proxy/security-proxy.properties b/security-proxy/security-proxy.properties
@@ -84,14 +95,15 @@ index d42ef7a..6a23907 100644
  
  # Connection pool settings for the logger appender that inserts OGC request stats on the database
 diff --git a/security-proxy/targets-mapping.properties b/security-proxy/targets-mapping.properties
-index 1bccb4f..eadd82b 100644
+index 1bccb4f..fa5bd98 100644
 --- a/security-proxy/targets-mapping.properties
 +++ b/security-proxy/targets-mapping.properties
-@@ -9,3 +9,4 @@ datafeeder=http://${DATAFEEDER_HOST}:8080/datafeeder/
+@@ -9,3 +9,5 @@ datafeeder=http://${DATAFEEDER_HOST}:8080/datafeeder/
  import=http://${IMPORT_HOST}:80/
  datahub=http://${DATAHUB_HOST}:80/datahub/
  ogc-api-records=http://${OGC_API_RECORDS_HOST}:8080/ogc-api-records/
 +maelstro-backend=http://${MAELSTRO_HOST}:8000/
++maelstro=http://${MAELSTRO_FRONT_HOST}:8080/maelstro/
 \ No newline at end of file
 -- 
 2.34.1
