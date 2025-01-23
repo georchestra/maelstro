@@ -36,6 +36,4 @@ USER root
 RUN --mount=type=cache,target=/root/.cache \
     poetry install --no-root --with check
 
-RUN chown -R appuser:appgroup /app
-USER appuser
 CMD ["/app/maelstro/scripts/code_check.sh"]
