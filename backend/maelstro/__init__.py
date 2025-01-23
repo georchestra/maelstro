@@ -6,7 +6,7 @@ import uvicorn
 from fastapi_cli.utils.cli import get_uvicorn_log_config
 
 
-def dev():
+def dev() -> None:
     """
     Dev server entrypoint:
     special configuration:
@@ -25,7 +25,7 @@ def dev():
     )
 
 
-def docker_dev():
+def docker_dev() -> None:
     """
     Dev server entrypoint for running the server inside a docker container:
     special configuration:
@@ -43,7 +43,7 @@ def docker_dev():
     )
 
 
-def prod():
+def prod() -> None:
     """
     Server entrypoint for running the server inside a docker container:
     """

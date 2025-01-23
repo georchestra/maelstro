@@ -2,7 +2,7 @@
 Main backend app setup
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 from fastapi import FastAPI, Request, Response, Header
 
 
@@ -13,7 +13,7 @@ app.state.health_countdown = 5
 
 @app.head("/")
 @app.get("/")
-def root_page():
+def root_page() -> dict[str, str]:
     """
     Hello world dummy route
     """
@@ -30,7 +30,7 @@ def user_page(
     ] = None,
     sec_proxy: Annotated[str | None, Header(include_in_schema=False)] = None,
     sec_orgname: Annotated[str | None, Header(include_in_schema=False)] = None,
-):
+) -> dict[str, str | None]:
     """
     Display user information provided by gateway
     """
@@ -53,7 +53,7 @@ def user_page(
 @app.delete("/debug")
 @app.options("/debug")
 @app.patch("/debug")
-def debug_page(request: Request):
+def debug_page(request: Request) -> dict[str, Any]:
     """
     Display details of query including headers.
     This may be useful in development to check all the headers provided by the gateway.
@@ -80,7 +80,10 @@ def debug_page(request: Request):
 
 
 @app.get("/health")
-def health_check(response: Response):
+def health_check(
+    response: Response,
+    sec_username: Annotated[str | None, Header(include_in_schema=False)] = None,
+) -> dict[str, str | None]:
     """
     Health check to make sure the server is up and running
     For test purposes, the server is reported healthy only from the 5th request onwards
@@ -90,4 +93,4 @@ def health_check(response: Response):
         app.state.health_countdown -= 1
         response.status_code = 404
         status = "unhealthy"
-    return {"status": status, "user": None}
+    return {"status": status, "user": sec_username}
