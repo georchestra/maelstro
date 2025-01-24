@@ -4,11 +4,17 @@ Main backend app setup
 
 from typing import Annotated, Any
 from fastapi import FastAPI, Request, Response, Header
+from geonetwork import GnApi
+from maelstro.config import Config
+from maelstro.metadata import Meta
 
 
 app = FastAPI(root_path="/maelstro-backend")
 
 app.state.health_countdown = 5
+
+
+config = Config(env_var_name="MAELSTRO_CONFIG")
 
 
 @app.head("/")
@@ -77,6 +83,33 @@ def debug_page(request: Request) -> dict[str, Any]:
         "headers": dict(request.headers),
         "query_params": request.query_params.multi_items(),
     }
+
+
+@app.get("/sources/{src_name}/data/{uuid}/layers")
+def get_layers(src_name: str, uuid: str) -> list[dict[str, str | None]]:
+    src_info = config.get_access_info(
+        is_src=True, is_geonetwork=True, instance_id=src_name
+    )
+    gn = GnApi(src_info["url"], src_info["auth"])
+    zipdata = gn.get_record_zip(uuid)
+    meta = Meta(zipdata)
+    return meta.get_ogc_geoserver_layers()
+
+
+@app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
+def post_data_copy(dst_name: str, uuid: str, layer_name: str, src_name: str) -> Any:
+    src_info = config.get_access_info(
+        is_src=True, is_geonetwork=True, instance_id=src_name
+    )
+    gn = GnApi(src_info["url"], src_info["auth"])
+    zipdata = gn.get_record_zip(uuid)
+
+    print(f"Layer name {layer_name} currently unused, needed for cloning geoserver")
+
+    dst_info = config.get_access_info(
+        is_src=False, is_geonetwork=True, instance_id=dst_name
+    )
+    return GnApi(dst_info["url"], dst_info["auth"]).put_record_zip(zipdata)
 
 
 @app.get("/health")
