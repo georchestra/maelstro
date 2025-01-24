@@ -46,3 +46,9 @@ npm run test:unit
 ```sh
 npm run lint
 ```
+
+## Extract i18n strings
+
+```sh
+npm run vue-i18n-extract
+```
