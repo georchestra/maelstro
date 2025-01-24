@@ -11,6 +11,12 @@ import InputText from 'primevue/inputtext'
       <FormField name="sourceDataset" class="flex gap-5 items-center">
         <label for="sourceDataset" class="w-36">Source dataset</label>
         <InputText id="sourceDataset" placeholder="" />
+        <!--
+        <gn-search-input
+          api-url="https://demo.georchestra.org/geonetwork/srv/api"
+          class="text-4xl"
+        ></gn-search-input>
+        -->
       </FormField>
       <FormField name="sourceLayer" class="flex gap-5 items-center">
         <label for="sourceLayer" class="w-36">Source layer</label>
