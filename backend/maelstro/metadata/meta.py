@@ -19,17 +19,9 @@ NS_REGISTRIES = {
 }
 
 
-class Meta:
-    def __init__(self, zipfile: bytes):
-        self.zipfile = zipfile
-        with ZipFile(BytesIO(zipfile)) as zf:
-            zip_properties = zf.read("index.csv").decode()
-            dr = DictReader(StringIO(zip_properties), delimiter=";")
-            self.properties = next(dr)
-
-            self.xml_bytes = zf.read(f"{self.properties['uuid']}/metadata/metadata.xml")
-
-        schema = self.properties.get("schema", "iso19139")
+class MetaXml:
+    def __init__(self, xml_bytes: bytes, schema: str = "iso19139"):
+        self.xml_bytes = xml_bytes
         self.namespaces = NS_REGISTRIES.get(schema)
         self.prefix = NS_PREFIXES.get(schema)
 
@@ -79,3 +71,18 @@ class Meta:
             if text_node is not None:
                 return str(text_node.text)
         return None
+
+
+class MetaZip(MetaXml):
+    def __init__(self, zipfile: bytes):
+        self.zipfile = zipfile
+        with ZipFile(BytesIO(zipfile)) as zf:
+            zip_properties = zf.read("index.csv").decode()
+            dr = DictReader(StringIO(zip_properties), delimiter=";")
+            self.properties = next(dr)
+
+            xml_bytes = zf.read(f"{self.properties['uuid']}/metadata/metadata.xml")
+
+        schema = self.properties.get("schema", "iso19139")
+
+        super().__init__(xml_bytes, schema)

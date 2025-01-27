@@ -1,3 +1,3 @@
-from .meta import Meta as Meta
+from .meta import MetaZip as Meta
 
 __all__ = ["Meta"]
