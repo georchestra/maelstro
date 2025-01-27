@@ -4,10 +4,12 @@ from typing import Any
 from maelstro.common.types import Credentials
 
 
+class ConfigError(Exception):
+    pass
+
+
 class Config:
-    def __init__(
-        self, config_file: str = f"{os.path.dirname(__file__)}/../../config.yaml"
-    ):
+    def __init__(self, config_file: str):
         with open(config_file, encoding="utf8") as cf:
             self.config = yaml.load(cf, yaml.Loader)
 
@@ -36,7 +38,7 @@ class Config:
         info = None
         if is_src:
             if is_geonetwork:
-                info = next(
+                infos = (
                     {
                         "auth": (gn.get("login"), gn.get("password")),
                         "url": gn["api_url"],
@@ -45,19 +47,34 @@ class Config:
                     if gn["name"] == instance_id
                 )
             else:
-                info = next(
+                infos = (
                     {"auth": (gs.get("login"), gs.get("password")), "url": gs["url"]}
                     for gs in self.config["sources"]["geoserver_instances"]
                     if gs["url"] == instance_id
                 )
+            try:
+                info = next(infos)
+            except StopIteration:
+                raise ConfigError(
+                    f"Key {instance_id} could not be found among "
+                    f"configured {'geonetwork' if is_geonetwork else 'geoserver'} "
+                    "source servers."
+                )
         else:
             inst_type = "geonetwork" if is_geonetwork else "geoserver"
             url_key = "api_url" if is_geonetwork else "url"
-            instance = next(
-                inst
-                for name, inst in self.config["destinations"].items()
-                if name == instance_id
-            )[inst_type]
+            try:
+                instance = next(
+                    inst
+                    for name, inst in self.config["destinations"].items()
+                    if name == instance_id
+                )[inst_type]
+            except StopIteration:
+                raise ConfigError(
+                    f"Key {instance_id} could not be found among "
+                    f"configured {'geonetwork' if is_geonetwork else 'geoserver'} "
+                    "destination servers."
+                )
             info = {
                 "auth": (instance.get("login"), instance.get("password")),
                 "url": instance[url_key],
@@ -75,9 +92,11 @@ def substitute_single_credentials_from_env(
     common_login, common_password = common_credentials
 
     if common_login is not None:
-        server_instance["login"] = common_login
+        if server_instance.get("login") is None:
+            server_instance["login"] = common_login
     if common_password is not None:
-        server_instance["password"] = common_password
+        if server_instance.get("password") is None:
+            server_instance["password"] = common_password
 
     read_value_from_env(server_instance, "login")
     read_value_from_env(server_instance, "password")

@@ -23,6 +23,23 @@ Refer to documentation in [frontend/README.md](frontend/README.md)
 ## Backend
  
 The folder [backend](backend) contains the API written with FastAPI.
+
+### Configuration
+
+The configuration is based on a YAML file containing connection information about the source and destination servers. You can find an example of this file in <backend/tests/test_config.yaml>
+
+The file has 2 categories:
+- sources
+- destinations
+
+Sources contains 2 list of servers: `geonetwork_instances` and `geoserver_instances`. Each instance is described bu its url (api_url for geonetwork), and their credentials.
+
+Destinations is a dict of geonetwork / geoserver combinations, each with their url and credentials.
+
+The logics for credentials is by increasing order of importance:
+- credentials defined at a higher level are applied to a lower level (e.g. common credentials can be defined for both geonetwork and geoserver in a destination item)
+- credentials in the geoserver/geonetwork level are read from the keys "login", "password"
+- if the keys "login_env_var" and/or "password_env_var" are found, the corrensponding environment variable is read, and if defined, overrides the credential
  
 ### Access
 

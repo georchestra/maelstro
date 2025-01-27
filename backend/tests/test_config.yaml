@@ -9,8 +9,8 @@ sources:
       password_env_var: DEMO_LOGIN
   geoserver_instances: 
     - url: "https://mastergs.rennesmetropole.fr/geoserver/"
-      login: admin
-      password: admin
+      login: test
+      password: 1234
     - url: "https://mastergs.rennesmetropole.fr/geoserver-geofence/"
       login: "toto6"
       password: "Str0ng_passW0rd"
@@ -28,14 +28,15 @@ destinations:
       password_env_var: LOCAL_LOGIN
     geoserver:
       url: https://georchestra-127-0-0-1.nip.io/geoserver
-  "Plateforme professionnelle":
+  "PlateformeProfessionnelle":
     login: "toto" 
     password: "passW0rd"  # si login et password sont précisés au niveau de l'IDG, ils sont communs aux instances geoserver et geonetwork
     geoserver: 
+      password: "overridePW"  # si login ou password sont redéfinis à un niveau plus bas, ils prennent la priorité
       url: https://portail.sig.rennesmetropole.fr/geoserver
     geonetwork:
       api_url: https://portail.sig.rennesmetropole.fr/geonetwork/srv/api
-  "Plateforme publique":
+  "PlateformePublique":
     geoserver: 
       url: https://public.sig.rennesmetropole.fr/geoserver
       # si login et password sont précisés au niveau de geoserver ou geonetwork, ils prennent la main 
