@@ -7,7 +7,6 @@ services:
   maelstro-front:
     build:
       context: ./frontend
-      target: server
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/maelstro/"]
       interval: 10s
