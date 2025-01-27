@@ -91,7 +91,7 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str | None]]:
         is_src=True, is_geonetwork=True, instance_id=src_name
     )
     gn = GnApi(src_info["url"], src_info["auth"])
-    zipdata = gn.get_record_zip(uuid)
+    zipdata = gn.get_record_zip(uuid).read()
     meta = Meta(zipdata)
     return meta.get_ogc_geoserver_layers()
 
