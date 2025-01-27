@@ -54,12 +54,12 @@ class Config:
                 )
             try:
                 info = next(infos)
-            except StopIteration:
+            except StopIteration as exc:
                 raise ConfigError(
                     f"Key {instance_id} could not be found among "
                     f"configured {'geonetwork' if is_geonetwork else 'geoserver'} "
                     "source servers."
-                )
+                ) from exc
         else:
             inst_type = "geonetwork" if is_geonetwork else "geoserver"
             url_key = "api_url" if is_geonetwork else "url"
@@ -69,12 +69,12 @@ class Config:
                     for name, inst in self.config["destinations"].items()
                     if name == instance_id
                 )[inst_type]
-            except StopIteration:
+            except StopIteration as exc:
                 raise ConfigError(
                     f"Key {instance_id} could not be found among "
                     f"configured {'geonetwork' if is_geonetwork else 'geoserver'} "
                     "destination servers."
-                )
+                ) from exc
             info = {
                 "auth": (instance.get("login"), instance.get("password")),
                 "url": instance[url_key],
