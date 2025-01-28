@@ -16,11 +16,14 @@ class Config:
         self.read_all_credentials()
 
     def read_all_credentials(self) -> None:
+        common_credentials = substitute_single_credentials_from_env(
+            self.config["sources"]
+        )
         for gn_instance in self.config["sources"]["geonetwork_instances"]:
-            substitute_single_credentials_from_env(gn_instance)
+            substitute_single_credentials_from_env(gn_instance, common_credentials)
 
         for gs_instance in self.config["sources"]["geonetwork_instances"]:
-            substitute_single_credentials_from_env(gs_instance)
+            substitute_single_credentials_from_env(gs_instance, common_credentials)
 
         for geor_instance in self.config["destinations"].values():
             common_credentials = substitute_single_credentials_from_env(geor_instance)
@@ -112,3 +115,4 @@ def read_value_from_env(
         env_value = os.environ.get(env_var)
         if env_value is not None:
             server_instance[value_type] = env_value
+        server_instance.pop(f"{value_type}_env_var")
