@@ -31,6 +31,8 @@ services:
     volumes:
       - ./backend:/app
       - georchestra_datadir:/etc/georchestra
+    environment:
+      - LOCAL_LOGIN=admin
     healthcheck:
       test: "health_check"
       interval: 10s
