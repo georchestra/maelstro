@@ -1,0 +1,48 @@
+sources:
+  geonetwork_instances:
+    # une seule instance geonetwork source supportée dans la v1
+    # ce nom sera utilisé dans une V2 (non financée) pour que l'utilisateur final choisisse l'instance GN source 
+    - name: "GeonetworkMaster"
+      # api_url: https://mastergn.rennesmetropole.fr/geonetwork/srv/api
+      api_url: https://demo.georchestra.org/geonetwork/srv/api
+      login_env_var: DEMO_LOGIN
+      password_env_var: DEMO_LOGIN
+  geoserver_instances: 
+    - url: "https://mastergs.rennesmetropole.fr/geoserver/"
+      login: test
+      password: 1234
+    - url: "https://mastergs.rennesmetropole.fr/geoserver-geofence/"
+      login: "toto6"
+      password: "Str0ng_passW0rd"
+  
+  
+destinations:
+  # une destination est toujours une instance geOrchestra
+  # une instance geOrchestra associe toujours un unique geoserver et un unique geonetwork
+  
+  # nom de l'instance geOrchestra destination, telle qu'il apparaitra dans la UI
+  "CompoLocale":
+    geonetwork:
+      api_url: http://geonetwork:8080/geonetwork/srv/api
+      login_env_var: LOCAL_LOGIN
+      password_env_var: LOCAL_LOGIN
+    geoserver:
+      url: https://georchestra-127-0-0-1.nip.io/geoserver
+  "PlateformeProfessionnelle":
+    login: "toto" 
+    password: "passW0rd"  # si login et password sont précisés au niveau de l'IDG, ils sont communs aux instances geoserver et geonetwork
+    geoserver: 
+      password: "overridePW"  # si login ou password sont redéfinis à un niveau plus bas, ils prennent la priorité
+      url: https://portail.sig.rennesmetropole.fr/geoserver
+    geonetwork:
+      api_url: https://portail.sig.rennesmetropole.fr/geonetwork/srv/api
+  "PlateformePublique":
+    geoserver: 
+      url: https://public.sig.rennesmetropole.fr/geoserver
+      # si login et password sont précisés au niveau de geoserver ou geonetwork, ils prennent la main 
+      login: "toto2"
+      password: "Str0ng_passW0rd"
+    geonetwork:
+      api_url: https://public.sig.rennesmetropole.fr/geonetwork/srv/api
+      login: "toto3"
+      password: "Str0ng_passW0rd"

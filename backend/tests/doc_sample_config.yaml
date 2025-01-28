@@ -1,0 +1,15 @@
+sources:
+  login: admin
+  password_env_var: COMMON_PW
+  geonetwork_instances:
+  - name: "a"
+    password: "pwA"
+  - name: "b"
+    login: "B"
+    password: default_unused
+    password_env_var: "PASSWORD_B"
+  - name: "c"
+    login: "C"
+  geoserver_instances: []
+
+destinations: {}
