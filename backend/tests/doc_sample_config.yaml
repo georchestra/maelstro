@@ -10,5 +10,6 @@ sources:
     password_env_var: "PASSWORD_B"
   - name: "c"
     login: "C"
+  geoserver_instances: []
 
 destinations: {}

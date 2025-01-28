@@ -22,7 +22,7 @@ class Config:
         for gn_instance in self.config["sources"]["geonetwork_instances"]:
             substitute_single_credentials_from_env(gn_instance, common_credentials)
 
-        for gs_instance in self.config["sources"]["geonetwork_instances"]:
+        for gs_instance in self.config["sources"]["geoserver_instances"]:
             substitute_single_credentials_from_env(gs_instance, common_credentials)
 
         for geor_instance in self.config["destinations"].values():

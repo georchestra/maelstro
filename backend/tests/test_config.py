@@ -114,7 +114,8 @@ def test_doc_sample():
                 {"name": "a", "login": "admin", "password": "pwA"},
                 {"name": "b", "login": "B", "password": "pwB"},
                 {"name": "c", "login": "C"},
-            ]
+            ],
+            "geoserver_instances": [],
         },
         "destinations": {},
     }

@@ -26,15 +26,15 @@ The folder [backend](backend) contains the API written with FastAPI.
 
 ### Configuration
 
-The configuration is based on a YAML file containing connection information about the source and destination servers. You can find an example of this file in <backend/tests/test_config.yaml>
+The configuration is based on a YAML file containing connection information about the source and destination servers. You can find an example of this file in [test_config.yaml](backend/tests/test_config.yaml)
 
 The file has 2 categories:
 - sources
 - destinations
 
-Sources contains 2 list of servers: `geonetwork_instances` and `geoserver_instances`. Each instance is described bu its url (api_url for geonetwork), and their credentials.
+Sources contains 2 list of servers: `geonetwork_instances` and `geoserver_instances`. Each instance is described by its `url` (`api_url` for geonetwork), and their credentials.
 
-Destinations is a dict of geonetwork / geoserver combinations, each with their url and credentials.
+Destinations is a dict of geonetwork / geoserver combinations, each with their `url` and credentials.
 
 The logics for credentials is by decreasing order of importance:
 1. env var: if the keys "login_env_var" and/or "password_env_var" are found in a single server definitions and if the corrensponding environment variable is defined, this value is read and applied as login /password
@@ -43,7 +43,7 @@ The logics for credentials is by decreasing order of importance:
 4. Then constant login/password keys are read
 5. I still either "login" or "password" is not defined, the credentials are considered invalid and anonymous acces is used for the instance without authentication
 
-Example (see <backend/tests/doc_sample_config.yaml>):
+Example (see [doc_sample_config.yaml](backend/tests/doc_sample_config.yaml)):
 
 ```
 sources:
