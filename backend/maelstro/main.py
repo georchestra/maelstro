@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Request, Response, Header
 from geonetwork import GnApi
 from maelstro.config import ConfigError, app_config as config
 from maelstro.metadata import Meta
-from maelstro.core import clone_uuid
+from maelstro.core import CloneDataset
 
 
 app = FastAPI(root_path="/maelstro-backend")
@@ -125,7 +125,8 @@ def put_dataset_copy(
         copy_styles: bool = True,
         dry_run: bool = False,
 ) -> Any:
-    return clone_uuid(src_name, dst_name, metadataUuid, copy_meta, copy_layers, copy_styles)
+    clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
+    return clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles)
 
 
 @app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")

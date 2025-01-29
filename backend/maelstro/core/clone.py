@@ -14,7 +14,6 @@ logger = logging.getLogger()
 
 # module to be converted to class structure
 op_logger = OpLogger()
-resource_urls = []
 
 
 class MaelstroException(HTTPException):
@@ -39,79 +38,75 @@ class ParamError(MaelstroException):
         super().__init__({**err_dict, "status_code": 406})
 
 
-def clone_uuid(
-        src_name: str,
-        dst_name: str,
-        uuid: str,
+class CloneDataset:
+    def __init__(self, src_name: str, dst_name: str, uuid: str):
+        self.src_name = src_name
+        self.dst_name = dst_name
+        self.set_uuid(uuid)
+
+    def set_uuid(self, uuid: str):
+        self.uuid = uuid
+        if uuid:
+            gn = get_gn_service(self.src_name, True)
+            zipdata = gn.get_record_zip(uuid).read()
+            self.meta = Meta(zipdata)
+
+    def clone_dataset(
+        self,
         copy_meta: bool,
         copy_layers: bool,
-        copy_styles: bool
-):
-    gn = get_gn_service(src_name, True)
-    zipdata = gn.get_record_zip(uuid).read()
-    meta = Meta(zipdata)
+        copy_styles: bool,
+        format_output: bool = True
+    ):
+        if self.meta is None:
+            return
+        self.copy_meta = copy_meta
+        self.copy_layers = copy_layers
+        self.copy_styles = copy_styles
 
-    if copy_layers or copy_styles:
-        clone_layers(src_name, dst_name, meta, copy_layers, copy_styles)
+        if copy_layers or copy_styles:
+            self.clone_layers()
 
-    if copy_meta:
-        gn_dst = get_gn_service(dst_name, False)
-        mapping = {
-            "sources": config.get_gs_sources(),
-            "destinations": [
-                src["gs_url"]
-                for src in config.get_destinations()
-            ],
-        }
-        meta.update_geoverver_urls(mapping)
-        gn_dst.put_record_zip(meta.xml_bytes)
+        if copy_meta:
+            gn_dst = get_gn_service(self.dst_name, False)
+            mapping = {
+                "sources": config.get_gs_sources(),
+                "destinations": [
+                    src["gs_url"]
+                    for src in config.get_destinations()
+                ],
+            }
+            self.meta.update_geoverver_urls(mapping)
+            gn_dst.put_record_zip(self.meta.xml_bytes)
 
-    return op_logger.format_operations()
-    return op_logger.get_operations()
-    dst_info = config.get_access_info(
-        is_src=False, is_geonetwork=True, instance_id=dst_name
-    )
-    return GnApi(dst_info["url"], dst_info["auth"]).put_record_zip(zipdata)
+        if format_output:
+            return op_logger.format_operations()
+        return op_logger.get_operations()
 
+    def clone_layers(self):
+        server_layers = self.meta.get_gs_layers(config.get_gs_sources())
 
-def clone_layers(
-        src_name: str,
-        dst_name: str,
-        meta,
-        copy_layers: bool,
-        copy_styles: bool
-):
-    layers = meta.get_ogc_geoserver_layers()
-    server_layers = {
-        url: set((l["name"] or "GAM:plan_b3_psc_02_captage_pct").split(":")[-1] for l in layers if url in l["server_url"])
-        for url in config.get_gs_sources()
-    }
+        gs_dst = get_gs_service(self.dst_name, False)
+        for gs_url, layer_names in server_layers.items():
+            if layer_names:
+                gs_src = get_gs_service(gs_url, True)
+                for layer_name in layer_names:
+                    resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
+                    resp.raise_for_status()
+                    layer_data = resp.json()
 
-    resource_urls.clear()
-    gs_dst = get_gs_service(dst_name, False)
-    for gs_url, layer_names in server_layers.items():
-        if layer_names:
-            gs_src = get_gs_service(gs_url, True)
-            for layer_name in layer_names:
-                resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
-                resp.raise_for_status()
-                layer_data = resp.json()
+                    # resp = gs_dst.rest_client.put(f"/rest/layers/{layer_name}.json")
 
-                # resp = gs_dst.rest_client.put(f"/rest/layers/{layer_name}.json")
+                    # styles must be cloned first
+                    if self.copy_styles:
+                        self.clone_styles(gs_src, gs_dst, layer_data)
 
-                # styles must be cloned first
-                if copy_styles:
-                    clone_styles(gs_src, gs_dst, layer_data)
+                    # styles must be available when cloning layers
+                    if self.copy_layers:
+                        self.clone_layer(gs_src, gs_dst, layer_name, layer_data)
 
-                # styles must be available when cloning layers
-                if copy_layers:
-                    clone_layer(gs_src, gs_dst, layer_name, layer_data)
-
-
-def clone_layer(gs_src, gs_dst, layer_name, layer_data):
-    resource_url = layer_data["layer"]["resource"]["href"].replace(gs_src.url, "")
-    if resource_url not in resource_urls:
-        resource_urls.append(resource_url)
+    def clone_layer(self, gs_src, gs_dst, layer_name, layer_data):
+        resource_url = layer_data["layer"]["resource"]["href"].replace(gs_src.url, "")
         layer_string = json.dumps(layer_data)
         layer_data = json.loads(layer_string.replace(gs_src.url, gs_dst.url))
 
@@ -157,55 +152,53 @@ def clone_layer(gs_src, gs_dst, layer_name, layer_data):
                 )
         resp.raise_for_status()
 
-    resp = gs_dst.rest_client.put(f"/rest/layers/{layer_name}", json=layer_data)
-    resp.raise_for_status()
-
-
-def clone_styles(gs_src, gs_dst, layer_data):
-    defaultStyle = layer_data["layer"]["defaultStyle"]
-    additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
-    all_styles = {
-        style["name"]: {
-            "workspace": style.get("workspace"),
-            "href": style.get("href"),
-        }
-        for style in [defaultStyle] + additional_styles
-    }
-    for style_name, style in all_styles.items():
-        clone_style(gs_src, gs_dst, style_name, style)
-
-
-def clone_style(gs_src, gs_dst, style_name, style):
-    if gs_src.url in style["href"]:
-        style_route = style["href"].replace(gs_src.url, "")
-        resp = gs_src.rest_client.get(style_route)
+        resp = gs_dst.rest_client.put(f"/rest/layers/{layer_name}", json=layer_data)
         resp.raise_for_status()
-        style_info = resp.json()
-        style_format = style_info["style"]["format"]
-        style_def_route = style_route.replace(".json", f".{style_format}")
-        style_def = gs_src.rest_client.get(style_def_route)
 
-        dst_style = gs_dst.rest_client.get(style_route)
-        if dst_style.status_code == 200:
-            dst_style = gs_dst.rest_client.put(style_route, json=style_info)
-            dst_style.raise_for_status()
-        else:
-            style_post_route = re.sub(
-                r"/styles/.*\.json",
-                "/styles",
-                style_route,
-            )
-            dst_style = gs_dst.rest_client.post(style_post_route, json=style_info)
-            #dst_style.raise_for_status()
-
-        dst_style_def = gs_dst.rest_client.put(
-            style_def_route,
-            data=style_def.content,
-            headers={
-                "content-type": style_def.headers['content-type']
+    def clone_styles(self, gs_src, gs_dst, layer_data):
+        defaultStyle = layer_data["layer"]["defaultStyle"]
+        additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
+        all_styles = {
+            style["name"]: {
+                "workspace": style.get("workspace"),
+                "href": style.get("href"),
             }
-        )
-        #dst_style_def.raise_for_status()
+            for style in [defaultStyle] + additional_styles
+        }
+        for style_name, style in all_styles.items():
+            self.clone_style(gs_src, gs_dst, style_name, style)
+
+    def clone_style(self, gs_src, gs_dst, style_name, style):
+        if gs_src.url in style["href"]:
+            style_route = style["href"].replace(gs_src.url, "")
+            resp = gs_src.rest_client.get(style_route)
+            resp.raise_for_status()
+            style_info = resp.json()
+            style_format = style_info["style"]["format"]
+            style_def_route = style_route.replace(".json", f".{style_format}")
+            style_def = gs_src.rest_client.get(style_def_route)
+
+            dst_style = gs_dst.rest_client.get(style_route)
+            if dst_style.status_code == 200:
+                dst_style = gs_dst.rest_client.put(style_route, json=style_info)
+                dst_style.raise_for_status()
+            else:
+                style_post_route = re.sub(
+                    r"/styles/.*\.json",
+                    "/styles",
+                    style_route,
+                )
+                dst_style = gs_dst.rest_client.post(style_post_route, json=style_info)
+                #dst_style.raise_for_status()
+
+            dst_style_def = gs_dst.rest_client.put(
+                style_def_route,
+                data=style_def.content,
+                headers={
+                    "content-type": style_def.headers['content-type']
+                }
+            )
+            # dst_style_def.raise_for_status()
 
 
 def get_service_info(url, is_source, is_geonetwork):

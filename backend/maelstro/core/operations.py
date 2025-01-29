@@ -40,22 +40,22 @@ class OpLogger:
 
 
 class OpService:
-    def __init__(self, op_logger, service, url, is_source, is_geonetwork):
+    def __init__(self, op_logger, service, url, is_source, is_geonetwork, dry_run=False):
         self.op_logger = op_logger
         self.service = service
         self.url = url
         self.context = "source" if is_source else "destination"
         self.service_type = "geonetwork" if is_geonetwork else "geoserver"
         self.log_operation("Init and check version")
-        self.dry = False
+        self.dry = dry_run
 
     def log_operation(self, operation):
         self.op_logger.log_operation(operation, self.url, self.context, self.service_type)
 
 
 class GnOpService(OpService):
-    def __init__(self, op_logger, gn_service, url, is_source):
-        super().__init__(op_logger, gn_service, url, is_source, True)
+    def __init__(self, op_logger, gn_service, url, is_source, dry_run=False):
+        super().__init__(op_logger, gn_service, url, is_source, True, dry_run)
 
     def get_record_zip(self, uuid):
         self.log_operation(f"Download zip record {uuid}")
@@ -70,11 +70,13 @@ class GnOpService(OpService):
 
 
 class GsOpService(OpService):
-    def __init__(self, op_logger, gn_service, url, is_source):
-        super().__init__(op_logger, gn_service, url, is_source, False)
+    def __init__(self, op_logger, gn_service, url, is_source, dry_run=False):
+        super().__init__(op_logger, gn_service, url, is_source, False, dry_run)
 
     def __getattr__(self, key):
         class EmptyResponse:
+            status_code = 200
+
             def raise_for_status(self):
                 pass
 

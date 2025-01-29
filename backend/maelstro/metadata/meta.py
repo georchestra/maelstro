@@ -2,6 +2,7 @@ from io import BytesIO, StringIO
 from zipfile import ZipFile
 from csv import DictReader
 from lxml import etree
+from maelstro.common.types import GsLayer
 
 
 NS_PREFIXES = {
@@ -34,6 +35,27 @@ class MetaXml:
             )
             if self.is_ogc_layer(link_node)
         ]
+
+    def get_gs_layers(self, gs_servers: list[str] = []):
+        return {
+            url: set(
+                self.get_gslayer_from_gn_link(l["name"], l["server_url"], gs_servers)
+                for l in self.get_ogc_geoserver_layers()
+                if url in l["server_url"])
+            for url in gs_servers
+        }
+
+    def get_gslayer_from_gn_link(self, layer_name, ows_url, gs_servers):
+        if layer_name is None:
+            layer_name = "GAM:plan_b3_psc_02_captage_pct"
+        if ":" in layer_name:
+            return GsLayer(*layer_name.split(":"))
+        for url in gs_servers:
+            ows_url = ows_url.replace(url, "")
+        return GsLayer(
+            workspace_name=ows_url.lstrip("/").split("/")[0],
+            layer_name=layer_name
+        )
 
     def update_geoverver_urls(self, mapping):
         xml_root = etree.parse(BytesIO(self.xml_bytes))

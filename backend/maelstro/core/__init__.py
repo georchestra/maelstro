@@ -1,3 +1,3 @@
-from .clone import clone_uuid as clone_uuid
+from .clone import CloneDataset as CloneDataset
 
-__all__: list[str] = ["clone_uuid"]
+__all__: list[str] = ["CloneDataset"]
