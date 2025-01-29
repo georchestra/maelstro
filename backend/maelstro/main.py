@@ -2,6 +2,7 @@
 Main backend app setup
 """
 
+from io import BytesIO
 from typing import Annotated, Any
 from fastapi import FastAPI, HTTPException, Request, Response, Header
 from geonetwork import GnApi
@@ -84,30 +85,29 @@ def debug_page(request: Request) -> dict[str, Any]:
 
 
 @app.get("/check_config")
-def check_config(check_credentials=True) -> dict[str, bool]:
+def check_config(check_credentials: bool = True) -> dict[str, bool]:
     # TODO: implement check of all servers configured in the config file
-    return {"test_conf.yaml": True}
+    return {"test_conf.yaml": True, "check_credentials": check_credentials}
 
 
 @app.get("/sources")
-def get_sources() -> list[dict[str, str | None]]:
+def get_sources() -> list[dict[str, str]]:
     return config.get_gn_sources()
 
 
 @app.get("/destinations")
-def get_destinations() -> list[dict[str, str | None]]:
+def get_destinations() -> list[dict[str, str]]:
     return config.get_destinations()
 
 
-
 @app.get("/sources/{src_name}/data/{uuid}/layers")
-def get_layers(src_name: str, uuid: str) -> list[dict[str, str | None]]:
+def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
     try:
         src_info = config.get_access_info(
             is_src=True, is_geonetwork=True, instance_id=src_name
         )
     except ConfigError as err:
-        raise HTTPException(status_code=406, detail=err.args)
+        raise HTTPException(status_code=406, detail=err.args) from err
 
     gn = GnApi(src_info["url"], src_info["auth"])
     zipdata = gn.get_record_zip(uuid).read()
@@ -117,15 +117,15 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str | None]]:
 
 @app.put("/copy")
 def put_dataset_copy(
-        src_name: str,
-        dst_name: str,
-        metadataUuid: str,
-        copy_meta: bool = True,
-        copy_layers: bool = True,
-        copy_styles: bool = True,
-        dry_run: bool = False,
+    src_name: str,
+    dst_name: str,
+    metadataUuid: str,
+    copy_meta: bool = True,
+    copy_layers: bool = True,
+    copy_styles: bool = True,
+    dry_run: bool = False,
 ) -> Any:
-    clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
+    clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
     return clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles)
 
 
@@ -142,7 +142,7 @@ def post_data_copy(dst_name: str, uuid: str, layer_name: str, src_name: str) -> 
     dst_info = config.get_access_info(
         is_src=False, is_geonetwork=True, instance_id=dst_name
     )
-    return GnApi(dst_info["url"], dst_info["auth"]).put_record_zip(zipdata)
+    return GnApi(dst_info["url"], dst_info["auth"]).put_record_zip(BytesIO(zipdata))
 
 
 @app.get("/health")
