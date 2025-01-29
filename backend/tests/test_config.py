@@ -28,7 +28,10 @@ def test_init(test_config_path):
                     "url": "https://mastergs.rennesmetropole.fr/geoserver-geofence/",
                     "login": "toto6",
                     "password": "Str0ng_passW0rd"
-                }
+                },
+                {
+                    'url': 'https://data.lillemetropole.fr/geoserver/',
+                },
             ]
         },
         "destinations": {
@@ -105,8 +108,9 @@ def test_get_info(test_config_path):
 
 
 def test_doc_sample():
+    os.environ["CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "doc_sample_config.yaml")
     os.environ["PASSWORD_B"] = "pwB"
-    conf = Config(os.path.join(os.path.dirname(__file__), "doc_sample_config.yaml"))
+    conf = Config("CONFIG_PATH")
     assert conf.config == {
         "sources": {
             "login": "admin",

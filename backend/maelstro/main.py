@@ -3,18 +3,16 @@ Main backend app setup
 """
 
 from typing import Annotated, Any
-from fastapi import FastAPI, Request, Response, Header
+from fastapi import FastAPI, HTTPException, Request, Response, Header
 from geonetwork import GnApi
-from maelstro.config import Config
+from maelstro.config import ConfigError, app_config as config
 from maelstro.metadata import Meta
+from maelstro.core import clone_uuid
 
 
 app = FastAPI(root_path="/maelstro-backend")
 
 app.state.health_countdown = 5
-
-
-config = Config(env_var_name="MAELSTRO_CONFIG")
 
 
 @app.head("/")
@@ -85,15 +83,49 @@ def debug_page(request: Request) -> dict[str, Any]:
     }
 
 
+@app.get("/check_config")
+def check_config(check_credentials=True) -> dict[str, bool]:
+    # TODO: implement check of all servers configured in the config file
+    return {"test_conf.yaml": True}
+
+
+@app.get("/sources")
+def get_sources() -> list[dict[str, str | None]]:
+    return config.get_gn_sources()
+
+
+@app.get("/destinations")
+def get_destinations() -> list[dict[str, str | None]]:
+    return config.get_destinations()
+
+
+
 @app.get("/sources/{src_name}/data/{uuid}/layers")
 def get_layers(src_name: str, uuid: str) -> list[dict[str, str | None]]:
-    src_info = config.get_access_info(
-        is_src=True, is_geonetwork=True, instance_id=src_name
-    )
+    try:
+        src_info = config.get_access_info(
+            is_src=True, is_geonetwork=True, instance_id=src_name
+        )
+    except ConfigError as err:
+        raise HTTPException(status_code=406, detail=err.args)
+
     gn = GnApi(src_info["url"], src_info["auth"])
     zipdata = gn.get_record_zip(uuid).read()
     meta = Meta(zipdata)
     return meta.get_ogc_geoserver_layers()
+
+
+@app.put("/copy")
+def put_dataset_copy(
+        src_name: str,
+        dst_name: str,
+        metadataUuid: str,
+        copy_meta: bool = True,
+        copy_layers: bool = True,
+        copy_styles: bool = True,
+        dry_run: bool = False,
+) -> Any:
+    return clone_uuid(src_name, dst_name, metadataUuid, copy_meta, copy_layers, copy_styles)
 
 
 @app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
@@ -102,7 +134,7 @@ def post_data_copy(dst_name: str, uuid: str, layer_name: str, src_name: str) -> 
         is_src=True, is_geonetwork=True, instance_id=src_name
     )
     gn = GnApi(src_info["url"], src_info["auth"])
-    zipdata = gn.get_record_zip(uuid)
+    zipdata = gn.get_record_zip(uuid).read()
 
     print(f"Layer name {layer_name} currently unused, needed for cloning geoserver")
 

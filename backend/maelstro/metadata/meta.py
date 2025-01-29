@@ -27,7 +27,6 @@ class MetaXml:
 
     def get_ogc_geoserver_layers(self) -> list[dict[str, str | None]]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
-
         return [
             self.layerproperties_from_link(link_node)
             for link_node in xml_root.findall(
@@ -35,6 +34,19 @@ class MetaXml:
             )
             if self.is_ogc_layer(link_node)
         ]
+
+    def update_geoverver_urls(self, mapping):
+        xml_root = etree.parse(BytesIO(self.xml_bytes))
+        for link_node in xml_root.findall(f".//{self.prefix}:CI_OnlineResource", self.namespaces):
+            url_node = link_node.find(f".//{self.prefix}:linkage", self.namespaces)
+            text_node = url_node.find("./")
+            for src in mapping["sources"]:
+                for dst in mapping["destinations"]:
+                    text_node.text = text_node.text.replace(src, dst)
+        b_io = BytesIO()
+        xml_root.write(b_io)
+        b_io.seek(0)
+        self.xml_bytes = b_io.read()
 
     def is_ogc_layer(self, link_node: etree._Element) -> bool:
         link_protocol = self.protocol_from_link(link_node)

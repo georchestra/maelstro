@@ -6,7 +6,7 @@ authors = [
     {name = "Your Name",email = "you@example.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12, <4.0"
 dependencies = [
     "fastapi[standard] (>=0.115.6,<0.116.0)",
     "requests (>=2.32.3,<3.0.0)",
@@ -14,6 +14,7 @@ dependencies = [
     "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
     "lxml-stubs (>=0.5.1,<0.6.0)",
     "geonetwork @ git+https://github.com/camptocamp/python-geonetwork",
+    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud",
 ]
 
 [tool.poetry.group.check]

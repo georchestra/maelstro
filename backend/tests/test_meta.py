@@ -42,3 +42,17 @@ def test_iso19115():
             'protocol': 'OGC:WFS'
         }
     ]
+
+
+def test_replace_geoserver():
+    with open(os.path.join(os.path.dirname(__file__), 'demo_iso19139.zip'), 'rb') as zf:
+        mm = Meta(zf.read())
+    assert mm.xml_bytes.find(b"https://public.sig.rennesmetropole.fr/geoserver") >= 0
+    mm.update_geoverver_urls(
+        {
+            "sources": ["https://public.sig.rennesmetropole.fr/geoserver"],
+            "destinations": ["https://prod.sig.rennesmetropole.fr/geoserver"],
+        }
+    )
+    assert mm.xml_bytes.find(b"https://public.sig.rennesmetropole.fr/geoserver") == -1
+    assert mm.xml_bytes.find(b"https://prod.sig.rennesmetropole.fr/geoserver") >= 0
