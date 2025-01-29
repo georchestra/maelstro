@@ -66,7 +66,7 @@ class CloneDataset:
         format_output: bool = True,
     ) -> str | list[Any]:
         if self.meta is None:
-            return
+            return []
         self.copy_meta = copy_meta
         self.copy_layers = copy_layers
         self.copy_styles = copy_styles
@@ -168,14 +168,14 @@ class CloneDataset:
     def clone_styles(
         self, gs_src: GsOpService, gs_dst: GsOpService, layer_data: dict[str, Any]
     ) -> None:
-        defaultStyle = layer_data["layer"]["defaultStyle"]
+        default_style = layer_data["layer"]["defaultStyle"]
         additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
         all_styles = {
             style["name"]: {
                 "workspace": style.get("workspace"),
                 "href": style.get("href"),
             }
-            for style in [defaultStyle] + additional_styles
+            for style in [default_style] + additional_styles
         }
         for style in all_styles.values():
             self.clone_style(gs_src, gs_dst, style)

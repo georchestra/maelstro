@@ -65,18 +65,15 @@ class MetaXml:
 
     def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> None:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
-        for link_node in xml_root.findall(
-            f".//{self.prefix}:CI_OnlineResource", self.namespaces
+        for url_node in xml_root.findall(
+            f".//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage/",
+            self.namespaces,
         ):
-            if link_node is not None:
-                url_node = link_node.find(f".//{self.prefix}:linkage", self.namespaces)
-                if url_node is not None:
-                    text_node = url_node.find("./")
-                    for src in mapping["sources"]:
-                        for dst in mapping["destinations"]:
-                            if text_node is not None:
-                                if text_node.text is not None:
-                                    text_node.text = text_node.text.replace(src, dst)
+            if (url_node is None) or (url_node.text is None):
+                continue
+            for src in mapping["sources"]:
+                for dst in mapping["destinations"]:
+                    url_node.text = url_node.text.replace(src, dst)
         b_io = BytesIO()
         xml_root.write(b_io)
         b_io.seek(0)

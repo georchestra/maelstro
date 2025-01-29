@@ -93,8 +93,7 @@ class GnOpService(OpService):
         self.log_operation("Upload zip record")
         if self.dry:
             return {"dry-run": True}  # skip writing in dry-run
-        else:
-            return self.service.put_record_zip(zipdata)
+        return self.service.put_record_zip(zipdata)
 
 
 class GnSessionWrapper:
