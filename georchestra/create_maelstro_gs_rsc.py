@@ -1,4 +1,3 @@
-from IPython.core.release import description
 from geoservercloud import GeoServerCloud
 import csv
 
