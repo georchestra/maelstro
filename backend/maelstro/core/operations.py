@@ -1,4 +1,5 @@
 from requests.exceptions import HTTPError
+from geonetwork import GnSession
 
 
 class OpLogger:
@@ -6,8 +7,9 @@ class OpLogger:
         self.operations = []
         self.services = []
 
-    def add_gn_service(self, gs_service, url: str, is_source: bool):
-        gn_service = GnOpService(self, gs_service, url, is_source)
+    def add_gn_service(self, gn_service, url: str, is_source: bool):
+        op_service = OpService(self, None, url, is_source, True)
+        gn_service.session = GnSessionWrapper(op_service, gn_service.session, url)
         self.services.append(gn_service)
         return gn_service
 
@@ -50,6 +52,7 @@ class OpService:
         self.dry = dry_run
 
     def log_operation(self, operation):
+        #print(operation, self.url, self.context, self.service_type)
         self.op_logger.log_operation(operation, self.url, self.context, self.service_type)
 
 
@@ -67,6 +70,29 @@ class GnOpService(OpService):
             return {"dry-run": True}  # skip writing in dry-run
         else:
             return self.service.put_record_zip(zipdata)
+
+
+class GnSessionWrapper(GnSession):
+    def __init__(self, op_service, rest_client, url):
+        self.rest_client = rest_client
+        self.op_service = op_service
+        self.url = url
+        self._request = rest_client.request
+
+    def __getattribute__(self, key):
+        if key in ["get", "put", "post", "delete"]:
+
+            def create_request_wrapper(method):
+                def request_wrapper(path, *args, **kwargs):
+                    rest_client = object.__getattribute__(self, "rest_client")
+                    resp = rest_client.__getattribute__(method).__call__(path, *args, **kwargs)
+                    op_service = object.__getattribute__(self, "op_service")
+                    url = object.__getattribute__(self, "url")
+                    op_service.log_operation(f"{method} ({resp.status_code}) {path.replace(url, '')}")
+                    return resp
+                return request_wrapper
+            return create_request_wrapper(key)
+        return object.__getattribute__(self, "rest_client").__getattribute__(key)
 
 
 class GsOpService(OpService):
