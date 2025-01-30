@@ -15,9 +15,6 @@ from .operations import OpLogger, GsOpService
 
 logger = logging.getLogger()
 
-# module to be converted to class structure
-op_logger = OpLogger()
-
 
 class MaelstroException(HTTPException):
     def __init__(self, err_dict: dict[str, str]):
@@ -43,6 +40,7 @@ class ParamError(MaelstroException):
 
 class CloneDataset:
     def __init__(self, src_name: str, dst_name: str, uuid: str, dry: bool = False):
+        self.op_logger = OpLogger()
         self.src_name = src_name
         self.dst_name = dst_name
         self.set_uuid(uuid)
@@ -54,7 +52,7 @@ class CloneDataset:
     def set_uuid(self, uuid: str) -> None:
         self.uuid = uuid
         if uuid:
-            gn = get_gn_service(self.src_name, True)
+            gn = get_gn_service(self.src_name, True, self.op_logger)
             zipdata = gn.get_record_zip(uuid).read()
             self.meta = Meta(zipdata)
 
@@ -63,7 +61,7 @@ class CloneDataset:
         copy_meta: bool,
         copy_layers: bool,
         copy_styles: bool,
-        format_output: bool = True,
+        output_format: str = "text/plain",
     ) -> str | list[Any]:
         if self.meta is None:
             return []
@@ -75,7 +73,7 @@ class CloneDataset:
             self.clone_layers()
 
         if copy_meta:
-            gn_dst = get_gn_service(self.dst_name, False)
+            gn_dst = get_gn_service(self.dst_name, False, self.op_logger)
             mapping: dict[str, list[str]] = {
                 "sources": config.get_gs_sources(),
                 "destinations": [src["gs_url"] for src in config.get_destinations()],
@@ -83,23 +81,21 @@ class CloneDataset:
             self.meta.update_geoverver_urls(mapping)
             gn_dst.put_record_zip(BytesIO(self.meta.xml_bytes))
 
-        if format_output:
-            return op_logger.format_operations()
-        return op_logger.get_operations()
+        if output_format == "text/plain":
+            return self.op_logger.format_operations()
+        return self.op_logger.get_operations()
 
     def clone_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
 
-        gs_dst = get_gs_service(self.dst_name, False)
+        gs_dst = get_gs_service(self.dst_name, False, self.op_logger)
         for gs_url, layer_names in server_layers.items():
             if layer_names:
-                gs_src = get_gs_service(gs_url, True)
+                gs_src = get_gs_service(gs_url, True, self.op_logger)
                 for layer_name in layer_names:
                     resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
                     resp.raise_for_status()
                     layer_data = resp.json()
-
-                    # resp = gs_dst.rest_client.put(f"/rest/layers/{layer_name}.json")
 
                     # styles must be cloned first
                     if self.copy_styles:
@@ -235,14 +231,16 @@ def get_service_info(url: str, is_source: bool, is_geonetwork: bool) -> dict[str
     return service_info
 
 
-def get_gn_service(instance_name: str, is_source: bool) -> GnApi:
+def get_gn_service(instance_name: str, is_source: bool, op_logger: OpLogger) -> GnApi:
     gn_info = get_service_info(instance_name, is_source, True)
     return op_logger.add_gn_service(
         GnApi(gn_info["url"], gn_info["auth"]), gn_info["url"], is_source
     )
 
 
-def get_gs_service(instance_name: str, is_source: bool) -> GsOpService:
+def get_gs_service(
+    instance_name: str, is_source: bool, op_logger: OpLogger
+) -> GsOpService:
     gs_info = get_service_info(instance_name, is_source, False)
     gss = GeoServerService(gs_info["url"], gs_info["auth"])
     try:

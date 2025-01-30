@@ -8,12 +8,12 @@ class ConfigError(Exception):
     pass
 
 
-EMPTY_CONFIG = {
+EMPTY_CONFIG: dict[str, Any] = {
     "sources": {
         "geonetwork_instances": [],
         "geoserver_instances": [],
     },
-    "destinations": {}
+    "destinations": {},
 }
 
 

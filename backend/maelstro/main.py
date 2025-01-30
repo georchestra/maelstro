@@ -4,7 +4,8 @@ Main backend app setup
 
 from io import BytesIO
 from typing import Annotated, Any
-from fastapi import FastAPI, HTTPException, Request, Response, Header
+from fastapi import FastAPI, HTTPException, status, Request, Response, Header
+from fastapi.responses import PlainTextResponse
 from geonetwork import GnApi
 from maelstro.config import ConfigError, app_config as config
 from maelstro.metadata import Meta
@@ -124,9 +125,19 @@ def put_dataset_copy(
     copy_layers: bool = True,
     copy_styles: bool = True,
     dry_run: bool = False,
+    accept: Annotated[str, Header()] = "text/plain",
 ) -> Any:
+    if accept not in ["text/plain", "application/json"]:
+        raise HTTPException(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            f"Unsupported media type: {accept}. "
+            'Accepts "text/plain" or "application/json"',
+        )
     clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
-    return clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles)
+    logged_ops = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    if accept == "application/json":
+        return logged_ops
+    return PlainTextResponse(logged_ops)
 
 
 @app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
@@ -154,9 +165,9 @@ def health_check(
     Health check to make sure the server is up and running
     For test purposes, the server is reported healthy only from the 5th request onwards
     """
-    status: str = "healthy"
+    health_status: str = "healthy"
     if app.state.health_countdown > 0:
         app.state.health_countdown -= 1
         response.status_code = 404
-        status = "unhealthy"
-    return {"status": status, "user": sec_username}
+        health_status = "unhealthy"
+    return {"status": health_status, "user": sec_username}
