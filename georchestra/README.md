@@ -29,7 +29,7 @@ userPassword:: e1NTSEF9cXlQT25BQUkzei9lb3JEZ0FDa3JzYy9hcmRjcGpCdVNyTDBya3c9PQ=
 EOF"
 
 # init GS
-pip install geoservercloud
+pip install geoservercloud --user
 python3 georchestra/create_maelstro_gs_rsc.py
 
 # init geoserver database data
