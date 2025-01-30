@@ -1,6 +1,6 @@
 import os
-import yaml
 from typing import Any
+import yaml
 from maelstro.common.types import Credentials
 
 
@@ -8,10 +8,24 @@ class ConfigError(Exception):
     pass
 
 
+EMPTY_CONFIG: dict[str, Any] = {
+    "sources": {
+        "geonetwork_instances": [],
+        "geoserver_instances": [],
+    },
+    "destinations": {},
+}
+
+
 class Config:
-    def __init__(self, config_file: str):
-        with open(config_file, encoding="utf8") as cf:
-            self.config = yaml.load(cf, yaml.Loader)
+    def __init__(self, env_var_name: str | None = None):
+        self.config = EMPTY_CONFIG
+        if env_var_name is not None:
+            config_path = os.environ.get(env_var_name)
+            if config_path is not None:
+                config_file = config_path
+                with open(config_file, encoding="utf8") as cf:
+                    self.config = yaml.load(cf, yaml.Loader)
 
         self.read_all_credentials()
 
@@ -35,6 +49,25 @@ class Config:
                 geor_instance["geoserver"], common_credentials
             )
 
+    def get_gn_sources(self) -> list[dict[str, str]]:
+        return [
+            {"name": gn["name"], "url": gn["api_url"]}
+            for gn in self.config["sources"]["geonetwork_instances"]
+        ]
+
+    def get_gs_sources(self) -> list[str]:
+        return [gs["url"] for gs in self.config["sources"]["geoserver_instances"]]
+
+    def get_destinations(self) -> list[dict[str, str]]:
+        return [
+            {
+                "name": k,
+                "gn_url": v["geonetwork"]["api_url"],
+                "gs_url": v["geoserver"]["url"],
+            }
+            for k, v in self.config["destinations"].items()
+        ]
+
     def get_access_info(
         self, is_src: bool, is_geonetwork: bool, instance_id: str
     ) -> dict[str, Any]:
@@ -43,7 +76,7 @@ class Config:
             if is_geonetwork:
                 infos = (
                     {
-                        "auth": (gn.get("login"), gn.get("password")),
+                        "auth": Credentials(gn.get("login"), gn.get("password")),
                         "url": gn["api_url"],
                     }
                     for gn in self.config["sources"]["geonetwork_instances"]
@@ -51,7 +84,10 @@ class Config:
                 )
             else:
                 infos = (
-                    {"auth": (gs.get("login"), gs.get("password")), "url": gs["url"]}
+                    {
+                        "auth": Credentials(gs.get("login"), gs.get("password")),
+                        "url": gs["url"],
+                    }
                     for gs in self.config["sources"]["geoserver_instances"]
                     if gs["url"] == instance_id
                 )
@@ -59,7 +95,7 @@ class Config:
                 info = next(infos)
             except StopIteration as exc:
                 raise ConfigError(
-                    f"Key {instance_id} could not be found among "
+                    f"Key '{instance_id}' could not be found among "
                     f"configured {'geonetwork' if is_geonetwork else 'geoserver'} "
                     "source servers."
                 ) from exc
@@ -74,16 +110,16 @@ class Config:
                 )[inst_type]
             except StopIteration as exc:
                 raise ConfigError(
-                    f"Key {instance_id} could not be found among "
+                    f"Key '{instance_id}' could not be found among "
                     f"configured {'geonetwork' if is_geonetwork else 'geoserver'} "
                     "destination servers."
                 ) from exc
             info = {
-                "auth": (instance.get("login"), instance.get("password")),
+                "auth": Credentials(instance.get("login"), instance.get("password")),
                 "url": instance[url_key],
             }
 
-        if (info["auth"][0] is None) or (info["auth"][1] is None):
+        if (info["auth"].login is None) or (info["auth"].password is None):
             info["auth"] = None
         return info
 
@@ -116,3 +152,6 @@ def read_value_from_env(
         if env_value is not None:
             server_instance[value_type] = env_value
         server_instance.pop(f"{value_type}_env_var")
+
+
+config = Config(env_var_name="MAELSTRO_CONFIG")

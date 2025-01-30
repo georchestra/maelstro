@@ -2,8 +2,14 @@
 Main backend app setup
 """
 
+from io import BytesIO
 from typing import Annotated, Any
-from fastapi import FastAPI, Request, Response, Header
+from fastapi import FastAPI, HTTPException, status, Request, Response, Header
+from fastapi.responses import PlainTextResponse
+from geonetwork import GnApi
+from maelstro.config import ConfigError, app_config as config
+from maelstro.metadata import Meta
+from maelstro.core import CloneDataset
 
 
 app = FastAPI(root_path="/maelstro-backend")
@@ -79,6 +85,77 @@ def debug_page(request: Request) -> dict[str, Any]:
     }
 
 
+@app.get("/check_config")
+def check_config(check_credentials: bool = True) -> dict[str, bool]:
+    # TODO: implement check of all servers configured in the config file
+    return {"test_conf.yaml": True, "check_credentials": check_credentials}
+
+
+@app.get("/sources")
+def get_sources() -> list[dict[str, str]]:
+    return config.get_gn_sources()
+
+
+@app.get("/destinations")
+def get_destinations() -> list[dict[str, str]]:
+    return config.get_destinations()
+
+
+@app.get("/sources/{src_name}/data/{uuid}/layers")
+def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
+    try:
+        src_info = config.get_access_info(
+            is_src=True, is_geonetwork=True, instance_id=src_name
+        )
+    except ConfigError as err:
+        raise HTTPException(status_code=406, detail=err.args) from err
+
+    gn = GnApi(src_info["url"], src_info["auth"])
+    zipdata = gn.get_record_zip(uuid).read()
+    meta = Meta(zipdata)
+    return meta.get_ogc_geoserver_layers()
+
+
+@app.put("/copy")
+def put_dataset_copy(
+    src_name: str,
+    dst_name: str,
+    metadataUuid: str,
+    copy_meta: bool = True,
+    copy_layers: bool = True,
+    copy_styles: bool = True,
+    dry_run: bool = False,
+    accept: Annotated[str, Header()] = "text/plain",
+) -> Any:
+    if accept not in ["text/plain", "application/json"]:
+        raise HTTPException(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            f"Unsupported media type: {accept}. "
+            'Accepts "text/plain" or "application/json"',
+        )
+    clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
+    logged_ops = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    if accept == "application/json":
+        return logged_ops
+    return PlainTextResponse(logged_ops)
+
+
+@app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
+def post_data_copy(dst_name: str, uuid: str, layer_name: str, src_name: str) -> Any:
+    src_info = config.get_access_info(
+        is_src=True, is_geonetwork=True, instance_id=src_name
+    )
+    gn = GnApi(src_info["url"], src_info["auth"])
+    zipdata = gn.get_record_zip(uuid).read()
+
+    print(f"Layer name {layer_name} currently unused, needed for cloning geoserver")
+
+    dst_info = config.get_access_info(
+        is_src=False, is_geonetwork=True, instance_id=dst_name
+    )
+    return GnApi(dst_info["url"], dst_info["auth"]).put_record_zip(BytesIO(zipdata))
+
+
 @app.get("/health")
 def health_check(
     response: Response,
@@ -88,9 +165,9 @@ def health_check(
     Health check to make sure the server is up and running
     For test purposes, the server is reported healthy only from the 5th request onwards
     """
-    status: str = "healthy"
+    health_status: str = "healthy"
     if app.state.health_countdown > 0:
         app.state.health_countdown -= 1
         response.status_code = 404
-        status = "unhealthy"
-    return {"status": status, "user": sec_username}
+        health_status = "unhealthy"
+    return {"status": health_status, "user": sec_username}

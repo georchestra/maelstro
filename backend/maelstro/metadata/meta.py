@@ -2,6 +2,7 @@ from io import BytesIO, StringIO
 from zipfile import ZipFile
 from csv import DictReader
 from lxml import etree
+from maelstro.common.types import GsLayer
 
 
 NS_PREFIXES = {
@@ -25,9 +26,8 @@ class MetaXml:
         self.namespaces = NS_REGISTRIES.get(schema)
         self.prefix = NS_PREFIXES.get(schema)
 
-    def get_ogc_geoserver_layers(self) -> list[dict[str, str | None]]:
+    def get_ogc_geoserver_layers(self) -> list[dict[str, str]]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
-
         return [
             self.layerproperties_from_link(link_node)
             for link_node in xml_root.findall(
@@ -36,20 +36,59 @@ class MetaXml:
             if self.is_ogc_layer(link_node)
         ]
 
+    def get_gs_layers(
+        self, gs_servers: list[str] | None = None
+    ) -> dict[str, set[GsLayer]]:
+        if gs_servers is None:
+            gs_servers = []
+        return {
+            url: set(
+                self.get_gslayer_from_gn_link(l["name"], l["server_url"], gs_servers)
+                for l in self.get_ogc_geoserver_layers()
+                if url in l["server_url"]
+            )
+            for url in gs_servers
+        }
+
+    def get_gslayer_from_gn_link(
+        self, layer_name: str, ows_url: str, gs_servers: list[str]
+    ) -> GsLayer:
+        if ":" in layer_name:
+            return GsLayer(*layer_name.split(":"))
+        for url in gs_servers:
+            ows_url = ows_url.replace(url, "")
+        return GsLayer(
+            workspace_name=ows_url.lstrip("/").split("/")[0], layer_name=layer_name
+        )
+
+    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> None:
+        xml_root = etree.parse(BytesIO(self.xml_bytes))
+        for url_node in xml_root.findall(
+            f".//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage/",
+            self.namespaces,
+        ):
+            if (url_node is None) or (url_node.text is None):
+                continue
+            for src in mapping["sources"]:
+                for dst in mapping["destinations"]:
+                    url_node.text = url_node.text.replace(src, dst)
+        b_io = BytesIO()
+        xml_root.write(b_io)
+        b_io.seek(0)
+        self.xml_bytes = b_io.read()
+
     def is_ogc_layer(self, link_node: etree._Element) -> bool:
         link_protocol = self.protocol_from_link(link_node)
         if link_protocol is None:
             return False
         return link_protocol[:7].lower() in ["ogc:wms", "ogc:wfs", "ogc:wcs"]
 
-    def layerproperties_from_link(
-        self, link_node: etree._Element
-    ) -> dict[str, str | None]:
+    def layerproperties_from_link(self, link_node: etree._Element) -> dict[str, str]:
         return {
-            "server_url": self.url_from_link(link_node),
-            "name": self.name_from_link(link_node),
-            "description": self.desc_from_link(link_node),
-            "protocol": self.protocol_from_link(link_node),
+            "server_url": self.url_from_link(link_node) or "",
+            "name": self.name_from_link(link_node) or "",
+            "description": self.desc_from_link(link_node) or "",
+            "protocol": self.protocol_from_link(link_node) or "",
         }
 
     def url_from_link(self, link_node: etree._Element) -> str | None:

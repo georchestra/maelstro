@@ -3,13 +3,11 @@ import pytest
 from maelstro.config import Config, ConfigError
 
 
-@pytest.fixture
-def test_config_path():
-    return os.path.join(os.path.dirname(__file__), "test_config.yaml")
+os.environ["CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_config.yaml")
 
 
-def test_init(test_config_path):
-    conf = Config(test_config_path)
+def test_init():
+    conf = Config("CONFIG_PATH")
     assert conf.config == {
         "sources": {
             "geonetwork_instances": [
@@ -28,7 +26,10 @@ def test_init(test_config_path):
                     "url": "https://mastergs.rennesmetropole.fr/geoserver-geofence/",
                     "login": "toto6",
                     "password": "Str0ng_passW0rd"
-                }
+                },
+                {
+                    'url': 'https://data.lillemetropole.fr/geoserver/',
+                },
             ]
         },
         "destinations": {
@@ -70,20 +71,20 @@ def test_init(test_config_path):
     }
 
 
-def test_subst_env(test_config_path):
+def test_subst_env():
     os.environ["DEMO_LOGIN"] = "demo"
     os.environ["LOCAL_LOGIN"] = "test"
-    conf = Config(test_config_path)
+    conf = Config("CONFIG_PATH")
     conf.config["sources"]["geonetwork_instances"][0]["login"] == "demo"
     conf.config["sources"]["geonetwork_instances"][0]["password"] == "demo"
     conf.config["destinations"]["CompoLocale"]["geonetwork"]["login"] == "test"
     conf.config["destinations"]["CompoLocale"]["geonetwork"]["password"] == "test"
 
 
-def test_get_info(test_config_path):
+def test_get_info():
     os.environ.pop("DEMO_LOGIN")
     os.environ["DEMO_LOGIN"] = "demo"
-    conf = Config(test_config_path)
+    conf = Config("CONFIG_PATH")
     assert conf.get_access_info(True, True, "GeonetworkMaster") == {
         "auth": ("demo", "demo"),
         "url": "https://demo.georchestra.org/geonetwork/srv/api",
@@ -105,8 +106,9 @@ def test_get_info(test_config_path):
 
 
 def test_doc_sample():
+    os.environ["SAMPLE_PATH"] = os.path.join(os.path.dirname(__file__), "doc_sample_config.yaml")
     os.environ["PASSWORD_B"] = "pwB"
-    conf = Config(os.path.join(os.path.dirname(__file__), "doc_sample_config.yaml"))
+    conf = Config("SAMPLE_PATH")
     assert conf.config == {
         "sources": {
             "login": "admin",

@@ -14,6 +14,7 @@ sources:
     - url: "https://mastergs.rennesmetropole.fr/geoserver-geofence/"
       login: "toto6"
       password: "Str0ng_passW0rd"
+    - url: "https://data.lillemetropole.fr/geoserver/"
   
   
 destinations:

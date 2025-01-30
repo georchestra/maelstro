@@ -91,3 +91,12 @@ In case formatting issues are found, the code can be auto-fixed with:
 ```
 docker compose run --rm  check /app/maelstro/scripts/code_fix.sh
 ```
+
+To launch the tests locally, use the command as in github CI:
+```
+docker compose run --rm  check pytest --cov=maelstro tests/
+```
+or
+```
+docker compose run --rm  check pytest --cov=maelstro --cov-report=html tests/
+```

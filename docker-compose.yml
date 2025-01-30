@@ -31,6 +31,9 @@ services:
     volumes:
       - ./backend:/app
       - georchestra_datadir:/etc/georchestra
+    environment:
+      MAELSTRO_CONFIG: /app/tests/test_config.yaml
+      LOCAL_LOGIN: admin
     healthcheck:
       test: "health_check"
       interval: 10s
