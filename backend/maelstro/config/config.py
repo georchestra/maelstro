@@ -8,15 +8,24 @@ class ConfigError(Exception):
     pass
 
 
+EMPTY_CONFIG = {
+    "sources": {
+        "geonetwork_instances": [],
+        "geoserver_instances": [],
+    },
+    "destinations": {}
+}
+
+
 class Config:
     def __init__(self, env_var_name: str | None = None):
-        config_file: str = f"{os.path.dirname(__file__)}/../../tests/test_config.yaml"
+        self.config = EMPTY_CONFIG
         if env_var_name is not None:
             config_path = os.environ.get(env_var_name)
             if config_path is not None:
                 config_file = config_path
-        with open(config_file, encoding="utf8") as cf:
-            self.config = yaml.load(cf, yaml.Loader)
+                with open(config_file, encoding="utf8") as cf:
+                    self.config = yaml.load(cf, yaml.Loader)
 
         self.read_all_credentials()
 
