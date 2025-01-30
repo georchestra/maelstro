@@ -2,6 +2,10 @@
 services:
   caddy:
     image: caddy:2.8-alpine
+    networks:
+      default:
+        aliases:
+          - georchestra-127-0-0-1.nip.io
     ports:
       - "80:80"
       - "443:443"
