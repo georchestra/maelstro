@@ -128,7 +128,7 @@ CREATE TABLE psc.antennes (
     the_geom public.geometry(Point,4326),
     gml_id character varying(254),
     id character varying(254),
-    antennes character varying(254),
+    antenne character varying(254),
     adresse character varying(254),
     adr_num character varying(254),
     adr_suf character varying(254),
@@ -182,7 +182,7 @@ ALTER TABLE ONLY psc.antennes ALTER COLUMN fid SET DEFAULT nextval('psc.antennes
 -- Data for Name: antennes; Type: TABLE DATA; Schema: psc; Owner: georchestra
 --
 
-COPY psc.antennes (fid, the_geom, gml_id, id, antennes, adresse, adr_num, adr_suf, adr_voie, code_post, com, insee_com, ant_tel, ant_mail, latitude, longitude, x_l93, y_l93, metadata, inaugurati) FROM stdin;
+COPY psc.antennes (fid, the_geom, gml_id, id, antenne, adresse, adr_num, adr_suf, adr_voie, code_post, com, insee_com, ant_tel, ant_mail, latitude, longitude, x_l93, y_l93, metadata, inaugurati) FROM stdin;
 1	0101000020E610000054EB58D867E025418C7F619B87BC5A41	antennes.ar_02	ar_02	CAMBRAI	5 rue d'Alger	5		r d'Alger	59400	Cambrai	59122	0374278003	Antennes-Cambrai@hautsdefrance.fr	50,1770908006218	3,23564890297393	716851,9225534	7008798,42782582	https://geocatalogue.hautsdefrance.fr/geonetwork/srv/fre/catalog.search#/metadata/4b5f8e1b-de37-47cd-9203-37a59f318b09	2018-12-11 00:00:00
 2	0101000020E61000001EB2D48E251024419DC0916C76665A41	antennes.ar_04	ar_04	CLERMONT	4 avenue des DÃ©portÃ©s	4		av des DÃ©portÃ©s	60600	Clermont	60157	0374273040	Antennes-Clermont@hautsdefrance.fr	49,384075	2,413835	657426,778966494	6920665,69639602	https://geocatalogue.hautsdefrance.fr/geonetwork/srv/fre/catalog.search#/metadata/4b5f8e1b-de37-47cd-9203-37a59f318b09	2017-01-23 00:00:00
 3	0101000020E61000005792E1BF62452641911E127A95405A41	antennes.ar_03	ar_03	CHATEAU-THIERRY	2 avenue Ernest Couvrecelle	2		av Ernest Couvrecelle	02400	Etampes-sur-Marne	02292	0374278133	antennes-chateau-thierry@hautsdefrance.fr	49,0360971240337	3,40723630201098	729777,374799997	6881877,9074	https://geocatalogue.hautsdefrance.fr/geonetwork/srv/fre/catalog.search#/metadata/4b5f8e1b-de37-47cd-9203-37a59f318b09	2019-09-13 00:00:00
