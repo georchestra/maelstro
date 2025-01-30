@@ -28,5 +28,17 @@ userPassword:: e1NTSEF9cXlQT25BQUkzei9lb3JEZ0FDa3JzYy9hcmRjcGpCdVNyTDBya3c9PQ=
 
 EOF"
 
+# init GS run from host
+pip install --user geoservercloud
+python3 georchestra/create_maelstro_gs_rsc.py
+# OR run in docker 
+docker compose run -v $(pwd)/georchestra/create_maelstro_gs_rsc.py:/scripts/create_maelstro_gs_rsc.py --rm maelstro-back python /scripts/create_maelstro_gs_rsc.py
+
+
+# init geoserver database data
+docker compose cp georchestra/psc_antenne.sql postgis:/psc_antenne.sql
+docker compose exec -it postgis bash -c "psql -U georchestra -d datafeeder < psc_antenne.sql"
+
+
 ```
 
