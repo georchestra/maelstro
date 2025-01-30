@@ -53,8 +53,6 @@ class MetaXml:
     def get_gslayer_from_gn_link(
         self, layer_name: str, ows_url: str, gs_servers: list[str]
     ) -> GsLayer:
-        if not layer_name:
-            layer_name = "GAM:plan_b3_psc_02_captage_pct"
         if ":" in layer_name:
             return GsLayer(*layer_name.split(":"))
         for url in gs_servers:
