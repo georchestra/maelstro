@@ -24,7 +24,7 @@ destinations:
   # nom de l'instance geOrchestra destination, telle qu'il apparaitra dans la UI
   "CompoLocale":
     geonetwork:
-      api_url: http://georchestra-127-0-0-1.nip.io/geonetwork/srv/api
+      api_url: https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api
       login_env_var: LOCAL_LOGIN
       password_env_var: LOCAL_PASSWORD
     geoserver:
