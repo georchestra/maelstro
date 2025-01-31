@@ -6,6 +6,7 @@ from typing import Any
 from requests.exceptions import HTTPError
 from fastapi import HTTPException
 from geonetwork import GnApi
+from geonetwork.exceptions import ParameterException
 from geoservercloud.services import RestService as GeoServerService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import ConfigError, app_config as config
@@ -25,7 +26,8 @@ class MaelstroException(HTTPException):
 
 class AuthError(MaelstroException):
     def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "401"})
+        # status 501 instead of 401 because repsone truncated by gateway
+        super().__init__({**err_dict, "status_code": "501"})
 
 
 class UrlError(MaelstroException):
@@ -38,12 +40,18 @@ class ParamError(MaelstroException):
         super().__init__({**err_dict, "status_code": "406"})
 
 
+# TODO: handle requests.exceptions.ConnectTimeout errorxception
+class TimeoutError(MaelstroException):
+    def __init__(self, err_dict: dict[str, str]):
+        super().__init__({**err_dict, "status_code": "406"})
+
+
 class CloneDataset:
     def __init__(self, src_name: str, dst_name: str, uuid: str, dry: bool = False):
         self.op_logger = OpLogger()
         self.src_name = src_name
         self.dst_name = dst_name
-        self.set_uuid(uuid)
+        self.uuid = uuid
         self.copy_meta = False
         self.copy_layers = False
         self.copy_styles = False
@@ -51,10 +59,6 @@ class CloneDataset:
 
     def set_uuid(self, uuid: str) -> None:
         self.uuid = uuid
-        if uuid:
-            gn = get_gn_service(self.src_name, True, self.op_logger)
-            zipdata = gn.get_record_zip(uuid).read()
-            self.meta = Meta(zipdata)
 
     def clone_dataset(
         self,
@@ -63,23 +67,73 @@ class CloneDataset:
         copy_styles: bool,
         output_format: str = "text/plain",
     ) -> str | list[Any]:
-        if self.meta is None:
-            return []
         self.copy_meta = copy_meta
         self.copy_layers = copy_layers
         self.copy_styles = copy_styles
 
-        if copy_layers or copy_styles:
-            self.clone_layers()
+        try:
+            if self.uuid:
+                gn = get_gn_service(self.src_name, True, self.op_logger)
+                zipdata = gn.get_record_zip(self.uuid).read()
+                self.meta = Meta(zipdata)
 
-        if copy_meta:
-            gn_dst = get_gn_service(self.dst_name, False, self.op_logger)
-            mapping: dict[str, list[str]] = {
-                "sources": config.get_gs_sources(),
-                "destinations": [src["gs_url"] for src in config.get_destinations()],
-            }
-            self.meta.update_geoverver_urls(mapping)
-            gn_dst.put_record_zip(BytesIO(self.meta.xml_bytes))
+            if self.meta is None:
+                return []
+
+            if copy_layers or copy_styles:
+                self.clone_layers()
+
+            if copy_meta:
+                gn_dst = get_gn_service(self.dst_name, False, self.op_logger)
+                mapping: dict[str, list[str]] = {
+                    "sources": config.get_gs_sources(),
+                    "destinations": [
+                        src["gs_url"] for src in config.get_destinations()
+                    ],
+                }
+                pre_info, post_info = self.meta.update_geoverver_urls(mapping)
+                self.op_logger.log_operation(
+                    "Update of geoserver links in zip archive",
+                    str({"before": pre_info, "after": post_info}),
+                    "GnApi",
+                    "clone",
+                )
+                try:
+                    results = gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
+                except ParameterException as err:
+                    self.op_logger.log_operation(
+                        "Record creation failed ({err.args[0]['code']})",
+                        err.args[0]["details"],
+                        "GnApi",
+                        "clone",
+                    )
+                    raise HTTPException(406, self.op_logger.get_operations()) from err
+                self.op_logger.log_operation(
+                    results["msg"],
+                    results["detail"],
+                    "GnApi",
+                    "clone",
+                )
+        except HTTPError as err:
+            self.op_logger.log_operation(
+                "Failed",
+                err.response.url,
+                "requests",
+                "clone",
+            )
+            status_code = err.response.status_code
+            if status_code in [401, 403, 404]:
+                # prevent output truncation by gateway
+                status_code += 100
+            raise HTTPException(status_code, self.op_logger.get_operations()) from err
+        except ParameterException as err:
+            self.op_logger.log_operation(
+                err.args[0]["msg"],
+                err.args[0]["code"],
+                "GnApi",
+                "clone",
+            )
+            raise HTTPException(406, self.op_logger.get_operations()) from err
 
         if output_format == "text/plain":
             return self.op_logger.format_operations()
@@ -166,6 +220,10 @@ class CloneDataset:
     ) -> None:
         default_style = layer_data["layer"]["defaultStyle"]
         additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
+        if isinstance(additional_styles, dict):
+            # in case of a single element in the list, this may be provided by the API
+            # as a dict, it must be converted to a list of dicts
+            additional_styles = [additional_styles]
         all_styles = {
             style["name"]: {
                 "workspace": style.get("workspace"),

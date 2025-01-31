@@ -78,8 +78,9 @@ def debug_page(request: Request) -> dict[str, Any]:
                 "root_path",
             ]
         },
+        "data": request.body(),
         "method": request.method,
-        "url": request.url,
+        "url": str(request.url),
         "headers": dict(request.headers),
         "query_params": request.query_params.multi_items(),
     }
@@ -116,7 +117,13 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
     return meta.get_ogc_geoserver_layers()
 
 
-@app.put("/copy")
+@app.put(
+    "/copy",
+    responses={
+        200: {"content": {"text/plain": {}, "application/json": {}}},
+        406: {"description": "should be 404, but 404 is rewritten by the gateway"},
+    },
+)
 def put_dataset_copy(
     src_name: str,
     dst_name: str,
@@ -125,7 +132,7 @@ def put_dataset_copy(
     copy_layers: bool = True,
     copy_styles: bool = True,
     dry_run: bool = False,
-    accept: Annotated[str, Header()] = "text/plain",
+    accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
 ) -> Any:
     if accept not in ["text/plain", "application/json"]:
         raise HTTPException(
@@ -133,8 +140,11 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
-    clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
-    logged_ops = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    try:
+        clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
+        logged_ops = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    except HTTPException as err:
+        raise err
     if accept == "application/json":
         return logged_ops
     return PlainTextResponse(logged_ops)
