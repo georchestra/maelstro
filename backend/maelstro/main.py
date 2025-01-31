@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import Annotated, Any, Dict
 from fastapi import FastAPI, HTTPException, status, Request, Response, Header, Form
 from fastapi.responses import PlainTextResponse
+from geonetwork import GnApi
 from maelstro.config import ConfigError, app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
