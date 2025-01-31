@@ -33,7 +33,8 @@ services:
       - georchestra_datadir:/etc/georchestra
     environment:
       MAELSTRO_CONFIG: /app/tests/test_config.yaml
-      LOCAL_LOGIN: admin
+      LOCAL_LOGIN: testadmin
+      LOCAL_PASSWORD: testadmin
     healthcheck:
       test: "health_check"
       interval: 10s
