@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import FormView from '../views/FormView.vue'
 import BaseLayout from '@/layouts/BaseLayout.vue'
+import { useConfigStore } from '@/stores/config.store'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +22,9 @@ const router = createRouter({
           path: 'synchronize',
           name: 'synchronize',
           component: FormView,
+          beforeEnter: async () => {
+            await useConfigStore().fetchConfig()
+          },
         },
       ],
     },
