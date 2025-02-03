@@ -3,14 +3,22 @@ Main backend app setup
 """
 
 from io import BytesIO
-from typing import Annotated, Any, Dict
-from fastapi import FastAPI, HTTPException, status, Request, Response, Header, Form
+from typing import Annotated, Any
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    status,
+    Request,
+    Response,
+    Header,
+    Body,
+)
 from fastapi.responses import PlainTextResponse
 from geonetwork import GnApi
 from maelstro.config import ConfigError, app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
-import json
+from maelstro.common.models import SearchQuery
 
 
 app = FastAPI(root_path="/maelstro-backend")
@@ -101,14 +109,17 @@ def get_sources() -> list[dict[str, str]]:
 def get_destinations() -> list[dict[str, str]]:
     return config.get_destinations()
 
+
 @app.post("/search/{src_name}")
-def post_search(src_name: str, data: Dict[str, Any]) :
+def post_search(
+    src_name: str, search_query: Annotated[SearchQuery, Body()]
+) -> dict[str, Any]:
     src_info = config.get_access_info(
         is_src=True, is_geonetwork=True, instance_id=src_name
     )
     gn = GnApi(src_info["url"], src_info["auth"])
+    return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
 
-    return gn.search(json.dumps(data))
 
 @app.get("/sources/{src_name}/data/{uuid}/layers")
 def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:

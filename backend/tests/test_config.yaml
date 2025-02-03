@@ -5,8 +5,10 @@ sources:
     - name: "GeonetworkMaster"
       # api_url: https://mastergn.rennesmetropole.fr/geonetwork/srv/api
       api_url: https://demo.georchestra.org/geonetwork/srv/api
-      login_env_var: DEMO_LOGIN
-      password_env_var: DEMO_LOGIN
+      login_env_var: DEMO_CRD
+      password_env_var: DEMO_CRD
+    - name: "GeonetworkRennes"
+      api_url: https://public.sig.rennesmetropole.fr/geonetwork/srv/api
   geoserver_instances: 
     - url: "https://mastergs.rennesmetropole.fr/geoserver/"
       login: test
