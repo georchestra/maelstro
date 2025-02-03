@@ -37,13 +37,14 @@ class UrlError(MaelstroException):
 
 class ParamError(MaelstroException):
     def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "406"})
+        super().__init__({**err_dict, "status_code": "400"})
 
 
+# pylint: disable=fixme
 # TODO: handle requests.exceptions.ConnectTimeout errorxception
-class TimeoutError(MaelstroException):
+class RequestTimeoutError(MaelstroException):
     def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "406"})
+        super().__init__({**err_dict, "status_code": "400"})
 
 
 class CloneDataset:
@@ -56,6 +57,7 @@ class CloneDataset:
         self.copy_layers = False
         self.copy_styles = False
         self.dry = dry
+        self.meta = None
 
     def set_uuid(self, uuid: str) -> None:
         self.uuid = uuid
@@ -107,7 +109,7 @@ class CloneDataset:
                         "GnApi",
                         "clone",
                     )
-                    raise HTTPException(406, self.op_logger.get_operations()) from err
+                    raise HTTPException(400, self.op_logger.get_operations()) from err
                 self.op_logger.log_operation(
                     results["msg"],
                     results["detail"],
@@ -133,7 +135,7 @@ class CloneDataset:
                 "GnApi",
                 "clone",
             )
-            raise HTTPException(406, self.op_logger.get_operations()) from err
+            raise HTTPException(400, self.op_logger.get_operations()) from err
 
         if output_format == "text/plain":
             return self.op_logger.format_operations()

@@ -109,7 +109,7 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
             is_src=True, is_geonetwork=True, instance_id=src_name
         )
     except ConfigError as err:
-        raise HTTPException(status_code=406, detail=err.args) from err
+        raise HTTPException(status_code=400, detail=err.args) from err
 
     gn = GnApi(src_info["url"], src_info["auth"])
     zipdata = gn.get_record_zip(uuid).read()
@@ -121,7 +121,7 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
     "/copy",
     responses={
         200: {"content": {"text/plain": {}, "application/json": {}}},
-        406: {"description": "should be 404, but 404 is rewritten by the gateway"},
+        400: {"description": "should be 404, but 404 is rewritten by the gateway"},
     },
 )
 def put_dataset_copy(

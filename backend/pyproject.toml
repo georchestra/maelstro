@@ -13,7 +13,7 @@ dependencies = [
     "lxml (>=5.3.0,<6.0.0)",
     "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
     "lxml-stubs (>=0.5.1,<0.6.0)",
-    "geonetwork @ git+https://github.com/camptocamp/python-geonetwork",
+    "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@56d7317b7874726a251b5f74fd0b9ea0e26cce49",
     "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud",
 ]
 

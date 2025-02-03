@@ -4,7 +4,8 @@ import json
 username = 'testadmin'
 password = 'testadmin'
 
-server = "https://georchestra-127-0-0-1.nip.io"
+# server = "https://georchestra-127-0-0-1.nip.io"
+server = "http://proxy:8080"
 
 geOrchestra_api = geOrchestra(server, username, password)
 
