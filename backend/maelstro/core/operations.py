@@ -10,8 +10,14 @@ from geonetwork.exceptions import GnException
 from geoservercloud.services import RestService  # type: ignore
 
 
+gs_logger = logging.getLogger("GeoOperations")
+gs_logger.setLevel(logging.DEBUG)
+
+
 class ResponseHandler(Handler):
-    responses: list[Response | None] = []
+    def __init__(self) -> None:
+        super().__init__()
+        self.responses: list[Response | None] = []
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
@@ -21,26 +27,21 @@ class ResponseHandler(Handler):
         except AttributeError:
             self.responses.append(None)
 
-    def reset(self) -> None:
-        self.responses = []
-
     def format_response(self, resp: Response) -> str:
         return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
 
-    def pop_formatted_responses(self) -> list[str]:
-        return [self.format_response(r) for r in self.pop_responses() if r is not None]
+    def json_response(self, resp: Response) -> dict[str, Any]:
+        return {
+            "method": resp.request.method,
+            "status_code": resp.status_code,
+            "url": resp.url,
+        }
 
-    def pop_responses(self) -> list[Response | None]:
-        responses = self.responses
-        self.reset()
-        return responses
+    def get_formatted_responses(self) -> list[str]:
+        return [self.format_response(r) for r in self.responses if r is not None]
 
-
-gn_handler = ResponseHandler()
-gn_logger.addHandler(gn_handler)
-logger = logging.getLogger("GeoOperations")
-logger.addHandler(gn_handler)
-logger.setLevel(logging.DEBUG)
+    def get_json_responses(self) -> list[dict[str, Any]]:
+        return [self.json_response(r) for r in self.responses if r is not None]
 
 
 def add_gn_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
@@ -55,6 +56,20 @@ def add_gn_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
             ) from err
 
     return wrapped_function
+
+
+class LoggedRequests:
+    def __init__(self) -> None:
+        self.handler = ResponseHandler()
+
+    def __enter__(self) -> ResponseHandler:
+        gn_logger.addHandler(self.handler)
+        gs_logger.addHandler(self.handler)
+        return self.handler
+
+    def __exit__(self, *args: Any) -> None:
+        gn_logger.removeHandler(self.handler)
+        gs_logger.removeHandler(self.handler)
 
 
 class OpLogger:
@@ -120,7 +135,6 @@ class OpService:
         self.dry = dry_run
 
     def log_operation(self, operation: str) -> None:
-        # print(operation, self.url, self.context, self.service_type)
         self.op_logger.log_operation(
             operation, self.url, self.context, self.service_type
         )
@@ -207,7 +221,7 @@ class GsOpService(OpService):
             def get(self, path: str, *args: Any, **kwargs: Any) -> Response:
                 resp: Response = self.rest_client.get(path, *args, **kwargs)
                 self.op_service.log_operation(f"GET ({resp.status_code}) {path}")
-                logger.debug("", extra={"response": resp})
+                gs_logger.debug("", extra={"response": resp})
                 return resp
 
             def put(self, path: str, *args: Any, **kwargs: Any) -> Response:
@@ -222,7 +236,7 @@ class GsOpService(OpService):
                     except HTTPError as err:
                         resp = err.response
                     self.op_service.log_operation(f"PUT ({resp.status_code}) {path}")
-                    logger.debug("", extra={"response": resp})
+                    gs_logger.debug("", extra={"response": resp})
                     return resp
 
             def post(self, path: str, *args: Any, **kwargs: Any) -> Response:
@@ -237,7 +251,7 @@ class GsOpService(OpService):
                     except HTTPError as err:
                         resp = err.response
                     self.op_service.log_operation(f"POST ({resp.status_code}) {path}")
-                    logger.debug("", extra={"response": resp})
+                    gs_logger.debug("", extra={"response": resp})
                     return resp
 
             def delete(self, path: str, *args: Any, **kwargs: Any) -> Response:
@@ -252,7 +266,7 @@ class GsOpService(OpService):
                     except HTTPError as err:
                         resp = err.response
                     self.op_service.log_operation(f"DELETE ({resp.status_code}) {path}")
-                    logger.debug("", extra={"response": resp})
+                    gs_logger.debug("", extra={"response": resp})
                     return resp
 
         if key == "rest_client":
