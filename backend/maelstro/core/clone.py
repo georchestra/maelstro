@@ -9,7 +9,7 @@ from geoservercloud.services import RestService as GeoServerService  # type: ign
 from maelstro.metadata import Meta
 from maelstro.config import ConfigError, app_config as config
 from maelstro.common.types import GsLayer
-from .operations import OpLogger, GsOpService
+from .georchestra import GsRestWrapper, get_georchestra_handler
 from .exceptions import AuthError, ParamError, MaelstroDetail, raise_for_status
 
 
@@ -18,10 +18,9 @@ logger = logging.getLogger()
 
 class CloneDataset:
     def __init__(self, src_name: str, dst_name: str, uuid: str, dry: bool = False):
-        self.op_logger = OpLogger()
         self.src_name = src_name
         self.dst_name = dst_name
-        self.set_uuid(uuid)
+        self.uuid = uuid
         self.copy_meta = False
         self.copy_layers = False
         self.copy_styles = False
@@ -29,10 +28,6 @@ class CloneDataset:
 
     def set_uuid(self, uuid: str) -> None:
         self.uuid = uuid
-        if uuid:
-            gn = get_gn_service(self.src_name, True, self.op_logger)
-            zipdata = gn.get_record_zip(uuid).read()
-            self.meta = Meta(zipdata)
 
     def clone_dataset(
         self,
@@ -41,17 +36,30 @@ class CloneDataset:
         copy_styles: bool,
         output_format: str = "text/plain",
     ) -> str | list[Any]:
-        if self.meta is None:
-            return []
         self.copy_meta = copy_meta
         self.copy_layers = copy_layers
         self.copy_styles = copy_styles
 
-        if copy_layers or copy_styles:
+        with get_georchestra_handler() as geo_hnd:
+            self.geo_hnd = geo_hnd
+            self._clone_dataset(output_format)
+            self.geo_hnd = None
+
+    def _clone_dataset(self, output_format):
+
+        if self.uuid:
+            gn = self.geo_hnd.get_gn_service(self.src_name, True)
+            zipdata = gn.get_record_zip(self.uuid).read()
+            self.meta = Meta(zipdata)
+
+        if self.meta is None:
+            return []
+
+        if self.copy_layers or self.copy_styles:
             self.clone_layers()
 
-        if copy_meta:
-            gn_dst = get_gn_service(self.dst_name, False, self.op_logger)
+        if self.copy_meta:
+            gn_dst = self.geo_hnd.get_gn_service(self.dst_name, False)
             mapping: dict[str, list[str]] = {
                 "sources": config.get_gs_sources(),
                 "destinations": [src["gs_url"] for src in config.get_destinations()],
@@ -60,16 +68,16 @@ class CloneDataset:
             gn_dst.put_record_zip(BytesIO(self.meta.xml_bytes))
 
         if output_format == "text/plain":
-            return self.op_logger.format_operations()
-        return self.op_logger.get_operations()
+            return self.geo_hnd.response_handler.get_formatted_responses()
+        return self.geo_hnd.response_handler.get_json_responses()
 
     def clone_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
 
-        gs_dst = get_gs_service(self.dst_name, False, self.op_logger)
+        gs_dst = self.geo_hnd.get_gs_service(self.dst_name, False)
         for gs_url, layer_names in server_layers.items():
             if layer_names:
-                gs_src = get_gs_service(gs_url, True, self.op_logger)
+                gs_src = self.geo_hnd.get_gs_service(gs_url, True)
                 for layer_name in layer_names:
                     resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
                     raise_for_status(resp)
@@ -85,8 +93,8 @@ class CloneDataset:
 
     def clone_layer(
         self,
-        gs_src: GsOpService,
-        gs_dst: GsOpService,
+        gs_src: GsRestWrapper,
+        gs_dst: GsRestWrapper,
         layer_name: GsLayer,
         layer_data: dict[str, Any],
     ) -> None:
@@ -140,7 +148,7 @@ class CloneDataset:
         raise_for_status(resp)
 
     def clone_styles(
-        self, gs_src: GsOpService, gs_dst: GsOpService, layer_data: dict[str, Any]
+        self, gs_src: GsRestWrapper, gs_dst: GsRestWrapper, layer_data: dict[str, Any]
     ) -> None:
         default_style = layer_data["layer"]["defaultStyle"]
         additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
@@ -156,8 +164,8 @@ class CloneDataset:
 
     def clone_style(
         self,
-        gs_src: GsOpService,
-        gs_dst: GsOpService,
+        gs_src: GsRestWrapper,
+        gs_dst: GsRestWrapper,
         style: dict[str, Any],
     ) -> None:
         if gs_src.url in style["href"]:
@@ -188,54 +196,3 @@ class CloneDataset:
                 headers={"content-type": style_def.headers["content-type"]},
             )
             raise_for_status(dst_style_def)
-
-
-def get_service_info(url: str, is_source: bool, is_geonetwork: bool) -> dict[str, Any]:
-    try:
-        service_info = config.get_access_info(
-            is_src=is_source, is_geonetwork=is_geonetwork, instance_id=url
-        )
-    except ConfigError as err:
-        logger.debug(
-            "Key not found: %s\n Config:\n%s", url, json.dumps(config.config, indent=4)
-        )
-        raise ParamError(
-            MaelstroDetail(
-                context="src" if is_source else "dst",
-                key=url,
-                err=f"{'geonetwork' if is_geonetwork else 'geoserver'} not found in config",
-            )
-        ) from err
-    return service_info
-
-
-def get_gn_service(instance_name: str, is_source: bool, op_logger: OpLogger) -> GnApi:
-    gn_info = get_service_info(instance_name, is_source, True)
-    return op_logger.add_gn_service(
-        GnApi(gn_info["url"], gn_info["auth"]), gn_info["url"], is_source
-    )
-
-
-def get_gs_service(
-    instance_name: str, is_source: bool, op_logger: OpLogger
-) -> GsOpService:
-    gs_info = get_service_info(instance_name, is_source, False)
-    gss = GeoServerService(gs_info["url"], gs_info["auth"])
-    try:
-        resp = gss.rest_client.get("/rest/about/version.json")
-    except HTTPError as err:
-        if err.response.status_code == 401:
-            raise AuthError(
-                MaelstroDetail(
-                    server=gs_info["url"],
-                    user=gs_info["auth"] and gs_info["auth"].login,
-                    err="Invalid credentials",
-                )
-            ) from err
-    print(
-        (
-            resp.json()["about"]["resource"][0]["@name"],
-            resp.json()["about"]["resource"][0]["Version"],
-        )
-    )
-    return op_logger.add_gs_service(gss, gs_info["url"], is_source)

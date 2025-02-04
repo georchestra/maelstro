@@ -14,14 +14,14 @@ from fastapi import (
     Body,
 )
 from fastapi.responses import PlainTextResponse
+from maelstro.core.georchestra import get_georchestra_handler
 from geonetwork import GnApi
 from geonetwork.exceptions import GnException
-from maelstro.config import ConfigError, app_config as config
+from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
 from maelstro.core.operations import LoggedRequests
 from maelstro.common.models import SearchQuery
-from maelstro.common.formatters import format_ES_error
 
 
 app = FastAPI(root_path="/maelstro-backend")
@@ -117,40 +117,18 @@ def get_destinations() -> list[dict[str, str]]:
 def post_search(
     src_name: str, search_query: Annotated[SearchQuery, Body()]
 ) -> dict[str, Any]:
-    src_info = config.get_access_info(
-        is_src=True, is_geonetwork=True, instance_id=src_name
-    )
-    with LoggedRequests() as gn_handler:
-        try:
-            # gn_handler.reset()
-            gn = GnApi(src_info["url"], src_info["auth"])
-            return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
-        except GnException as err:
-            operations = gn_handler.get_json_responses()
-            raise HTTPException(
-                err.code,
-                {
-                    "msg": err.detail.message,
-                    "url": err.parent_response.url,
-                    "operations": operations,
-                    "content": format_ES_error(err.parent_response.json()),
-                },
-            ) from err
+    with get_georchestra_handler() as geo_hnd:
+        gn = geo_hnd.get_gn_service(src_name, True)
+        return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
 
 
 @app.get("/sources/{src_name}/data/{uuid}/layers")
 def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
-    try:
-        src_info = config.get_access_info(
-            is_src=True, is_geonetwork=True, instance_id=src_name
-        )
-    except ConfigError as err:
-        raise HTTPException(status_code=406, detail=err.args) from err
-
-    gn = GnApi(src_info["url"], src_info["auth"])
-    zipdata = gn.get_record_zip(uuid).read()
-    meta = Meta(zipdata)
-    return meta.get_ogc_geoserver_layers()
+    with get_georchestra_handler() as geo_hnd:
+        gn = geo_hnd.get_gn_service(src_name, True)
+        zipdata = gn.get_record_zip(uuid).read()
+        meta = Meta(zipdata)
+        return meta.get_ogc_geoserver_layers()
 
 
 @app.put(
@@ -198,22 +176,6 @@ def put_dataset_copy(
     if accept == "application/json":
         return gn_handler.get_json_responses()
     return PlainTextResponse("\n".join(gn_handler.get_formatted_responses()))
-
-
-@app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
-def post_data_copy(dst_name: str, uuid: str, layer_name: str, src_name: str) -> Any:
-    src_info = config.get_access_info(
-        is_src=True, is_geonetwork=True, instance_id=src_name
-    )
-    gn = GnApi(src_info["url"], src_info["auth"])
-    zipdata = gn.get_record_zip(uuid).read()
-
-    print(f"Layer name {layer_name} currently unused, needed for cloning geoserver")
-
-    dst_info = config.get_access_info(
-        is_src=False, is_geonetwork=True, instance_id=dst_name
-    )
-    return GnApi(dst_info["url"], dst_info["auth"]).put_record_zip(BytesIO(zipdata))
 
 
 @app.get("/health")
