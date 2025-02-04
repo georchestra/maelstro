@@ -19,7 +19,7 @@ from geonetwork.exceptions import GnException
 from maelstro.config import ConfigError, app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
-from maelstro.core.operations import gn_handler
+from maelstro.core.operations import LoggedRequests
 from maelstro.common.models import SearchQuery
 from maelstro.common.formatters import format_ES_error
 
@@ -120,21 +120,22 @@ def post_search(
     src_info = config.get_access_info(
         is_src=True, is_geonetwork=True, instance_id=src_name
     )
-    try:
-        gn_handler.reset()
-        gn = GnApi(src_info["url"], src_info["auth"])
-        return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
-    except GnException as err:
-        operations = gn_handler.pop_responses()
-        raise HTTPException(
-            err.code,
-            {
-                "msg": err.detail.message,
-                "url": err.parent_response.url,
-                "operations": operations,
-                "content": format_ES_error(err.parent_response.json()),
-            },
-        ) from err
+    with LoggedRequests() as gn_handler:
+        try:
+            # gn_handler.reset()
+            gn = GnApi(src_info["url"], src_info["auth"])
+            return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
+        except GnException as err:
+            operations = gn_handler.get_json_responses()
+            raise HTTPException(
+                err.code,
+                {
+                    "msg": err.detail.message,
+                    "url": err.parent_response.url,
+                    "operations": operations,
+                    "content": format_ES_error(err.parent_response.json()),
+                },
+            ) from err
 
 
 @app.get("/sources/{src_name}/data/{uuid}/layers")
@@ -175,28 +176,28 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
-    try:
-        gn_handler.reset()
-        clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
-        clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
-    except GnException as err:
-        operations = gn_handler.pop_responses()
-        raise HTTPException(
-            err.code,
-            {
-                "msg": err.detail.message,
-                "url": err.parent_request.url if err.parent_request else None,
-                "operations": operations,
-                "content": (
-                    err.parent_response.json()
-                    if err.parent_response
-                    else str(err.detail.info.get("errror"))
-                ),
-            },
-        ) from err
+    with LoggedRequests() as gn_handler:
+        try:
+            clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
+            clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+        except GnException as err:
+            operations = gn_handler.get_json_responses()
+            raise HTTPException(
+                err.code,
+                {
+                    "msg": err.detail.message,
+                    "url": err.parent_request.url if err.parent_request else None,
+                    "operations": operations,
+                    "content": (
+                        err.parent_response.json()
+                        if err.parent_response
+                        else str(err.detail.info.get("errror"))
+                    ),
+                },
+            ) from err
     if accept == "application/json":
-        return gn_handler.pop_responses()
-    return PlainTextResponse("\n".join(gn_handler.pop_formatted_responses()))
+        return gn_handler.get_json_responses()
+    return PlainTextResponse("\n".join(gn_handler.get_formatted_responses()))
 
 
 @app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")

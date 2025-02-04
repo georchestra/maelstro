@@ -10,7 +10,7 @@ from maelstro.metadata import Meta
 from maelstro.config import ConfigError, app_config as config
 from maelstro.common.types import GsLayer
 from .operations import OpLogger, GsOpService
-from .exceptions import AuthError, ParamError, MaelstroDetail
+from .exceptions import AuthError, ParamError, MaelstroDetail, raise_for_status
 
 
 logger = logging.getLogger()
@@ -72,7 +72,7 @@ class CloneDataset:
                 gs_src = get_gs_service(gs_url, True, self.op_logger)
                 for layer_name in layer_names:
                     resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
-                    resp.raise_for_status()
+                    raise_for_status(resp)
                     layer_data = resp.json()
 
                     # styles must be cloned first
@@ -108,7 +108,7 @@ class CloneDataset:
         if has_resource.status_code == 200:
             if has_layer.status_code != 200:
                 resp = gs_dst.rest_client.delete(resource_url)
-                resp.raise_for_status()
+                raise_for_status(resp)
                 resp = gs_dst.rest_client.post(
                     resource_post_route,
                     data=resource.content,
@@ -134,10 +134,10 @@ class CloneDataset:
                         err="Route not found. Check Workspace and datastore",
                     )
                 )
-        resp.raise_for_status()
+        raise_for_status(resp)
 
         resp = gs_dst.rest_client.put(f"/rest/layers/{layer_name}", json=layer_data)
-        resp.raise_for_status()
+        raise_for_status(resp)
 
     def clone_styles(
         self, gs_src: GsOpService, gs_dst: GsOpService, layer_data: dict[str, Any]
@@ -163,7 +163,7 @@ class CloneDataset:
         if gs_src.url in style["href"]:
             style_route = style["href"].replace(gs_src.url, "")
             resp = gs_src.rest_client.get(style_route)
-            resp.raise_for_status()
+            raise_for_status(resp)
             style_info = resp.json()
             style_format = style_info["style"]["format"]
             style_def_route = style_route.replace(".json", f".{style_format}")
@@ -172,7 +172,7 @@ class CloneDataset:
             dst_style = gs_dst.rest_client.get(style_route)
             if dst_style.status_code == 200:
                 dst_style = gs_dst.rest_client.put(style_route, json=style_info)
-                dst_style.raise_for_status()
+                raise_for_status(dst_style)
             else:
                 style_post_route = re.sub(
                     r"/styles/.*\.json",
@@ -180,14 +180,14 @@ class CloneDataset:
                     style_route,
                 )
                 dst_style = gs_dst.rest_client.post(style_post_route, json=style_info)
-                # dst_style.raise_for_status()
+                # raise_for_status(dst_style)
 
             dst_style_def = gs_dst.rest_client.put(
                 style_def_route,
                 data=style_def.content,
                 headers={"content-type": style_def.headers["content-type"]},
             )
-            dst_style_def.raise_for_status()
+            raise_for_status(dst_style_def)
 
 
 def get_service_info(url: str, is_source: bool, is_geonetwork: bool) -> dict[str, Any]:
