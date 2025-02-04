@@ -11,25 +11,28 @@ from geoservercloud.services import RestService  # type: ignore
 
 
 class ResponseHandler(Handler):
-    responses = []
+    responses: list[Response | None] = []
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         try:
-            self.responses.append(record.response)
+            # The response attribute of the record has been added via the `extra` parameter
+            # type checking skipped for simplicity
+            self.responses.append(record.response)  # type: ignore
         except AttributeError:
             self.responses.append(None)
 
-    def reset(self):
+    def reset(self) -> None:
         self.responses = []
 
-    def format_response(self, resp: Response):
+    def format_response(self, resp: Response) -> str:
         return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
 
-    def pop_responses(self, formatted=True):
+    def pop_formatted_responses(self) -> list[str]:
+        return [self.format_response(r) for r in self.pop_responses() if r is not None]
+
+    def pop_responses(self) -> list[Response | None]:
         responses = self.responses
         self.reset()
-        if formatted:
-            return [self.format_response(r) for r in responses if r is not None]
         return responses
 
 
@@ -40,13 +43,17 @@ logger.addHandler(gn_handler)
 logger.setLevel(logging.DEBUG)
 
 
-def add_gn_handling(app_function):
-    def wrapped_function(*args, **kwargs):
+def add_gn_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
+    def wrapped_function(*args, **kwargs):  # type: ignore
         try:
             result = app_function(*args, **kwargs)
             return result
         except GnException as err:
-            raise HTTPException(status_code=err.code, detail={"message": err.detail.message, "info": err.detail.info})
+            raise HTTPException(
+                status_code=err.code,
+                detail={"message": err.detail.message, "info": err.detail.info},
+            ) from err
+
     return wrapped_function
 
 
@@ -60,7 +67,7 @@ class OpLogger:
         gn_service.session = GnSessionWrapper(
             op_service, gn_service.session, url
         )  # type: ignore
-        gn_service.get_record_zip = add_gn_handling(gn_service.get_record_zip)
+        gn_service.get_record_zip = add_gn_handling(gn_service.get_record_zip)  # type: ignore[method-assign]
         self.services.append(gn_service)
         return gn_service
 

@@ -133,7 +133,7 @@ def post_search(
                 "url": err.parent_response.url,
                 "operations": operations,
                 "content": format_ES_error(err.parent_response.json()),
-            }
+            },
         ) from err
 
 
@@ -188,12 +188,11 @@ def put_dataset_copy(
                 "url": err.parent_request.url,
                 "operations": operations,
                 "content": err.parent_response.json() if err.parent_response else None,
-            }
+            },
         ) from err
-    logged_ops = gn_handler.pop_responses()
     if accept == "application/json":
-        return logged_ops
-    return PlainTextResponse("\n".join(logged_ops))
+        return gn_handler.pop_responses()
+    return PlainTextResponse("\n".join(gn_handler.pop_formatted_responses()))
 
 
 @app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
