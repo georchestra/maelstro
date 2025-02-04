@@ -61,7 +61,7 @@ class MetaXml:
             workspace_name=ows_url.lstrip("/").split("/")[0], layer_name=layer_name
         )
 
-    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> None:
+    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> tuple[str, str]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
         for url_node in xml_root.findall(
             f".//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage/",
@@ -75,7 +75,10 @@ class MetaXml:
         b_io = BytesIO()
         xml_root.write(b_io)
         b_io.seek(0)
+        pre = len(self.xml_bytes)
         self.xml_bytes = b_io.read()
+        post = len(self.xml_bytes)
+        return f"Before: {pre} bytes", f"Before: {post} bytes"
 
     def is_ogc_layer(self, link_node: etree._Element) -> bool:
         link_protocol = self.protocol_from_link(link_node)
@@ -125,3 +128,32 @@ class MetaZip(MetaXml):
         schema = self.properties.get("schema", "iso19139")
 
         super().__init__(xml_bytes, schema)
+
+    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> tuple[str, str]:
+        super().update_geoverver_urls(mapping)
+        new_bytes = BytesIO(b"")
+        with ZipFile(BytesIO(self.zipfile), "r") as zf_src:
+            # get compression type from non directory elements of zip archive
+            compression = next(
+                fi.compress_type for fi in zf_src.infolist() if not fi.is_dir()
+            )
+            md_filepath = f"{self.properties['uuid']}/metadata/metadata.xml"
+            pre_info = zf_src.getinfo(md_filepath)
+            with ZipFile(new_bytes, "w", compression=compression) as zf_dst:
+                for file_info in zf_src.infolist():
+                    if file_info.is_dir():
+                        zf_dst.mkdir(file_info)
+                    else:
+                        file_path = file_info.filename
+                        with zf_dst.open(file_path, "w") as zb:
+                            if file_path == md_filepath:
+                                zb.write(self.xml_bytes)
+                            else:
+                                zb.write(zf_src.read(file_path))
+                post_info = zf_dst.getinfo(md_filepath)
+        new_bytes.seek(0)
+        self.zipfile = new_bytes.read()
+        return str(pre_info), str(post_info)
+
+    def get_zip(self) -> bytes:
+        return self.zipfile
