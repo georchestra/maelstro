@@ -4,38 +4,16 @@ import json
 from io import BytesIO
 from typing import Any
 from requests.exceptions import HTTPError
-from fastapi import HTTPException
 from geonetwork import GnApi
 from geoservercloud.services import RestService as GeoServerService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import ConfigError, app_config as config
 from maelstro.common.types import GsLayer
 from .operations import OpLogger, GsOpService
+from .exceptions import AuthError, ParamError, MaelstroDetail
 
 
 logger = logging.getLogger()
-
-
-class MaelstroException(HTTPException):
-    def __init__(self, err_dict: dict[str, str]):
-        if not isinstance(err_dict, dict):
-            err_dict = {"data": err_dict}
-        super().__init__(int(err_dict.get("status_code", "500")), err_dict)
-
-
-class AuthError(MaelstroException):
-    def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "401"})
-
-
-class UrlError(MaelstroException):
-    def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "404"})
-
-
-class ParamError(MaelstroException):
-    def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "406"})
 
 
 class CloneDataset:
@@ -150,11 +128,11 @@ class CloneDataset:
             )
             if resp.status_code == 404:
                 raise ParamError(
-                    {
-                        "context": "dst",
-                        "key": resource_post_route,
-                        "err": "Route not found. Check Workspace and datastore",
-                    }
+                    MaelstroDetail(
+                        context="dst",
+                        key=resource_post_route,
+                        err="Route not found. Check Workspace and datastore",
+                    )
                 )
         resp.raise_for_status()
 
@@ -222,11 +200,11 @@ def get_service_info(url: str, is_source: bool, is_geonetwork: bool) -> dict[str
             "Key not found: %s\n Config:\n%s", url, json.dumps(config.config, indent=4)
         )
         raise ParamError(
-            {
-                "context": "src" if is_source else "dst",
-                "key": url,
-                "err": f"{'geonetwork' if is_geonetwork else 'geoserver'} not found",
-            }
+            MaelstroDetail(
+                context="src" if is_source else "dst",
+                key=url,
+                err=f"{'geonetwork' if is_geonetwork else 'geoserver'} not found in config",
+            )
         ) from err
     return service_info
 
@@ -248,11 +226,11 @@ def get_gs_service(
     except HTTPError as err:
         if err.response.status_code == 401:
             raise AuthError(
-                {
-                    "server": gs_info["url"],
-                    "user": gs_info["auth"] and gs_info["auth"].login,
-                    "err": "Invalid credentials",
-                }
+                MaelstroDetail(
+                    server=gs_info["url"],
+                    user=gs_info["auth"] and gs_info["auth"].login,
+                    err="Invalid credentials",
+                )
             ) from err
     print(
         (

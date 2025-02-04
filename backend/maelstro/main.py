@@ -185,9 +185,13 @@ def put_dataset_copy(
             err.code,
             {
                 "msg": err.detail.message,
-                "url": err.parent_request.url,
+                "url": err.parent_request.url if err.parent_request else None,
                 "operations": operations,
-                "content": err.parent_response.json() if err.parent_response else None,
+                "content": (
+                    err.parent_response.json()
+                    if err.parent_response
+                    else str(err.detail.info.get("errror"))
+                ),
             },
         ) from err
     if accept == "application/json":
