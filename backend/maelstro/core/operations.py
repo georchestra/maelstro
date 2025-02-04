@@ -16,7 +16,8 @@ gs_logger.setLevel(logging.DEBUG)
 class ResponseHandler(Handler):
     def __init__(self) -> None:
         super().__init__()
-        self.responses: list[Response | None] = []
+        self.responses: list[Response | None | dict[str, Any]] = []
+        self.valid = False
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
@@ -70,6 +71,7 @@ def add_gs_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
     METHODS_TO_LOG = ["get", "post", "put", "delete"]
 
     if app_function.__name__ in METHODS_TO_LOG:
+
         def wrapped_function(path, *args, **kwargs):  # type: ignore
             try:
                 result = app_function(path, *args, **kwargs)
@@ -77,8 +79,9 @@ def add_gs_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
                 gs_logger.debug(
                     "[%s] %s: %s",
                     app_function.__name__,
-                    result.status_code, path,
-                    extra={"response": result}
+                    result.status_code,
+                    path,
+                    extra={"response": result},
                 )
                 return result
             except RequestException as err:
@@ -87,11 +90,14 @@ def add_gs_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
                     app_function.__name__,
                     path,
                     err.__class__.__name__,
-                    extra={"response": err.request}
+                    extra={"response": err.request},
                 )
                 raise HTTPException(
                     status_code=504,
-                    detail={"message": f"HTTP error {err.__class__.__name__} at {path}", "info": err},
+                    detail={
+                        "message": f"HTTP error {err.__class__.__name__} at {path}",
+                        "info": err,
+                    },
                 ) from err
 
         return wrapped_function
@@ -105,8 +111,10 @@ class LoggedRequests:
     def __enter__(self) -> ResponseHandler:
         gn_logger.addHandler(self.handler)
         gs_logger.addHandler(self.handler)
+        self.handler.valid = True
         return self.handler
 
     def __exit__(self, *args: Any) -> None:
+        self.handler.valid = False
         gn_logger.removeHandler(self.handler)
         gs_logger.removeHandler(self.handler)

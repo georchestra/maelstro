@@ -6,7 +6,7 @@ from typing import Any
 from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
-from .georchestra import GsRestWrapper, get_georchestra_handler
+from .georchestra import GeorchestraHandler, GsRestWrapper, get_georchestra_handler
 from .exceptions import ParamError, MaelstroDetail, raise_for_status
 
 
@@ -21,6 +21,8 @@ class CloneDataset:
         self.copy_meta = False
         self.copy_layers = False
         self.copy_styles = False
+        self.meta: Meta
+        self.geo_hnd: GeorchestraHandler
 
     def clone_dataset(
         self,
@@ -36,10 +38,9 @@ class CloneDataset:
         with get_georchestra_handler() as geo_hnd:
             self.geo_hnd = geo_hnd
             operations = self._clone_dataset(output_format)
-            self.geo_hnd = None
         return operations
 
-    def _clone_dataset(self, output_format):
+    def _clone_dataset(self, output_format: str) -> str | list[Any]:
 
         if self.uuid:
             gn = self.geo_hnd.get_gn_service(self.src_name, True)
@@ -59,16 +60,20 @@ class CloneDataset:
                 "destinations": [src["gs_url"] for src in config.get_destinations()],
             }
             pre_info, post_info = self.meta.update_geoverver_urls(mapping)
-            self.geo_hnd.response_handler.responses.append({
-                "operation": "Update of geoserver links in zip archive",
-                "before": pre_info,
-                "after": post_info
-            })
+            self.geo_hnd.response_handler.responses.append(
+                {
+                    "operation": "Update of geoserver links in zip archive",
+                    "before": pre_info,
+                    "after": post_info,
+                }
+            )
             results = gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
-            self.geo_hnd.response_handler.responses.append({
-                "message": results["msg"],
-                "detail": results["detail"],
-            })
+            self.geo_hnd.response_handler.responses.append(
+                {
+                    "message": results["msg"],
+                    "detail": results["detail"],
+                }
+            )
 
         if output_format == "text/plain":
             return self.geo_hnd.response_handler.get_formatted_responses()
