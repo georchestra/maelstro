@@ -50,5 +50,9 @@ services:
     build:
       context: ./backend
       target: check
+    environment:
+      MAELSTRO_CONFIG: /app/tests/test_config.yaml
+      LOCAL_LOGIN: testadmin
+      LOCAL_PASSWORD: testadmin
     volumes:
       - ./backend:/app
