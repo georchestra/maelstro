@@ -26,15 +26,19 @@ class ResponseHandler(Handler):
         except AttributeError:
             self.responses.append(None)
 
-    def format_response(self, resp: Response) -> str:
-        return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
+    def format_response(self, resp: Response | dict[str, Any]) -> str:
+        if isinstance(resp, Response):
+            return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
+        return " - ".join(f"{k}: {v}" for k, v in resp.items() if k != "detail")
 
-    def json_response(self, resp: Response) -> dict[str, Any]:
-        return {
-            "method": resp.request.method,
-            "status_code": resp.status_code,
-            "url": resp.url,
-        }
+    def json_response(self, resp: Response | dict[str, Any]) -> dict[str, Any]:
+        if isinstance(resp, Response):
+            return {
+                "method": resp.request.method,
+                "status_code": resp.status_code,
+                "url": resp.url,
+            }
+        return resp
 
     def get_formatted_responses(self) -> list[str]:
         return [self.format_response(r) for r in self.responses if r is not None]

@@ -14,11 +14,9 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 from maelstro.core.georchestra import get_georchestra_handler
-from geonetwork.exceptions import GnException
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
-from maelstro.core.operations import LoggedRequests
 from maelstro.common.models import SearchQuery
 
 
@@ -69,7 +67,7 @@ def user_page(
 @app.delete("/debug")
 @app.options("/debug")
 @app.patch("/debug")
-def debug_page(request: Request) -> dict[str, Any]:
+async def debug_page(request: Request) -> dict[str, Any]:
     """
     Display details of query including headers.
     This may be useful in development to check all the headers provided by the gateway.
@@ -77,19 +75,21 @@ def debug_page(request: Request) -> dict[str, Any]:
     """
     return {
         **{
-            k: request[k]
+            k: str(request.get(k))
             for k in [
+                "method",
                 "type",
                 "asgi",
                 "http_version",
                 "server",
                 "client",
                 "scheme",
+                "url",
+                "base_url",
                 "root_path",
             ]
         },
-        "method": request.method,
-        "url": request.url,
+        "data": await request.body(),
         "headers": dict(request.headers),
         "query_params": request.query_params.multi_items(),
     }
@@ -133,7 +133,7 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
     "/copy",
     responses={
         200: {"content": {"text/plain": {}, "application/json": {}}},
-        400: {"description": "should be 404, but 404 is rewritten by the gateway"},
+        400: {"description": "400 may also be an uuid which is not found, see details"},
     },
 )
 def put_dataset_copy(
@@ -143,7 +143,7 @@ def put_dataset_copy(
     copy_meta: bool = True,
     copy_layers: bool = True,
     copy_styles: bool = True,
-    accept: Annotated[str, Header()] = "text/plain",
+    accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
 ) -> Any:
     if accept not in ["text/plain", "application/json"]:
         raise HTTPException(

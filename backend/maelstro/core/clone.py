@@ -58,8 +58,17 @@ class CloneDataset:
                 "sources": config.get_gs_sources(),
                 "destinations": [src["gs_url"] for src in config.get_destinations()],
             }
-            self.meta.update_geoverver_urls(mapping)
-            gn_dst.put_record_zip(BytesIO(self.meta.xml_bytes))
+            pre_info, post_info = self.meta.update_geoverver_urls(mapping)
+            self.geo_hnd.response_handler.responses.append({
+                "operation": "Update of geoserver links in zip archive",
+                "before": pre_info,
+                "after": post_info
+            })
+            results = gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
+            self.geo_hnd.response_handler.responses.append({
+                "message": results["msg"],
+                "detail": results["detail"],
+            })
 
         if output_format == "text/plain":
             return self.geo_hnd.response_handler.get_formatted_responses()
@@ -146,6 +155,10 @@ class CloneDataset:
     ) -> None:
         default_style = layer_data["layer"]["defaultStyle"]
         additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
+        if isinstance(additional_styles, dict):
+            # in case of a single element in the list, this may be provided by the API
+            # as a dict, it must be converted to a list of dicts
+            additional_styles = [additional_styles]
         all_styles = {
             style["name"]: {
                 "workspace": style.get("workspace"),
