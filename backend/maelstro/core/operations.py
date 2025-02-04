@@ -1,8 +1,53 @@
 from typing import Any, IO, Callable
+import logging
+from logging import Handler
 from requests import Response
 from requests.exceptions import HTTPError
+from fastapi import HTTPException
 from geonetwork import GnApi, GnSession
+from geonetwork.gn_logger import logger as gn_logger
+from geonetwork.exceptions import GnException
 from geoservercloud.services import RestService  # type: ignore
+
+
+class ResponseHandler(Handler):
+    responses = []
+
+    def emit(self, record):
+        try:
+            self.responses.append(record.response)
+        except AttributeError:
+            self.responses.append(None)
+
+    def reset(self):
+        self.responses = []
+
+    def format_response(self, resp: Response):
+        return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
+
+    def pop_responses(self, formatted=True):
+        responses = self.responses
+        self.reset()
+        if formatted:
+            return [self.format_response(r) for r in responses if r is not None]
+        return responses
+
+
+gn_handler = ResponseHandler()
+gn_logger.addHandler(gn_handler)
+logger = logging.getLogger("GeoOperations")
+logger.addHandler(gn_handler)
+logger.setLevel(logging.DEBUG)
+
+
+def add_gn_handling(app_function):
+    def wrapped_function(*args, **kwargs):
+        try:
+            result = app_function(*args, **kwargs)
+            return result
+        except GnException as err:
+            raise HTTPException(status_code=err.code, detail={"message": err.detail.message, "info": err.detail.info})
+    return wrapped_function
 
 
 class OpLogger:
@@ -15,6 +60,7 @@ class OpLogger:
         gn_service.session = GnSessionWrapper(
             op_service, gn_service.session, url
         )  # type: ignore
+        gn_service.get_record_zip = add_gn_handling(gn_service.get_record_zip)
         self.services.append(gn_service)
         return gn_service
 
@@ -85,6 +131,7 @@ class GnOpService(OpService):
         self.service = gn_service
         super().__init__(op_logger, url, is_source, True, dry_run)
 
+    @add_gn_handling
     def get_record_zip(self, uuid: str) -> IO[bytes]:
         self.log_operation(f"Download zip record {uuid}")
         return self.service.get_record_zip(uuid)
@@ -107,6 +154,7 @@ class GnSessionWrapper:
         if key in ["get", "put", "post", "delete"]:
 
             def create_request_wrapper(method: str) -> Callable[..., Any]:
+                @add_gn_handling
                 def request_wrapper(path: str, *args: Any, **kwargs: Any) -> Any:
                     rest_client = object.__getattribute__(self, "rest_client")
                     resp = rest_client.__getattribute__(method).__call__(
@@ -152,6 +200,7 @@ class GsOpService(OpService):
             def get(self, path: str, *args: Any, **kwargs: Any) -> Response:
                 resp: Response = self.rest_client.get(path, *args, **kwargs)
                 self.op_service.log_operation(f"GET ({resp.status_code}) {path}")
+                logger.debug("", extra={"response": resp})
                 return resp
 
             def put(self, path: str, *args: Any, **kwargs: Any) -> Response:
@@ -166,6 +215,7 @@ class GsOpService(OpService):
                     except HTTPError as err:
                         resp = err.response
                     self.op_service.log_operation(f"PUT ({resp.status_code}) {path}")
+                    logger.debug("", extra={"response": resp})
                     return resp
 
             def post(self, path: str, *args: Any, **kwargs: Any) -> Response:
@@ -180,6 +230,7 @@ class GsOpService(OpService):
                     except HTTPError as err:
                         resp = err.response
                     self.op_service.log_operation(f"POST ({resp.status_code}) {path}")
+                    logger.debug("", extra={"response": resp})
                     return resp
 
             def delete(self, path: str, *args: Any, **kwargs: Any) -> Response:
@@ -194,6 +245,7 @@ class GsOpService(OpService):
                     except HTTPError as err:
                         resp = err.response
                     self.op_service.log_operation(f"DELETE ({resp.status_code}) {path}")
+                    logger.debug("", extra={"response": resp})
                     return resp
 
         if key == "rest_client":

@@ -15,10 +15,13 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 from geonetwork import GnApi
+from geonetwork.exceptions import GnException
 from maelstro.config import ConfigError, app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
+from maelstro.core.operations import gn_handler
 from maelstro.common.models import SearchQuery
+from maelstro.common.formatters import format_ES_error
 
 
 app = FastAPI(root_path="/maelstro-backend")
@@ -117,8 +120,21 @@ def post_search(
     src_info = config.get_access_info(
         is_src=True, is_geonetwork=True, instance_id=src_name
     )
-    gn = GnApi(src_info["url"], src_info["auth"])
-    return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
+    try:
+        gn_handler.reset()
+        gn = GnApi(src_info["url"], src_info["auth"])
+        return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
+    except GnException as err:
+        operations = gn_handler.pop_responses()
+        raise HTTPException(
+            err.code,
+            {
+                "msg": err.detail.message,
+                "url": err.parent_response.url,
+                "operations": operations,
+                "content": format_ES_error(err.parent_response.json()),
+            }
+        ) from err
 
 
 @app.get("/sources/{src_name}/data/{uuid}/layers")
@@ -136,7 +152,13 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
     return meta.get_ogc_geoserver_layers()
 
 
-@app.put("/copy")
+@app.put(
+    "/copy",
+    responses={
+        200: {"content": {"text/plain": {}, "application/json": {}}},
+        400: {"description": "should be 404, but 404 is rewritten by the gateway"},
+    },
+)
 def put_dataset_copy(
     src_name: str,
     dst_name: str,
@@ -153,11 +175,25 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
-    clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
-    logged_ops = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    try:
+        gn_handler.reset()
+        clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
+        clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    except GnException as err:
+        operations = gn_handler.pop_responses()
+        raise HTTPException(
+            err.code,
+            {
+                "msg": err.detail.message,
+                "url": err.parent_request.url,
+                "operations": operations,
+                "content": err.parent_response.json() if err.parent_response else None,
+            }
+        ) from err
+    logged_ops = gn_handler.pop_responses()
     if accept == "application/json":
         return logged_ops
-    return PlainTextResponse(logged_ops)
+    return PlainTextResponse("\n".join(logged_ops))
 
 
 @app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
