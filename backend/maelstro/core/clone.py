@@ -3,31 +3,24 @@ import logging
 import json
 from io import BytesIO
 from typing import Any
-from requests.exceptions import HTTPError
-from geonetwork import GnApi
-from geoservercloud.services import RestService as GeoServerService  # type: ignore
 from maelstro.metadata import Meta
-from maelstro.config import ConfigError, app_config as config
+from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
 from .georchestra import GsRestWrapper, get_georchestra_handler
-from .exceptions import AuthError, ParamError, MaelstroDetail, raise_for_status
+from .exceptions import ParamError, MaelstroDetail, raise_for_status
 
 
 logger = logging.getLogger()
 
 
 class CloneDataset:
-    def __init__(self, src_name: str, dst_name: str, uuid: str, dry: bool = False):
+    def __init__(self, src_name: str, dst_name: str, uuid: str):
         self.src_name = src_name
         self.dst_name = dst_name
         self.uuid = uuid
         self.copy_meta = False
         self.copy_layers = False
         self.copy_styles = False
-        self.dry = dry
-
-    def set_uuid(self, uuid: str) -> None:
-        self.uuid = uuid
 
     def clone_dataset(
         self,
@@ -42,8 +35,9 @@ class CloneDataset:
 
         with get_georchestra_handler() as geo_hnd:
             self.geo_hnd = geo_hnd
-            self._clone_dataset(output_format)
+            operations = self._clone_dataset(output_format)
             self.geo_hnd = None
+        return operations
 
     def _clone_dataset(self, output_format):
 

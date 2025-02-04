@@ -2,7 +2,6 @@
 Main backend app setup
 """
 
-from io import BytesIO
 from typing import Annotated, Any
 from fastapi import (
     FastAPI,
@@ -15,7 +14,6 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 from maelstro.core.georchestra import get_georchestra_handler
-from geonetwork import GnApi
 from geonetwork.exceptions import GnException
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
@@ -145,7 +143,6 @@ def put_dataset_copy(
     copy_meta: bool = True,
     copy_layers: bool = True,
     copy_styles: bool = True,
-    dry_run: bool = False,
     accept: Annotated[str, Header()] = "text/plain",
 ) -> Any:
     if accept not in ["text/plain", "application/json"]:
@@ -154,28 +151,11 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
-    with LoggedRequests() as gn_handler:
-        try:
-            clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
-            clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
-        except GnException as err:
-            operations = gn_handler.get_json_responses()
-            raise HTTPException(
-                err.code,
-                {
-                    "msg": err.detail.message,
-                    "url": err.parent_request.url if err.parent_request else None,
-                    "operations": operations,
-                    "content": (
-                        err.parent_response.json()
-                        if err.parent_response
-                        else str(err.detail.info.get("errror"))
-                    ),
-                },
-            ) from err
+    clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
+    operations = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
     if accept == "application/json":
-        return gn_handler.get_json_responses()
-    return PlainTextResponse("\n".join(gn_handler.get_formatted_responses()))
+        return operations
+    return PlainTextResponse("\n".join(operations))
 
 
 @app.get("/health")
