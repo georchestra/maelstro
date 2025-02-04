@@ -1,14 +1,11 @@
-from typing import Any, IO, Callable
+from typing import Any, Callable
 import logging
 from logging import Handler
 from requests import Response
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import RequestException
 from fastapi import HTTPException
-from geonetwork import GnApi, GnSession
 from geonetwork.gn_logger import logger as gn_logger
 from geonetwork.exceptions import GnException
-from geoservercloud.services import RestService  # type: ignore
-from maelstro.common.formatters import format_ES_error
 
 
 gs_logger = logging.getLogger("GeoOperations")
