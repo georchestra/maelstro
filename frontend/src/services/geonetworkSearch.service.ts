@@ -36,11 +36,14 @@ export const geonetworkSearchService = {
                 },
               },
             ],
-            must_not: {
-              terms: {
-                resourceType: ['service', 'map', 'map/static', 'mapDigital'],
+            must_not: [
+              {
+                terms: {
+                  resourceType: ['service', 'map', 'map/static', 'mapDigital'],
+                },
               },
-            },
+              { term: { isHarvested: true } },
+            ],
           },
         },
         _source: ['resourceTitleObject', 'uuid'],
