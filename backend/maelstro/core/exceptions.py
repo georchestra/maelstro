@@ -1,6 +1,5 @@
 from fastapi import HTTPException
 from dataclasses import dataclass, asdict
-from requests import Response
 
 
 @dataclass
@@ -37,14 +36,3 @@ class ParamError(MaelstroException):
     def __init__(self, err_detail: MaelstroDetail):
         err_detail.status_code = 406
         super().__init__(err_detail)
-
-
-def raise_for_status(response: Response) -> None:
-    if 400 <= response.status_code < 600:
-        raise HTTPException(
-            response.status_code,
-            {
-                "message": f"HTTP error in [{response.request.method}] {response.url}",
-                "info": response.text,
-            },
-        )

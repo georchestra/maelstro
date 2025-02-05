@@ -1,76 +1,49 @@
 from contextlib import contextmanager
-import inspect
 import json
 from typing import Any, Iterator
 from geonetwork import GnApi
 from geoservercloud.services import RestService  # type: ignore
-from geoservercloud.services.restclient import RestClient  # type: ignore
 from requests.exceptions import HTTPError
 from maelstro.config import ConfigError, app_config as config
 from .operations import (
-    ResponseHandler,
-    LoggedRequests,
-    add_gn_handling,
-    add_gs_handling,
+    LogCollectionHandler,
+    connect_log_handler,
     gs_logger,
 )
 from .exceptions import ParamError, MaelstroDetail, AuthError
 
 
-WRAPPERS = {"GnApiWrapper": add_gn_handling, "GsClientWrapper": add_gs_handling}
-
-
-class MethodWrapper:
-    def __init__(self, response_handler: ResponseHandler, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.response_handler = response_handler
-
-    def __init_subclass__(cls, **kwargs: Any):
-        super().__init_subclass__(**kwargs)
-        for k, v in inspect.getmembers(cls, inspect.isfunction):
-            setattr(cls, k, WRAPPERS[cls.__name__](v))
-
-
-class GnApiWrapper(GnApi, MethodWrapper):
-    def __init__(self, response_handler: ResponseHandler, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.response_handler = response_handler
-
-
-class GsClientWrapper(RestClient, MethodWrapper):  # type: ignore
+class GnApiWrapper(GnApi):
     pass
 
 
 class GsRestWrapper(RestService):  # type: ignore
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        setattr(
-            self,
-            "rest_client",
-            GsClientWrapper(self.rest_client.url, self.rest_client.auth),
-        )
+    pass
 
 
 class GeorchestraHandler:
-    def __init__(self, response_handler: ResponseHandler):
-        self.response_handler = response_handler
+    def __init__(self, log_handler: LogCollectionHandler):
+        self.log_handler = log_handler
 
     def get_gn_service(self, instance_name: str, is_source: bool) -> GnApiWrapper:
-        if not self.response_handler.valid:
+        if not self.log_handler.valid:
             raise RuntimeError(
                 "GeorchestraHandler context invalid, handler already close"
             )
         gn_info = self.get_service_info(instance_name, is_source, True)
-        return GnApiWrapper(self.response_handler, gn_info["url"], gn_info["auth"])
+        return GnApiWrapper(gn_info["url"], gn_info["auth"])
 
     def get_gs_service(self, instance_name: str, is_source: bool) -> GsRestWrapper:
-        if not self.response_handler.valid:
+        if not self.log_handler.valid:
             raise RuntimeError(
                 "GeorchestraHandler context invalid, handler already close"
             )
         gs_info = self.get_service_info(instance_name, is_source, False)
         gsapi = GsRestWrapper(gs_info["url"], gs_info["auth"])
         try:
+            import geoservercloud.services.restclient  # type: ignore
+
+            geoservercloud.services.restclient.TIMEOUT = 15
             resp = gsapi.rest_client.get("/rest/about/version.json")
         except HTTPError as err:
             if err.response.status_code == 401:
@@ -116,5 +89,5 @@ class GeorchestraHandler:
 
 @contextmanager
 def get_georchestra_handler() -> Iterator[GeorchestraHandler]:
-    with LoggedRequests() as response_handler:
-        yield GeorchestraHandler(response_handler)
+    with connect_log_handler() as log_handler:
+        yield GeorchestraHandler(log_handler)
