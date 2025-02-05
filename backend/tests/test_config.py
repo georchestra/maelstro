@@ -1,6 +1,7 @@
 import os
 import pytest
 from maelstro.config import Config, ConfigError
+from maelstro.common.types import Credentials
 
 
 os.environ["CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_config.yaml")
@@ -14,6 +15,10 @@ def test_init():
                 {
                     "name": "GeonetworkMaster",
                     "api_url": "https://demo.georchestra.org/geonetwork/srv/api",
+                },
+                {
+                    "name": "GeonetworkRennes",
+                    "api_url": "https://public.sig.rennesmetropole.fr/geonetwork/srv/api",
                 }
             ],
             "geoserver_instances": [
@@ -35,7 +40,9 @@ def test_init():
         "destinations": {
             "CompoLocale": {
                 "geonetwork": {
-                    "api_url": "http://geonetwork:8080/geonetwork/srv/api",
+                    "api_url": "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api",
+                    "login": "testadmin",
+                    "password": "testadmin",
                 },
                 "geoserver": {
                     "url": "https://georchestra-127-0-0-1.nip.io/geoserver"
@@ -72,7 +79,7 @@ def test_init():
 
 
 def test_subst_env():
-    os.environ["DEMO_LOGIN"] = "demo"
+    os.environ["DEMO_CRD"] = "demo"
     os.environ["LOCAL_LOGIN"] = "test"
     conf = Config("CONFIG_PATH")
     conf.config["sources"]["geonetwork_instances"][0]["login"] == "demo"
@@ -82,19 +89,19 @@ def test_subst_env():
 
 
 def test_get_info():
-    os.environ.pop("DEMO_LOGIN")
-    os.environ["DEMO_LOGIN"] = "demo"
+    os.environ.pop("DEMO_CRD")
+    os.environ["DEMO_CRD"] = "demo"
     conf = Config("CONFIG_PATH")
     assert conf.get_access_info(True, True, "GeonetworkMaster") == {
-        "auth": ("demo", "demo"),
+        "auth": Credentials("demo", "demo"),
         "url": "https://demo.georchestra.org/geonetwork/srv/api",
     }
     assert conf.get_access_info(True, False, "https://mastergs.rennesmetropole.fr/geoserver-geofence/") == {
-        "auth": ("toto6", "Str0ng_passW0rd"),
+        "auth": Credentials("toto6", "Str0ng_passW0rd"),
         "url": "https://mastergs.rennesmetropole.fr/geoserver-geofence/",
     }
     assert conf.get_access_info(False, True, "PlateformeProfessionnelle") == {
-        "auth": ("toto", "passW0rd"),
+        "auth": Credentials("toto", "passW0rd"),
         "url": "https://portail.sig.rennesmetropole.fr/geonetwork/srv/api",
     }
     assert conf.get_access_info(False, False, "CompoLocale") == {
