@@ -17,10 +17,12 @@ from maelstro.core.georchestra import get_georchestra_handler
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
+from maelstro.core.operations import setup_exception_handlers
 from maelstro.common.models import SearchQuery
 
 
 app = FastAPI(root_path="/maelstro-backend")
+setup_exception_handlers(app)
 
 app.state.health_countdown = 5
 

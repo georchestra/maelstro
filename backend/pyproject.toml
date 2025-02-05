@@ -14,7 +14,7 @@ dependencies = [
     "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
     "lxml-stubs (>=0.5.1,<0.6.0)",
     "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@a07d7fba1a53fc9b5840b7bc139fbec418f35366",
-    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud",
+    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@6defa49bf959d91883ecd43ed1e2e976566e9495",
 ]
 
 [tool.poetry.group.check]

@@ -7,7 +7,8 @@ from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
 from .georchestra import GeorchestraHandler, GsRestWrapper, get_georchestra_handler
-from .exceptions import ParamError, MaelstroDetail, raise_for_status
+from .exceptions import ParamError, MaelstroDetail
+from .operations import raise_for_status
 
 
 logger = logging.getLogger()
@@ -60,7 +61,7 @@ class CloneDataset:
                 "destinations": [src["gs_url"] for src in config.get_destinations()],
             }
             pre_info, post_info = self.meta.update_geoverver_urls(mapping)
-            self.geo_hnd.response_handler.responses.append(
+            self.geo_hnd.log_handler.responses.append(
                 {
                     "operation": "Update of geoserver links in zip archive",
                     "before": pre_info,
@@ -68,7 +69,7 @@ class CloneDataset:
                 }
             )
             results = gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
-            self.geo_hnd.response_handler.responses.append(
+            self.geo_hnd.log_handler.responses.append(
                 {
                     "message": results["msg"],
                     "detail": results["detail"],
@@ -76,12 +77,11 @@ class CloneDataset:
             )
 
         if output_format == "text/plain":
-            return self.geo_hnd.response_handler.get_formatted_responses()
-        return self.geo_hnd.response_handler.get_json_responses()
+            return self.geo_hnd.log_handler.get_formatted_responses()
+        return self.geo_hnd.log_handler.get_json_responses()
 
     def clone_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
-
         gs_dst = self.geo_hnd.get_gs_service(self.dst_name, False)
         for gs_url, layer_names in server_layers.items():
             if layer_names:

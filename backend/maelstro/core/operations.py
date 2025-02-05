@@ -1,19 +1,71 @@
-from typing import Any, Callable
+from contextlib import contextmanager
+from typing import Any, Iterator
 import logging
 from logging import Handler
 from requests import Response
 from requests.exceptions import RequestException
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from geonetwork.gn_logger import logger as gn_logger
+from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: ignore
 from geonetwork.exceptions import GnException
 
 
-gs_logger = logging.getLogger("GeoOperations")
-gs_logger.addHandler(logging.StreamHandler())
-gs_logger.setLevel(logging.DEBUG)
+parent_app = None
 
 
-class ResponseHandler(Handler):
+def setup_exception_handlers(app: FastAPI) -> None:
+    global parent_app  # pylint: disable=global-statement
+    parent_app = app
+
+    @app.exception_handler(GnException)
+    def handle_gn_exception(request: Request, err: GnException) -> None:
+        raise HTTPException(
+            # 404 not found on lib level will rather be a bad request here
+            # error 400 is not truncated by the gateway, whereas 404 is
+            err.code if err.code != 404 else 400,
+            {
+                "msg": err.detail.message,
+                "url": err.parent_response.url,
+                "operations": parent_app.state.log_handler.get_json_responses(),
+                "content": err.detail.info,
+            },
+        ) from err
+
+    @app.exception_handler(RequestException)
+    def handle_gs_exception(request: Request, err: RequestException) -> None:
+        gs_logger.debug(
+            "[%s] %s: %s",
+            request.method,
+            str(request.url),
+            err.__class__.__name__,
+            extra={"response": request},
+        )
+        assert parent_app is not None
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "message": f"HTTP error {err.__class__.__name__} at {request.url}",
+                "operations": parent_app.state.log_handler.get_json_responses(),
+                "info": str(err),
+            },
+        ) from err
+
+
+def raise_for_status(response: Response) -> None:
+    global parent_app  # pylint: disable=global-variable-not-assigned
+    if 400 <= response.status_code < 600:
+        assert parent_app is not None
+        raise HTTPException(
+            response.status_code if response.status_code != 404 else 400,
+            {
+                "message": f"HTTP error in [{response.request.method}] {response.url}",
+                "operations": parent_app.state.log_handler.get_json_responses(),
+                "info": response.text,
+            },
+        )
+
+
+class LogCollectionHandler(Handler):
     def __init__(self) -> None:
         super().__init__()
         self.responses: list[Response | None | dict[str, Any]] = []
@@ -48,73 +100,21 @@ class ResponseHandler(Handler):
         return [self.json_response(r) for r in self.responses if r is not None]
 
 
-def add_gn_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
-    def wrapped_function(self, *args, **kwargs):  # type: ignore
-        try:
-            result = app_function(self, *args, **kwargs)
-            return result
-        except GnException as err:
-            raise HTTPException(
-                err.code,
-                {
-                    "msg": err.detail.message,
-                    "url": err.parent_response.url,
-                    "operations": self.response_handler.get_json_responses(),
-                    "content": err.detail.info,
-                },
-            ) from err
-
-    return wrapped_function
-
-
-def add_gs_handling(app_function: Callable[..., Any]) -> Callable[..., Any]:
-    METHODS_TO_LOG = ["get", "post", "put", "delete"]
-
-    if app_function.__name__ in METHODS_TO_LOG:
-
-        def wrapped_function(path, *args, **kwargs):  # type: ignore
-            try:
-                result = app_function(path, *args, **kwargs)
-
-                gs_logger.debug(
-                    "[%s] %s: %s",
-                    app_function.__name__,
-                    result.status_code,
-                    path,
-                    extra={"response": result},
-                )
-                return result
-            except RequestException as err:
-                gs_logger.debug(
-                    "[%s] %s: %s",
-                    app_function.__name__,
-                    path,
-                    err.__class__.__name__,
-                    extra={"response": err.request},
-                )
-                raise HTTPException(
-                    status_code=504,
-                    detail={
-                        "message": f"HTTP error {err.__class__.__name__} at {path}",
-                        "info": err,
-                    },
-                ) from err
-
-        return wrapped_function
-    return app_function
-
-
-class LoggedRequests:
-    def __init__(self) -> None:
-        self.handler = ResponseHandler()
-
-    def __enter__(self) -> ResponseHandler:
-        gn_logger.addHandler(self.handler)
-        gs_logger.addHandler(self.handler)
-        self.handler.valid = True
-        return self.handler
-
-    def __exit__(self, *args: Any) -> None:
-        self.handler.valid = False
-        gn_logger.removeHandler(self.handler)
-        gs_logger.removeHandler(self.handler)
+@contextmanager
+def connect_log_handler() -> Iterator[LogCollectionHandler]:
+    global parent_app  # pylint: disable=global-variable-not-assigned
+    handler = LogCollectionHandler()
+    gn_logger.addHandler(handler)
+    gs_logger.addHandler(handler)
+    assert parent_app is not None
+    parent_app.state.log_handler = handler
+    handler.valid = True
+    try:
+        yield handler
+    except GeneratorExit:
+        pass
+    finally:
+        handler.valid = False
+        parent_app.state.log_handler = None
+        gn_logger.removeHandler(handler)
+        gs_logger.removeHandler(handler)
