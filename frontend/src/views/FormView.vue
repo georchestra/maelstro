@@ -1,8 +1,15 @@
 <script setup lang="ts">
+import LogsReport from '@/components/LogsReport.vue'
 import type { SearchResult } from '@/services/geonetworkSearch.service'
+import {
+  synchronizeService,
+  type Log,
+  type SynchronizeParams,
+} from '@/services/synchronize.service'
 import { useConfigStore } from '@/stores/config.store'
 import { useDatasetsStore } from '@/stores/datasets.store'
 import { Form, FormField } from '@primevue/forms'
+
 import {
   AutoComplete,
   Button,
@@ -22,19 +29,29 @@ const onComplete = (event: AutoCompleteCompleteEvent) =>
 const selectedDataset = ref<SearchResult | null>(null)
 
 const parameters = ref({
-  src_name: configStore.sources[0].name,
-  dst_name: null,
-  metadataUuid: null,
+  src_name: source.value.name,
+  dst_name: '',
   copy_meta: true,
   copy_layers: true,
   copy_styles: true,
   dry_run: false,
 })
+
+const logs = ref<Log[]>([])
+
+const synchronize = async () => {
+  const params = {
+    ...parameters.value,
+    metadataUuid: selectedDataset.value?.uuid,
+  } as unknown as SynchronizeParams
+
+  logs.value = await synchronizeService.synchronize(params)
+}
 </script>
 
 <template>
   <div class="flex flex-col my-12 items-center">
-    <div class="text-4xl text-gray-800 mb-10">
+    <div class="text-4xl mb-10">
       {{ $t('Synchronization of datasets between platforms') }}
     </div>
     <Form class="flex flex-col gap-5">
@@ -46,9 +63,12 @@ const parameters = ref({
           :suggestions="datasetsStore.results"
           :optionLabel="optionLabel"
           @complete="onComplete"
+          size="large"
+          scrollHeight="30rem"
+          fluid
         />
-        <Button icon="pi pi-times" @click="selectedDataset = null" v-if="selectedDataset" />
-        <p>{{ selectedDataset?.uuid }}</p>
+        <Button icon="pi pi-delete-left" @click="selectedDataset = null" severity="secondary" />
+        <p class="min-w-[300px]">{{ selectedDataset?.uuid }}</p>
       </FormField>
       <FormField name="dst_name" class="flex gap-5 items-center">
         <label for="dst_name" class="w-36">{{ $t('Target platform') }}</label>
@@ -71,7 +91,11 @@ const parameters = ref({
         <label for="copy_styles" class="w-36">{{ $t('Styles') }}</label>
         <ToggleSwitch id="copy_styles" placeholder="" v-model="parameters.copy_styles" />
       </FormField>
-      <Button :label="$t('Synchronize')" class="mt-5" />
+      <Button :label="$t('Synchronize')" class="mt-5" @click.stop="synchronize" />
     </Form>
+  </div>
+
+  <div class="m-5">
+    <LogsReport v-if="logs" :logs="logs"></LogsReport>
   </div>
 </template>

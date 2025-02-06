@@ -5,6 +5,15 @@ export type SearchResult = {
   }
 }
 
+interface GnSource {
+  uuid: string
+  resourceTitleObject: string
+}
+
+interface GnHit {
+  _source: GnSource
+}
+
 export const geonetworkSearchService = {
   async search(sourceName: string, query: string): Promise<SearchResult[]> {
     // const url =
@@ -55,7 +64,7 @@ export const geonetworkSearchService = {
     const hits = (await searchResponse.json()).hits.hits
     if (!hits) return []
 
-    return hits.map((hit: any) => ({
+    return hits.map((hit: GnHit) => ({
       uuid: hit._source.uuid,
       resourceTitleObject: hit._source.resourceTitleObject,
     }))
