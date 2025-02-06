@@ -28,6 +28,9 @@ class Config:
                     self.config = yaml.load(cf, yaml.Loader)
 
         self.read_all_credentials()
+        db_config = self.config.get("db_logging")
+        if db_config is not None:
+            substitute_single_credentials_from_env(db_config)
 
     def read_all_credentials(self) -> None:
         common_credentials = substitute_single_credentials_from_env(

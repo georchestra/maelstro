@@ -18,12 +18,14 @@ from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
 from maelstro.core.operations import log_handler, setup_exception_handlers
-from maelstro.logging.psql_logger import log_request_to_db
+from maelstro.logging.psql_logger import create_db_table, log_request_to_db, get_logs
 from maelstro.common.models import SearchQuery
 
 
 app = FastAPI(root_path="/maelstro-backend")
 setup_exception_handlers(app)
+# this call is safe: by default sqlalchemy checks first if the table exists
+create_db_table()
 
 app.state.health_countdown = 5
 
@@ -161,6 +163,11 @@ def put_dataset_copy(
     if accept == "application/json":
         return operations
     return PlainTextResponse("\n".join(operations))
+
+
+@app.get("/logs")
+def get_user_logs(size: int = 5, offset: int = 0, get_details: bool = False):
+    return get_logs(size, offset, get_details)
 
 
 @app.get("/health")
