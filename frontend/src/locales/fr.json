@@ -1,7 +1,12 @@
 {
-  "Source dataset": "Jeux de données source",
+  "Source dataset": "Jeu de données source",
   "Source layer": "Couche source",
   "Target platform": "Plateforme destination",
   "Synchronize": "Synchroniser",
-  "Synchronization of datasets between platforms": "Synchronisation de jeux de données entre plateformes"
+  "Synchronization of datasets between platforms": "Synchronisation de jeux de données entre plateformes",
+  "Operations log": "Journal des opérations",
+  "User guide": "Guide d'utilisation",
+  "Metadata": "Métadonnées",
+  "Layers": "Couches",
+  "Styles": "Styles"
 }
