@@ -6,8 +6,13 @@ from maelstro.common.types import GsLayer
 
 
 NS_PREFIXES = {
-    "iso19139": {"main": "gmd", "title": "gmd"},
-    "iso19115-3.2018": {"main": "cit", "title": "mri"},
+    "iso19139": "gmd",
+    "iso19115-3.2018": "cit",
+}
+
+NS_TITLE_PREFIXES = {
+    "iso19139": "gmd",
+    "iso19115-3.2018": "mri",
 }
 
 NS_REGISTRIES = {
@@ -26,14 +31,13 @@ class MetaXml:
         self.xml_bytes = xml_bytes
         self.schema = schema
         self.namespaces = NS_REGISTRIES.get(schema)
-        self.prefix = NS_PREFIXES.get(schema)["main"]
-        self.title_prefix = NS_PREFIXES.get(schema)["title"]
+        self.prefix = NS_PREFIXES.get(schema)
+        self.title_prefix = NS_TITLE_PREFIXES.get(schema)
 
     def get_title(self) -> str:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
         title_node = xml_root.find(
-            f".//{self.title_prefix}:MD_DataIdentification"
-            f"//{self.prefix}:title/",
+            f".//{self.title_prefix}:MD_DataIdentification" f"//{self.prefix}:title/",
             self.namespaces,
         )
         if title_node is not None:

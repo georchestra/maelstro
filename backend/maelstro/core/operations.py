@@ -31,7 +31,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
             err.code if err.code != 404 else 400,
             {
                 "msg": err.detail.message,
-                "url": err.parent_response.url,
+                "url": err.parent_request.url,
                 "operations": log_handler.get_json_responses(),
                 "content": err.detail.info,
             },
