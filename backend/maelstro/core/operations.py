@@ -7,11 +7,13 @@ from fastapi import FastAPI, HTTPException, Request
 from geonetwork.gn_logger import logger as gn_logger
 from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: ignore
 from geonetwork.exceptions import GnException
+from maelstro.logging.psql_logger import log_request_to_db
 
 
 def setup_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     def handle_fastapi_exception(request: Request, err: GnException) -> None:
+        log_request_to_db(err.status_code, request, log_handler)
         raise err
 
     @app.exception_handler(GnException)
@@ -95,7 +97,7 @@ class LogCollectionHandler(Handler):
         return [self.json_response(r) for r in self.responses if r is not None]
 
 
-# must use a global variable so that log_handler is accessible from inside exceptions
+# must use a global variable so that log_handler is accessible from inside exception
 log_handler = LogCollectionHandler()
 gn_logger.addHandler(log_handler)
 gs_logger.addHandler(log_handler)

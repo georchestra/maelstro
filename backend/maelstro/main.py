@@ -18,6 +18,7 @@ from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
 from maelstro.core.operations import log_handler, setup_exception_handlers
+from maelstro.logging.psql_logger import log_request_to_db
 from maelstro.common.models import SearchQuery
 
 
@@ -156,6 +157,7 @@ def put_dataset_copy(
         )
     clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
     operations = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    log_request_to_db(200, request, log_handler)
     if accept == "application/json":
         return operations
     return PlainTextResponse("\n".join(operations))
