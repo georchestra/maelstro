@@ -38,10 +38,12 @@ The folder [backend](backend) contains the API written with FastAPI.
 
 The configuration is based on a YAML file containing connection information about the source and destination servers. You can find an example of this file in [test_config.yaml](backend/tests/test_config.yaml)
 
-The file has 2 categories:
+For dev use of the platform, there is a sample config in the backend folder: [dev_config.yaml](backend/dev_config.yaml). This config is used by default in the docker compo.
 
+The file has 3 categories:
 - sources
 - destinations
+- db_logging
 
 Sources contains 2 list of servers: `geonetwork_instances` and `geoserver_instances`. Each instance is described by its `url` (`api_url` for geonetwork), and their credentials.
 
@@ -54,6 +56,16 @@ The logics for credentials is by decreasing order of importance:
 3. if still no login/password is found, the configuration file is parsed at the parent hierarchy level. First env vars are used like in 1.
 4. Then constant login/password keys are read
 5. I still either "login" or "password" is not defined, the credentials are considered invalid and anonymous acces is used for the instance without authentication
+
+The section db_logging contains all connection information to reach a writable postgres DB to use for writing and reading application logs:
+- host (default: database)
+- port (default: 5432)
+- login (default: georchestra)
+- password (default: georchestra)
+- database (default: georchestra)
+- schema (default: maelstro
+- table: (default: logs)
+
 
 Example (see [doc_sample_config.yaml](backend/tests/doc_sample_config.yaml)):
 
