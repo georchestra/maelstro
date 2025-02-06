@@ -17,12 +17,17 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from pydantic import TypeAdapter
 from maelstro.config import app_config as config
+from maelstro.common.types import DbConfig
+
+
+class DbNotSetup(Exception):
+    pass
 
 
 Base = declarative_base()
 
 
-DB_CONFIG = {
+DB_DEFAULT_CONFIG = {
     "host": "database",
     "port": 5432,
     "login": "georchestra",
@@ -31,18 +36,13 @@ DB_CONFIG = {
     "schema": "maelstro",
     "table": "logs",
 }
-DB_CONFIG.update(config.config.get("db_logging", {}))
-
-SCHEMA = str(DB_CONFIG.get("schema"))
-DB_URL = (
-    f"postgresql://{DB_CONFIG['login']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:"
-    f"{DB_CONFIG['port']}/{DB_CONFIG['database']}"
-)
+LOGGING_ACTIVE = config.has_db_logging()
+DB_CONFIG = config.get_db_config()
 
 
 class Log(Base):  # type: ignore
     __tablename__ = "logs"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__ = {"schema": DB_CONFIG.schema}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     start_time = Column(DateTime, nullable=False, default=datetime.now())
@@ -99,7 +99,17 @@ def log_request_to_db(
     log_to_db(record)
 
 
+def log_to_db(record: dict[str, Any]) -> None:
+    if not LOGGING_ACTIVE:
+        return
+    with Session(get_engine()) as session:
+        session.add(Log(**record))
+        session.commit()
+
+
 def get_logs(size: int, offset: int, get_details: bool = False) -> list[dict[str, Any]]:
+    if not LOGGING_ACTIVE:
+        raise DbNotSetup
     with Session(get_engine()) as session:
         return [
             row.to_dict(get_details)
@@ -128,6 +138,8 @@ def format_log(row: Log) -> str:
 
 
 def format_logs(size: int, offset: int) -> list[str]:
+    if not LOGGING_ACTIVE:
+        raise DbNotSetup
     with Session(get_engine()) as session:
         return [
             format_log(row)
@@ -138,19 +150,27 @@ def format_logs(size: int, offset: int) -> list[str]:
         ]
 
 
-def log_to_db(record: dict[str, Any]) -> None:
-    with Session(get_engine()) as session:
-        session.add(Log(**record))
-        session.commit()
+def build_url(db_config: DbConfig) -> str:
+    return (
+        f"postgresql://{db_config.login}:{db_config.password}@{db_config.host}:"
+        f"{db_config.port}/{db_config.database}"
+    )
 
 
 def get_engine() -> Engine:
-    return create_engine(DB_URL)
+    return create_engine(build_url(DB_CONFIG))
 
 
 def read_db_table(name: str = "logs") -> Table:
     engine = get_engine()
-    return Table("logs", MetaData(schema=SCHEMA), autoload_with=engine)
+    return Table("logs", MetaData(schema=DB_CONFIG.schema), autoload_with=engine)
+
+
+def setup_db_logging() -> None:
+    if not LOGGING_ACTIVE:
+        return
+    # this call is safe in init: by default sqlalchemy checks first if the table exists
+    create_db_table()
 
 
 def create_db_table() -> None:

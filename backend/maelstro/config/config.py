@@ -1,7 +1,7 @@
 import os
 from typing import Any
 import yaml
-from maelstro.common.types import Credentials
+from maelstro.common.types import Credentials, DbConfig
 
 
 class ConfigError(Exception):
@@ -70,6 +70,12 @@ class Config:
             }
             for k, v in self.config["destinations"].items()
         ]
+
+    def has_db_logging(self) -> bool:
+        return "db_logging" in self.config
+
+    def get_db_config(self) -> DbConfig:
+        return DbConfig(**self.config.get("db_logging", {}))
 
     def get_access_info(
         self, is_src: bool, is_geonetwork: bool, instance_id: str

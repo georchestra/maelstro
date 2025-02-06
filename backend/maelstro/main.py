@@ -19,18 +19,18 @@ from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
 from maelstro.core.operations import log_handler, setup_exception_handlers
 from maelstro.logging.psql_logger import (
-    create_db_table,
+    setup_db_logging,
     log_request_to_db,
     get_logs,
     format_logs,
+    DbNotSetup,
 )
 from maelstro.common.models import SearchQuery
 
 
 app = FastAPI(root_path="/maelstro-backend")
 setup_exception_handlers(app)
-# this call is safe: by default sqlalchemy checks first if the table exists
-create_db_table()
+setup_db_logging()
 
 app.state.health_countdown = 5
 
@@ -176,6 +176,7 @@ def put_dataset_copy(
     "/logs",
     responses={
         200: {"content": {"text/plain": {}, "application/json": {}}},
+        500: {"content": {"text/plain": {}, "application/json": {}}},
     },
 )
 def get_user_logs(
@@ -184,9 +185,12 @@ def get_user_logs(
     get_details: bool = False,
     accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
 ) -> Any:
-    if accept == "application/json":
-        return get_logs(size, offset, get_details)
-    return PlainTextResponse("\n".join(format_logs(size, offset)))
+    try:
+        if accept == "application/json":
+            return get_logs(size, offset, get_details)
+        return PlainTextResponse("\n".join(format_logs(size, offset)))
+    except DbNotSetup as err:
+        raise HTTPException(500, "DB logging not configured") from err
 
 
 @app.get("/health")
