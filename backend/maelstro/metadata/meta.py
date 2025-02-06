@@ -26,6 +26,14 @@ class MetaXml:
         self.namespaces = NS_REGISTRIES.get(schema)
         self.prefix = NS_PREFIXES.get(schema)
 
+    def get_title(self) -> str:
+        xml_root = etree.parse(BytesIO(self.xml_bytes))
+        return xml_root.find(
+            f".//{self.prefix}:MD_DataIdentification/{self.prefix}:citation"
+            f"/{self.prefix}:CI_Citation/{self.prefix}:title/",
+            self.namespaces
+        ).text
+
     def get_ogc_geoserver_layers(self) -> list[dict[str, str]]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
         return [

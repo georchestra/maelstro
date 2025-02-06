@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import datetime
 import json
 from typing import Any, Iterator
 from geonetwork import GnApi
@@ -7,39 +8,31 @@ from requests.exceptions import HTTPError
 from maelstro.config import ConfigError, app_config as config
 from .operations import (
     LogCollectionHandler,
-    connect_log_handler,
+    log_handler,
     gs_logger,
 )
 from .exceptions import ParamError, MaelstroDetail, AuthError
-
-
-class GnApiWrapper(GnApi):
-    pass
-
-
-class GsRestWrapper(RestService):  # type: ignore
-    pass
 
 
 class GeorchestraHandler:
     def __init__(self, log_handler: LogCollectionHandler):
         self.log_handler = log_handler
 
-    def get_gn_service(self, instance_name: str, is_source: bool) -> GnApiWrapper:
+    def get_gn_service(self, instance_name: str, is_source: bool) -> GnApi:
         if not self.log_handler.valid:
             raise RuntimeError(
                 "GeorchestraHandler context invalid, handler already close"
             )
         gn_info = self.get_service_info(instance_name, is_source, True)
-        return GnApiWrapper(gn_info["url"], gn_info["auth"])
+        return GnApi(gn_info["url"], gn_info["auth"])
 
-    def get_gs_service(self, instance_name: str, is_source: bool) -> GsRestWrapper:
+    def get_gs_service(self, instance_name: str, is_source: bool) -> RestService:
         if not self.log_handler.valid:
             raise RuntimeError(
                 "GeorchestraHandler context invalid, handler already close"
             )
         gs_info = self.get_service_info(instance_name, is_source, False)
-        gsapi = GsRestWrapper(gs_info["url"], gs_info["auth"])
+        gsapi = RestService(gs_info["url"], gs_info["auth"])
         try:
             import geoservercloud.services.restclient  # type: ignore
 
@@ -89,5 +82,8 @@ class GeorchestraHandler:
 
 @contextmanager
 def get_georchestra_handler() -> Iterator[GeorchestraHandler]:
-    with connect_log_handler() as log_handler:
-        yield GeorchestraHandler(log_handler)
+    log_handler.responses.clear()
+    log_handler.properties["start_time"] = datetime.now()
+    log_handler.valid = True
+    yield GeorchestraHandler(log_handler)
+    log_handler.valid = False
