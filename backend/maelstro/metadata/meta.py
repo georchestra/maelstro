@@ -6,8 +6,8 @@ from maelstro.common.types import GsLayer
 
 
 NS_PREFIXES = {
-    "iso19139": "gmd",
-    "iso19115-3.2018": "cit",
+    "iso19139": {"main": "gmd", "title": "gmd"},
+    "iso19115-3.2018": {"main": "cit", "title": "mri"},
 }
 
 NS_REGISTRIES = {
@@ -15,6 +15,7 @@ NS_REGISTRIES = {
         "gmd": "http://www.isotc211.org/2005/gmd",
     },
     "iso19115-3.2018": {
+        "mri": "http://standards.iso.org/iso/19115/-3/mri/1.0",
         "cit": "http://standards.iso.org/iso/19115/-3/cit/2.0",
     },
 }
@@ -23,14 +24,16 @@ NS_REGISTRIES = {
 class MetaXml:
     def __init__(self, xml_bytes: bytes, schema: str = "iso19139"):
         self.xml_bytes = xml_bytes
+        self.schema = schema
         self.namespaces = NS_REGISTRIES.get(schema)
-        self.prefix = NS_PREFIXES.get(schema)
+        self.prefix = NS_PREFIXES.get(schema)["main"]
+        self.title_prefix = NS_PREFIXES.get(schema)["title"]
 
     def get_title(self) -> str:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
         title_node = xml_root.find(
-            f".//{self.prefix}:MD_DataIdentification/{self.prefix}:citation"
-            f"/{self.prefix}:CI_Citation/{self.prefix}:title/",
+            f".//{self.title_prefix}:MD_DataIdentification"
+            f"//{self.prefix}:title/",
             self.namespaces,
         )
         if title_node is not None:
