@@ -4,6 +4,7 @@ import json
 from functools import cache
 from io import BytesIO
 from typing import Any
+from geonetwork import GnApi
 from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import app_config as config
@@ -28,23 +29,22 @@ class CloneDataset:
         self.geo_hnd: GeorchestraHandler
         self.checked_workspaces: set[str] = set()
         self.checked_datastores: set[str] = set()
-        self.services = {}
 
     @property
-    @cache
-    def gn_src(self):
+    @cache  # pylint: disable=method-cache-max-size-none
+    def gn_src(self) -> GnApi:
         return self.geo_hnd.get_gn_service(self.src_name, is_source=True)
 
     @property
-    @cache
-    def gn_dst(self):
+    @cache  # pylint: disable=method-cache-max-size-none
+    def gn_dst(self) -> GnApi:
         return self.geo_hnd.get_gn_service(self.dst_name, is_source=False)
 
     # gs_src cannot be a fixed property since there may be several source Geoservers
 
     @property
-    @cache
-    def gs_dst(self):
+    @cache  # pylint: disable=method-cache-max-size-none
+    def gs_dst(self) -> RestService:
         return self.geo_hnd.get_gs_service(self.dst_name, is_source=False)
 
     def clone_dataset(
@@ -146,7 +146,7 @@ class CloneDataset:
 
                 # styles must be available when cloning layers
                 if self.copy_layers:
-                    for layer_data in layers.values():
+                    for layer_name, layer_data in layers.items():
                         self.clone_layer(gs_src, layer_name, layer_data)
 
     def get_styles_from_layer(self, layer_data: dict[str, Any]) -> dict[str, Any]:
@@ -157,8 +157,7 @@ class CloneDataset:
             # as a dict, it must be converted to a list of dicts
             additional_styles = [additional_styles]
         all_styles = {
-            style["name"]: style
-            for style in [default_style] + additional_styles
+            style["name"]: style for style in [default_style] + additional_styles
         }
         return all_styles
 
@@ -168,7 +167,9 @@ class CloneDataset:
             style["workspace"]: None
         }
 
-    def get_stores_from_layers(self, gs_src: RestService, layers: dict[str, Any]) -> dict[str, Any]:
+    def get_stores_from_layers(
+        self, gs_src: RestService, layers: dict[GsLayer, Any]
+    ) -> dict[str, Any]:
         stores = {}
         resources = {
             layer_data["layer"]["resource"]["name"]: layer_data["layer"]["resource"]
@@ -184,7 +185,9 @@ class CloneDataset:
             stores[store["name"]] = store
         return stores
 
-    def get_workspaces_from_store(self, gs_src: RestService, store: dict[str, Any]) -> dict[str, Any]:
+    def get_workspaces_from_store(
+        self, gs_src: RestService, store: dict[str, Any]
+    ) -> dict[str, Any]:
         store_class = store["@class"]
         store_route = store["href"].replace(gs_src.url, "")
         store_resp = gs_src.rest_client.get(store_route)
@@ -279,7 +282,9 @@ class CloneDataset:
                 )
         raise_for_status(resp)
 
-        resp = self.gs_dst.rest_client.put(f"/rest/layers/{layer_name}", json=layer_data)
+        resp = self.gs_dst.rest_client.put(
+            f"/rest/layers/{layer_name}", json=layer_data
+        )
         raise_for_status(resp)
 
     def clone_style(
@@ -306,7 +311,9 @@ class CloneDataset:
                     "/styles",
                     style_route,
                 )
-                dst_style = self.gs_dst.rest_client.post(style_post_route, json=style_info)
+                dst_style = self.gs_dst.rest_client.post(
+                    style_post_route, json=style_info
+                )
                 # raise_for_status(dst_style)
 
             dst_style_def = self.gs_dst.rest_client.put(

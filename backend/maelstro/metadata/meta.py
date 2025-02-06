@@ -28,11 +28,14 @@ class MetaXml:
 
     def get_title(self) -> str:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
-        return xml_root.find(
+        title_node = xml_root.find(
             f".//{self.prefix}:MD_DataIdentification/{self.prefix}:citation"
             f"/{self.prefix}:CI_Citation/{self.prefix}:title/",
-            self.namespaces
-        ).text
+            self.namespaces,
+        )
+        if title_node is not None:
+            return title_node.text or ""
+        return ""
 
     def get_ogc_geoserver_layers(self) -> list[dict[str, str]]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))

@@ -18,7 +18,12 @@ from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
 from maelstro.core.operations import log_handler, setup_exception_handlers
-from maelstro.logging.psql_logger import create_db_table, log_request_to_db, get_logs, format_logs
+from maelstro.logging.psql_logger import (
+    create_db_table,
+    log_request_to_db,
+    get_logs,
+    format_logs,
+)
 from maelstro.common.models import SearchQuery
 
 
@@ -159,7 +164,9 @@ def put_dataset_copy(
         )
     clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
     operations = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
-    log_request_to_db(200, request, log_handler)
+    log_request_to_db(
+        200, request, log_handler.properties, log_handler.get_json_responses()
+    )
     if accept == "application/json":
         return operations
     return PlainTextResponse("\n".join(operations))
@@ -169,14 +176,14 @@ def put_dataset_copy(
     "/logs",
     responses={
         200: {"content": {"text/plain": {}, "application/json": {}}},
-    }
+    },
 )
 def get_user_logs(
-        size: int = 5,
-        offset: int = 0,
-        get_details: bool = False,
-        accept: Annotated[str, Header(include_in_schema=False)] = "text/plain"
-):
+    size: int = 5,
+    offset: int = 0,
+    get_details: bool = False,
+    accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
+) -> Any:
     if accept == "application/json":
         return get_logs(size, offset, get_details)
     return PlainTextResponse("\n".join(format_logs(size, offset)))
