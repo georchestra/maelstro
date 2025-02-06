@@ -1,7 +1,7 @@
 import Aura from '@primevue/themes/aura'
 import { createPinia } from 'pinia'
-import PrimeVue, { usePrimeVue, type PrimeVueLocaleOptions } from 'primevue/config'
-import { createApp, watch } from 'vue'
+import PrimeVue, { type PrimeVueLocaleOptions } from 'primevue/config'
+import { createApp } from 'vue'
 import App from './App.vue'
 import './assets/main.css'
 import router from './router'
@@ -50,13 +50,5 @@ app.use(PrimeVue, {
   },
   locale: primeLocales[i18n.global.locale],
 })
-
-watch(
-  () => i18n.global.locale, // Observe la langue actuelle de Vue I18n
-  (newLocale) => {
-    const primevue = usePrimeVue()
-    primevue.config.locale = primeLocales[newLocale] || primeLocales.en
-  },
-)
 
 app.mount('#app')
