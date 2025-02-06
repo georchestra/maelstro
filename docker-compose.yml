@@ -1,4 +1,3 @@
-
 include:
   - georchestra/geor-compose.yml
   - georchestra/geor-compose.override.yml
@@ -43,6 +42,8 @@ services:
       timeout: 10s
     command:
       - serve_docker_dev
+    ports:
+      - 127.0.0.1:8000:8000 # Used for frontend development
 
   check:
     profiles:
