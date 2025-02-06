@@ -90,23 +90,26 @@ def get_logs(size, offset, get_details=False):
         ]
 
 
+def format_log(row: Log) -> str:
+    user = f"{row.first_name} {row.last_name}"
+    status = "<succes>" if row.status_code == 200 else "<echec> "
+    operations = (
+        (["metadata"] if row.copy_meta else [])
+        + (["couches"] if row.copy_layers else [])
+        + (["styles"] if row.copy_styles else [])
+    )
+    source = f'{row.src_name}:{row.dataset_uuid} - "{row.src_title}"'
+    destination = (
+        f'{row.dst_name} - "{row.dst_title}" ({", ".join(operations)})'
+        if operations else "n/a (copy_meta=false, copy_layers=false, copy_styles=false)"
+    )
+    return f"[{row.start_time}]: {status} {user} copie {source} vers {destination}"
+
+
 def format_logs(size, offset):
     with Session(get_engine()) as session:
-        def row_to_copy_operations(row: Log):
-            return ", ".join(
-                (["metadata"] if row.copy_meta else [])
-                + (["couches"] if row.copy_layers else [])
-                + (["styles"] if row.copy_styles else [])
-            )
         return [
-            (
-                f"[{row.start_time}]: "
-                f"<{'succes' if row.status_code == 200 else 'echec '}> "
-                f"{row.first_name} {row.last_name} "
-                f'copie {row.src_name} - "{row.src_title}" '
-                f'vers {row.dst_name} - "{row.dst_title}" '
-                f"({row_to_copy_operations(row)})"
-            )
+            format_log(row)
             for row in session.query(Log).order_by(Log.id.desc()).offset(offset).limit(size)
         ]
 

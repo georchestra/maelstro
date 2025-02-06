@@ -18,7 +18,7 @@ from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
 from maelstro.core.operations import log_handler, setup_exception_handlers
-from maelstro.logging.psql_logger import create_db_table, log_request_to_db, get_logs
+from maelstro.logging.psql_logger import create_db_table, log_request_to_db, get_logs, format_logs
 from maelstro.common.models import SearchQuery
 
 
@@ -165,9 +165,21 @@ def put_dataset_copy(
     return PlainTextResponse("\n".join(operations))
 
 
-@app.get("/logs")
-def get_user_logs(size: int = 5, offset: int = 0, get_details: bool = False):
-    return get_logs(size, offset, get_details)
+@app.get(
+    "/logs",
+    responses={
+        200: {"content": {"text/plain": {}, "application/json": {}}},
+    }
+)
+def get_user_logs(
+        size: int = 5,
+        offset: int = 0,
+        get_details: bool = False,
+        accept: Annotated[str, Header(include_in_schema=False)] = "text/plain"
+):
+    if accept == "application/json":
+        return get_logs(size, offset, get_details)
+    return PlainTextResponse("\n".join(format_logs(size, offset)))
 
 
 @app.get("/health")
