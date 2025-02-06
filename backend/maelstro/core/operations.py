@@ -1,5 +1,4 @@
-from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
 import logging
 from logging import Handler
 from requests import Response
@@ -10,12 +9,10 @@ from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: i
 from geonetwork.exceptions import GnException
 
 
-parent_app = None
-
-
 def setup_exception_handlers(app: FastAPI) -> None:
-    global parent_app  # pylint: disable=global-statement
-    parent_app = app
+    @app.exception_handler(HTTPException)
+    def handle_fastapi_exception(request: Request, err: GnException) -> None:
+        raise err
 
     @app.exception_handler(GnException)
     def handle_gn_exception(request: Request, err: GnException) -> None:
@@ -26,7 +23,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
             {
                 "msg": err.detail.message,
                 "url": err.parent_response.url,
-                "operations": parent_app.state.log_handler.get_json_responses(),
+                "operations": log_handler.get_json_responses(),
                 "content": err.detail.info,
             },
         ) from err
@@ -40,26 +37,23 @@ def setup_exception_handlers(app: FastAPI) -> None:
             err.__class__.__name__,
             extra={"response": request},
         )
-        assert parent_app is not None
         raise HTTPException(
             status_code=504,
             detail={
                 "message": f"HTTP error {err.__class__.__name__} at {request.url}",
-                "operations": parent_app.state.log_handler.get_json_responses(),
+                "operations": log_handler.get_json_responses(),
                 "info": str(err),
             },
         ) from err
 
 
 def raise_for_status(response: Response) -> None:
-    global parent_app  # pylint: disable=global-variable-not-assigned
     if 400 <= response.status_code < 600:
-        assert parent_app is not None
         raise HTTPException(
             response.status_code if response.status_code != 404 else 400,
             {
                 "message": f"HTTP error in [{response.request.method}] {response.url}",
-                "operations": parent_app.state.log_handler.get_json_responses(),
+                "operations": log_handler.get_json_responses(),
                 "info": response.text,
             },
         )
@@ -70,6 +64,7 @@ class LogCollectionHandler(Handler):
         super().__init__()
         self.responses: list[Response | None | dict[str, Any]] = []
         self.valid = False
+        self.properties = {}
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
@@ -100,21 +95,7 @@ class LogCollectionHandler(Handler):
         return [self.json_response(r) for r in self.responses if r is not None]
 
 
-@contextmanager
-def connect_log_handler() -> Iterator[LogCollectionHandler]:
-    global parent_app  # pylint: disable=global-variable-not-assigned
-    handler = LogCollectionHandler()
-    gn_logger.addHandler(handler)
-    gs_logger.addHandler(handler)
-    assert parent_app is not None
-    parent_app.state.log_handler = handler
-    handler.valid = True
-    try:
-        yield handler
-    except GeneratorExit:
-        pass
-    finally:
-        handler.valid = False
-        parent_app.state.log_handler = None
-        gn_logger.removeHandler(handler)
-        gs_logger.removeHandler(handler)
+# must use a global variable so that log_handler is accessible from inside exceptions
+log_handler = LogCollectionHandler()
+gn_logger.addHandler(log_handler)
+gs_logger.addHandler(log_handler)

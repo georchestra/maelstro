@@ -1,5 +1,6 @@
+from typing import Any
 from fastapi import HTTPException
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 
 
 @dataclass
@@ -10,6 +11,7 @@ class MaelstroDetail:
     server: str | None = None
     key: str | None = None
     user: str | None = None
+    operations: list[dict[str, Any]] = field(default_factory=lambda: [])
 
     def asdict(self) -> dict[str, str | int | None]:
         return asdict(self)
@@ -34,5 +36,5 @@ class UrlError(MaelstroException):
 
 class ParamError(MaelstroException):
     def __init__(self, err_detail: MaelstroDetail):
-        err_detail.status_code = 406
+        err_detail.status_code = 400
         super().__init__(err_detail)

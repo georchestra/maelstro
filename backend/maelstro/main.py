@@ -17,7 +17,7 @@ from maelstro.core.georchestra import get_georchestra_handler
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
-from maelstro.core.operations import setup_exception_handlers
+from maelstro.core.operations import log_handler, setup_exception_handlers
 from maelstro.common.models import SearchQuery
 
 
@@ -139,6 +139,7 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
     },
 )
 def put_dataset_copy(
+    request: Request,
     src_name: str,
     dst_name: str,
     metadataUuid: str,
