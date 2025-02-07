@@ -36,6 +36,5 @@ docker compose run --rm \
     python3 /scripts/create_maelstro_gs_rsc.py
 
 # Insert required dataset in PostGIS
-docker compose cp georchestra/psc_antenne.sql postgis:/psc_antenne.sql
-docker compose exec postgis bash -c "psql -U georchestra -d datafeeder < psc_antenne.sql"
+cat georchestra/psc_antenne.sql | docker compose exec -T postgis psql -U georchestra -d datafeeder
 ```
