@@ -17,7 +17,7 @@ spec:
       {{- end }}
       labels:
         {{- include "helm-maelstro.selectorLabels" . | nindent 8 }}
-        org.geonetwork.service/name: {{ include "helm-maelstro.fullname" . }}-maelstro-deployment
+        app.kubernetes.io/name: {{ include "helm-maelstro.fullname" . }}-maelstro-backend-deployment
     spec:
       {{- if .Values.datadir.git.url }}
       initContainers:
@@ -42,11 +42,11 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 8000
+              port: http
           readinessProbe:
             httpGet:
               path: /health
-              port: 8000
+              port: http
           resources:
             {{- toYaml .Values.maelstro_backend.resources | nindent 12 }}
           env:

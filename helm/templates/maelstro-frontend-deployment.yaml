@@ -17,7 +17,7 @@ spec:
       {{- end }}
       labels:
         {{- include "helm-maelstro.selectorLabels" . | nindent 8 }}
-        org.geonetwork.service/name: {{ include "helm-maelstro.fullname" . }}-maelstro-deployment
+        app.kubernetes.io/name: {{ include "helm-maelstro.fullname" . }}-maelstro-frontend-deployment
     spec:
       {{- if .Values.datadir.git.url }}
       initContainers:
