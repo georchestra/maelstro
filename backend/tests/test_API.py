@@ -1,8 +1,14 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from maelstro.main import app
+import os
+os.environ["DEMO_LOGIN"] = "testadmin"
 
+import maelstro.config.config
+
+maelstro.config.config.app_config = maelstro.config.config.Config("/app/dev_config.yaml")
+
+from maelstro.main import app
 
 client = TestClient(app)
 
@@ -21,7 +27,7 @@ def test_search():
 def test_search2():
     response = client.post("/search/GeonetworkDemo", json={"query": {"wildcard": {"resourceTitleObject.default": {"value": "vélo*"}}}, "size": 1})
     assert len(response.json()['hits']['hits']) == 1
-    assert response.json()['hits']['total']["value"] == 32
+    assert response.json()['hits']['total']['value'] == 32
 
 
 def test_search3():
@@ -47,3 +53,18 @@ def test_search5():
     })
     assert len(response.json()['hits']['hits']) == 5
     assert response.json()['hits']['total']['value'] == 388
+
+
+def test_copy_all():
+    response = client.put("/copy?src_name=GeonetworkDemo&dst_name=CompoLocale&metadataUuid=ef6fe5e6-b8f8-49c4-a885-69ce665515dc&copy_meta=true&copy_layers=true&copy_styles=true", headers={"accept": "application/json"})
+    assert response.status_code == 200
+    assert len(response.json()) == 24
+
+
+def test_copy_meta():
+    response = client.put("/copy?src_name=GeonetworkRennes&dst_name=CompoLocale&metadataUuid=4d6318d8-de30-4af5-8f37-971c486a0280&copy_meta=true&copy_layers=false&copy_styles=false&dry_run=false", headers={"accept": "application/json"})
+    assert response.status_code == 200
+    assert len(response.json()) == 7
+
+
+# client.post("/search/GeonetworkRennes", json={"query": { "query_string": { "query": "velo"}},"_source": ["resourceTitleObject", "uuid"]}).json()
