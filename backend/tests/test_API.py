@@ -55,6 +55,7 @@ def test_search5():
     assert response.json()['hits']['total']['value'] == 388
 
 
+@pytest.mark.skip("test depends on existing workspace 'PSC', so it does not work in CI yet")
 def test_copy_all():
     response = client.put("/copy?src_name=GeonetworkDemo&dst_name=CompoLocale&metadataUuid=ef6fe5e6-b8f8-49c4-a885-69ce665515dc&copy_meta=true&copy_layers=true&copy_styles=true", headers={"accept": "application/json"})
     assert response.status_code == 200
