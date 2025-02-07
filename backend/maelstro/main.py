@@ -21,7 +21,7 @@ from maelstro.core.operations import log_handler, setup_exception_handlers
 from maelstro.logging.psql_logger import (
     setup_db_logging,
     log_request_to_db,
-    get_logs,
+    get_raw_logs,
     format_logs,
     DbNotSetup,
 )
@@ -179,7 +179,7 @@ def put_dataset_copy(
         500: {"content": {"text/plain": {}, "application/json": {}}},
     },
 )
-def get_user_logs(
+def get_logs(
     size: int = 5,
     offset: int = 0,
     get_details: bool = False,
@@ -187,7 +187,7 @@ def get_user_logs(
 ) -> Any:
     try:
         if accept == "application/json":
-            return get_logs(size, offset, get_details)
+            return get_raw_logs(size, offset, get_details)
         return PlainTextResponse("\n".join(format_logs(size, offset)))
     except DbNotSetup as err:
         raise HTTPException(500, "DB logging not configured") from err
