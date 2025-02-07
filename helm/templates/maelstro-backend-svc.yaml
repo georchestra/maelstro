@@ -12,4 +12,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-     org.maelstro.service/name: {{ include "helm-maelstro.fullname" . }}-maelstro-backend-deployment
+     app.kubernetes.io/name: {{ include "helm-maelstro.fullname" . }}-maelstro-backend-deployment
