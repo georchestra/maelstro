@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# To be properl executed by maelstro initialization need the +x flag 
-# so you need to add it with chmod and commit/push it
+# This script needs to be executable in order to run during the initialization phase
+# It might be required to `chmod +x` the file
 
 MAELSTRO_DIR=${1:-/app}
 SNIPPET="<script src='https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js'></script><geor-header active-app='maelstro' style='height:90px'></geor-header>"

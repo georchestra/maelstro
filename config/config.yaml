@@ -1,7 +1,7 @@
 sources:
   geonetwork_instances:
-    # une seule instance geonetwork source supportée dans la v1
-    # ce nom sera utilisé dans une V2 (non financée) pour que l'utilisateur final choisisse l'instance GN source 
+    # Only one geonetwork source is supported in v1
+    # This name value will be used in v2 (not financed yet), user will be able to use catalog source
     - name: "GeonetworkMaster"
       # api_url: https://mastergn.rennesmetropole.fr/geonetwork/srv/api
       api_url: https://demo.georchestra.org/geonetwork/srv/api
@@ -20,10 +20,10 @@ sources:
   
   
 destinations:
-  # une destination est toujours une instance geOrchestra
-  # une instance geOrchestra associe toujours un unique geoserver et un unique geonetwork
-  
-  # nom de l'instance geOrchestra destination, telle qu'il apparaitra dans la UI
+  # Destination needs to be geOrchestra
+  # It only have one geonetwork and geoserver
+
+  # Instance name of geOrchestra destination will be printed in user interface of maelstro
   "CompoLocale":
     geonetwork:
       api_url: https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api
@@ -32,17 +32,18 @@ destinations:
     geoserver:
       url: https://georchestra-127-0-0-1.nip.io/geoserver
   "PlateformeProfessionnelle":
+    # If login and password are set in the plateform level, it will be shared between geoserver and geonetwork
     login: "toto" 
-    password: "passW0rd"  # si login et password sont précisés au niveau de l'IDG, ils sont communs aux instances geoserver et geonetwork
-    geoserver: 
-      password: "overridePW"  # si login ou password sont redéfinis à un niveau plus bas, ils prennent la priorité
+    password: "passW0rd"
+    geoserver:
+      # if credentials are set in lower section it gets the priority
+      password: "overridePW"
       url: https://portail.sig.rennesmetropole.fr/geoserver
     geonetwork:
       api_url: https://portail.sig.rennesmetropole.fr/geonetwork/srv/api
   "PlateformePublique":
     geoserver: 
       url: https://public.sig.rennesmetropole.fr/geoserver
-      # si login et password sont précisés au niveau de geoserver ou geonetwork, ils prennent la main 
       login: "toto2"
       password: "Str0ng_passW0rd"
     geonetwork:
