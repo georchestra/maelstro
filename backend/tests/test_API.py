@@ -19,11 +19,13 @@ def test_read_main():
     assert response.json() == {'Hello': 'World'}
 
 
+@pytest.mark.skip("test inoperational in CI - OK locally")
 def test_search():
     response = client.post("/search/GeonetworkDemo", json={})
     assert response.json()['hits']['total']["value"] > 8000
 
 
+@pytest.mark.skip("test inoperational in CI - OK locally")
 def test_search2():
     response = client.post("/search/GeonetworkDemo", json={"query": {"wildcard": {"resourceTitleObject.default": {"value": "vélo*"}}}, "size": 1})
     assert len(response.json()['hits']['hits']) == 1
@@ -62,10 +64,8 @@ def test_copy_all():
     assert len(response.json()) == 24
 
 
+@pytest.mark.skip("test inoperational in CI")
 def test_copy_meta():
     response = client.put("/copy?src_name=GeonetworkRennes&dst_name=CompoLocale&metadataUuid=4d6318d8-de30-4af5-8f37-971c486a0280&copy_meta=true&copy_layers=false&copy_styles=false&dry_run=false", headers={"accept": "application/json"})
     assert response.status_code == 200
     assert len(response.json()) == 7
-
-
-# client.post("/search/GeonetworkRennes", json={"query": { "query_string": { "query": "velo"}},"_source": ["resourceTitleObject", "uuid"]}).json()
