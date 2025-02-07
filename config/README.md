@@ -1,5 +1,5 @@
-# configuration 
+# Configuration 
 
-this folder contains the configurations files for maelstro
+This folder contains the configurations files for maelstro
 
-we usually copy it into georchestra datadir
+When deploying with geOrchestra, these files should be copied into a `maelstro` subfolder of the geOrchestra [datadir](https://github.com/georchestra/datadir)
