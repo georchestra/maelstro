@@ -107,7 +107,9 @@ def log_to_db(record: dict[str, Any]) -> None:
         session.commit()
 
 
-def get_raw_logs(size: int, offset: int, get_details: bool = False) -> list[dict[str, Any]]:
+def get_raw_logs(
+    size: int, offset: int, get_details: bool = False
+) -> list[dict[str, Any]]:
     if not LOGGING_ACTIVE:
         raise DbNotSetup
     with Session(get_engine()) as session:
