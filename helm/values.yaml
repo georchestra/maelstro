@@ -1,0 +1,46 @@
+maelstro_frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: test
+  tolerations: []
+  affinity: {}
+  extra_environment: []
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+maelstro_backend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: test
+  tolerations: []
+  affinity: {}
+  extra_environment: []
+  service:
+    type: ClusterIP
+    port: 8000
+    annotations: {}
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+datadir:
+  volume:
+  - name: georchestra-datadir
+    emptyDir: {}
+  git:
+    url: https://github.com/georchestra/datadir.git
+    ref: docker-master
