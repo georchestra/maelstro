@@ -18,3 +18,4 @@ print(
         description="This user is for development test of maelstro",
     )
 )
+print(geOrchestra_api.console.updaterolesuser(uuid="tmaelstro",cn="MAELSTRO"))
