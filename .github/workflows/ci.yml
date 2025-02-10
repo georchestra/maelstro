@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
 
       - name: build
         run: docker compose build check
@@ -59,7 +59,35 @@ jobs:
     runs-on: ubuntu-22.04
     name: Build Docker images
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Build
         run: docker compose build maelstro-back maelstro-front
+
+      - name: "Pushing latest to docker.io"
+        if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
+        run: |
+          docker tag maelstro-maelstro-back:latest georchestra/maelstro-backend:latest
+          docker tag maelstro-maelstro-front:latest georchestra/maelstro-frontend:latest
+          docker push georchestra/maelstro-backend:latest
+          docker push georchestra/maelstro-frontend:latest
+
+      - name: "Update Docker Hub Back Description"
+        if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          repository: georchestra/maelstro-backend
+          readme-filepath: ./DOCKER_HUB.md
+          short-description: 'Maelstro backend module for the geOrchestra SDI'
+
+      - name: "Update Docker Hub Front Description"
+        if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          repository: georchestra/maelstro-frontend
+          readme-filepath: ./DOCKER_HUB.md
+          short-description: 'Maelstro frontend module for the geOrchestra SDI'
