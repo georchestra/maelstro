@@ -37,6 +37,15 @@ maelstro_backend:
       cpu: 100m
       memory: 128Mi
 credentials: {}
+# credentials:
+#  - name: MAELSTRO_GENERIC1
+#    username: toto
+#    url: https://plateforme1.com
+#    password: to1
+#  - name: MAELSTRO_GENERIC2
+#    username: todfsd
+#    url: https://plateforme2.com
+#    password: llll
 datadir:
   volume:
   - name: georchestra-datadir
