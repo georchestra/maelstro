@@ -1,16 +1,21 @@
 # Installation with geOrchestra
 
-Configuration of the [datadir](https://github.com/georchestra/datadir) of geOrchestra
+Installing Maelstro requires several customizations of the geOrchestra instance [datadir](https://github.com/georchestra/datadir):
+- copying and customizing files from [this folder](https://github.com/georchestra/maelstro/tree/main/config) into a `maelstro` subfolder of the datadir 
+- security-proxy or gateway routes
+
+It also requires an additional role to be created.
+
 
 ## Security proxy integration
-in the `security-proxy/targets-mapping.properties` file, add : 
+In the `security-proxy/targets-mapping.properties` file, add: 
 ```
 maelstro-backend=http://${MAELSTRO_HOST}:8000/
 maelstro=http://${MAELSTRO_FRONT_HOST}:8080/maelstro/
 ```
-You will need to customize the env var linked with the good host.
+Customize `MAELSTRO_HOST` and `MAELSTRO_FRONT_HOST` with your environment hosts.
 
-in `security-proxy/security-mappings.xml` file, add the following access rules :
+In the `security-proxy/security-mappings.xml` file, add the following access rules:
 ```
    <intercept-url pattern="/maelstro-backend.*" access="ROLE_MAELSTRO" />
    <intercept-url pattern="/maelstro.*" access="ROLE_MAELSTRO" />
@@ -32,7 +37,7 @@ In the `gateway/routes.yaml` file, edit the `spring.cloud.gateway.routes` sectio
          filters:
          - RewritePath=/maelstro/(?<segment>.*),/$\{segment}
 ```
-Them, `gateway/gateway.yaml` file, edit the `georchestra.gateway.services` section :
+Then, in the`gateway/gateway.yaml` file, edit the `georchestra.gateway.services` section:
 ```
        maelstro-back:
          target: ${georchestra.gateway.services.maelstro-back.target}
