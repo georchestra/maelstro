@@ -52,6 +52,20 @@ spec:
           env:
             - name: MAELSTRO_CONFIG
               value: "/etc/georchestra/maelstro/config.yaml"
+            {{- range .Values.credentials }}
+            - name: {{ .name }}_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: maelstro-creds-ext-plateform-secret
+                  key: {{ .name }}_USERNAME
+                  optional: false
+            - name: {{ .name }}_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: maelstro-creds-ext-plateform-secret
+                  key: {{ .name }}_PASSWORD
+                  optional: false
+            {{- end }}
           {{- with .Values.maelstro_backend.extra_environment }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

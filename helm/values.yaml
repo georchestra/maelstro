@@ -36,7 +36,7 @@ maelstro_backend:
     requests:
       cpu: 100m
       memory: 128Mi
-
+credentials: {}
 datadir:
   volume:
   - name: georchestra-datadir
