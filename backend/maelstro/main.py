@@ -2,7 +2,6 @@
 Main backend app setup
 """
 
-from io import BytesIO
 from typing import Annotated, Any
 from fastapi import (
     FastAPI,
@@ -14,14 +13,24 @@ from fastapi import (
     Body,
 )
 from fastapi.responses import PlainTextResponse
-from geonetwork import GnApi
-from maelstro.config import ConfigError, app_config as config
+from maelstro.core.georchestra import get_georchestra_handler
+from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CloneDataset
+from maelstro.core.operations import log_handler, setup_exception_handlers
+from maelstro.logging.psql_logger import (
+    setup_db_logging,
+    log_request_to_db,
+    get_raw_logs,
+    format_logs,
+    DbNotSetup,
+)
 from maelstro.common.models import SearchQuery
 
 
 app = FastAPI(root_path="/maelstro-backend")
+setup_exception_handlers(app)
+setup_db_logging()
 
 app.state.health_countdown = 5
 
@@ -68,7 +77,7 @@ def user_page(
 @app.delete("/debug")
 @app.options("/debug")
 @app.patch("/debug")
-def debug_page(request: Request) -> dict[str, Any]:
+async def debug_page(request: Request) -> dict[str, Any]:
     """
     Display details of query including headers.
     This may be useful in development to check all the headers provided by the gateway.
@@ -76,19 +85,21 @@ def debug_page(request: Request) -> dict[str, Any]:
     """
     return {
         **{
-            k: request[k]
+            k: str(request.get(k))
             for k in [
+                "method",
                 "type",
                 "asgi",
                 "http_version",
                 "server",
                 "client",
                 "scheme",
+                "url",
+                "base_url",
                 "root_path",
             ]
         },
-        "method": request.method,
-        "url": request.url,
+        "data": await request.body(),
         "headers": dict(request.headers),
         "query_params": request.query_params.multi_items(),
     }
@@ -114,38 +125,36 @@ def get_destinations() -> list[dict[str, str]]:
 def post_search(
     src_name: str, search_query: Annotated[SearchQuery, Body()]
 ) -> dict[str, Any]:
-    src_info = config.get_access_info(
-        is_src=True, is_geonetwork=True, instance_id=src_name
-    )
-    gn = GnApi(src_info["url"], src_info["auth"])
-    return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
+    with get_georchestra_handler() as geo_hnd:
+        gn = geo_hnd.get_gn_service(src_name, True)
+        return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
 
 
 @app.get("/sources/{src_name}/data/{uuid}/layers")
 def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
-    try:
-        src_info = config.get_access_info(
-            is_src=True, is_geonetwork=True, instance_id=src_name
-        )
-    except ConfigError as err:
-        raise HTTPException(status_code=406, detail=err.args) from err
-
-    gn = GnApi(src_info["url"], src_info["auth"])
-    zipdata = gn.get_record_zip(uuid).read()
-    meta = Meta(zipdata)
-    return meta.get_ogc_geoserver_layers()
+    with get_georchestra_handler() as geo_hnd:
+        gn = geo_hnd.get_gn_service(src_name, True)
+        zipdata = gn.get_record_zip(uuid).read()
+        meta = Meta(zipdata)
+        return meta.get_ogc_geoserver_layers()
 
 
-@app.put("/copy")
+@app.put(
+    "/copy",
+    responses={
+        200: {"content": {"text/plain": {}, "application/json": {}}},
+        400: {"description": "400 may also be an uuid which is not found, see details"},
+    },
+)
 def put_dataset_copy(
+    request: Request,
     src_name: str,
     dst_name: str,
     metadataUuid: str,
     copy_meta: bool = True,
     copy_layers: bool = True,
     copy_styles: bool = True,
-    dry_run: bool = False,
-    accept: Annotated[str, Header()] = "text/plain",
+    accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
 ) -> Any:
     if accept not in ["text/plain", "application/json"]:
         raise HTTPException(
@@ -153,27 +162,35 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
-    clone_ds = CloneDataset(src_name, dst_name, metadataUuid, dry_run)
-    logged_ops = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
+    operations = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    log_request_to_db(
+        200, request, log_handler.properties, log_handler.get_json_responses()
+    )
     if accept == "application/json":
-        return logged_ops
-    return PlainTextResponse(logged_ops)
+        return operations
+    return PlainTextResponse("\n".join(operations))
 
 
-@app.post("/destinations/{dst_name}/data/{uuid}/layers/{layer_name}/copy")
-def post_data_copy(dst_name: str, uuid: str, layer_name: str, src_name: str) -> Any:
-    src_info = config.get_access_info(
-        is_src=True, is_geonetwork=True, instance_id=src_name
-    )
-    gn = GnApi(src_info["url"], src_info["auth"])
-    zipdata = gn.get_record_zip(uuid).read()
-
-    print(f"Layer name {layer_name} currently unused, needed for cloning geoserver")
-
-    dst_info = config.get_access_info(
-        is_src=False, is_geonetwork=True, instance_id=dst_name
-    )
-    return GnApi(dst_info["url"], dst_info["auth"]).put_record_zip(BytesIO(zipdata))
+@app.get(
+    "/logs",
+    responses={
+        200: {"content": {"text/plain": {}, "application/json": {}}},
+        500: {"content": {"text/plain": {}, "application/json": {}}},
+    },
+)
+def get_logs(
+    size: int = 5,
+    offset: int = 0,
+    get_details: bool = False,
+    accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
+) -> Any:
+    try:
+        if accept == "application/json":
+            return get_raw_logs(size, offset, get_details)
+        return PlainTextResponse("\n".join(format_logs(size, offset)))
+    except DbNotSetup as err:
+        raise HTTPException(500, "DB logging not configured") from err
 
 
 @app.get("/health")

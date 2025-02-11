@@ -10,11 +10,17 @@ NS_PREFIXES = {
     "iso19115-3.2018": "cit",
 }
 
+NS_TITLE_PREFIXES = {
+    "iso19139": "gmd",
+    "iso19115-3.2018": "mri",
+}
+
 NS_REGISTRIES = {
     "iso19139": {
         "gmd": "http://www.isotc211.org/2005/gmd",
     },
     "iso19115-3.2018": {
+        "mri": "http://standards.iso.org/iso/19115/-3/mri/1.0",
         "cit": "http://standards.iso.org/iso/19115/-3/cit/2.0",
     },
 }
@@ -23,8 +29,20 @@ NS_REGISTRIES = {
 class MetaXml:
     def __init__(self, xml_bytes: bytes, schema: str = "iso19139"):
         self.xml_bytes = xml_bytes
+        self.schema = schema
         self.namespaces = NS_REGISTRIES.get(schema)
         self.prefix = NS_PREFIXES.get(schema)
+        self.title_prefix = NS_TITLE_PREFIXES.get(schema)
+
+    def get_title(self) -> str:
+        xml_root = etree.parse(BytesIO(self.xml_bytes))
+        title_node = xml_root.find(
+            f".//{self.title_prefix}:MD_DataIdentification" f"//{self.prefix}:title/",
+            self.namespaces,
+        )
+        if title_node is not None:
+            return title_node.text or ""
+        return ""
 
     def get_ogc_geoserver_layers(self) -> list[dict[str, str]]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
@@ -61,7 +79,7 @@ class MetaXml:
             workspace_name=ows_url.lstrip("/").split("/")[0], layer_name=layer_name
         )
 
-    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> None:
+    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> tuple[str, str]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
         for url_node in xml_root.findall(
             f".//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage/",
@@ -75,7 +93,10 @@ class MetaXml:
         b_io = BytesIO()
         xml_root.write(b_io)
         b_io.seek(0)
+        pre = len(self.xml_bytes)
         self.xml_bytes = b_io.read()
+        post = len(self.xml_bytes)
+        return f"Before: {pre} bytes", f"Before: {post} bytes"
 
     def is_ogc_layer(self, link_node: etree._Element) -> bool:
         link_protocol = self.protocol_from_link(link_node)
@@ -125,3 +146,32 @@ class MetaZip(MetaXml):
         schema = self.properties.get("schema", "iso19139")
 
         super().__init__(xml_bytes, schema)
+
+    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> tuple[str, str]:
+        super().update_geoverver_urls(mapping)
+        new_bytes = BytesIO(b"")
+        with ZipFile(BytesIO(self.zipfile), "r") as zf_src:
+            # get compression type from non directory elements of zip archive
+            compression = next(
+                fi.compress_type for fi in zf_src.infolist() if not fi.is_dir()
+            )
+            md_filepath = f"{self.properties['uuid']}/metadata/metadata.xml"
+            pre_info = zf_src.getinfo(md_filepath)
+            with ZipFile(new_bytes, "w", compression=compression) as zf_dst:
+                for file_info in zf_src.infolist():
+                    if file_info.is_dir():
+                        zf_dst.mkdir(file_info)
+                    else:
+                        file_path = file_info.filename
+                        with zf_dst.open(file_path, "w") as zb:
+                            if file_path == md_filepath:
+                                zb.write(self.xml_bytes)
+                            else:
+                                zb.write(zf_src.read(file_path))
+                post_info = zf_dst.getinfo(md_filepath)
+        new_bytes.seek(0)
+        self.zipfile = new_bytes.read()
+        return str(pre_info), str(post_info)
+
+    def get_zip(self) -> bytes:
+        return self.zipfile

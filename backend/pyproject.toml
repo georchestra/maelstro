@@ -13,8 +13,10 @@ dependencies = [
     "lxml (>=5.3.0,<6.0.0)",
     "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
     "lxml-stubs (>=0.5.1,<0.6.0)",
-    "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@93aafcb9700914114d94dc111a3c5e4b7b58b606",
-    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud",
+    "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@522f46e58d5da35ebc67dc7d05a8c98e5cd085b6",
+    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@6defa49bf959d91883ecd43ed1e2e976566e9495",
+    "sqlalchemy (>=2.0.37,<3.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)",
 ]
 
 [tool.poetry.group.check]

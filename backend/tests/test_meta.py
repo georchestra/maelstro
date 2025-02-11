@@ -22,6 +22,8 @@ def test_iso19139():
         }
     ]
 
+    assert mm.get_title() == "Stations de réparation et gonflage pour vélo sur Rennes Métropole"
+
 
 def test_iso19115():
     with open(os.path.join(os.path.dirname(__file__), 'lille_iso19115-3.zip'), 'rb') as zf:
@@ -42,6 +44,8 @@ def test_iso19115():
             'protocol': 'OGC:WFS'
         }
     ]
+
+    assert mm.get_title() == "Voies Vertes MEL à horizon 2026"
 
 
 def test_replace_geoserver():

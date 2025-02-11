@@ -1,60 +1,51 @@
 import re
 import logging
 import json
+from functools import cache
 from io import BytesIO
 from typing import Any
-from requests.exceptions import HTTPError
-from fastapi import HTTPException
 from geonetwork import GnApi
-from geoservercloud.services import RestService as GeoServerService  # type: ignore
+from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
-from maelstro.config import ConfigError, app_config as config
+from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
-from .operations import OpLogger, GsOpService
+from .georchestra import GeorchestraHandler, get_georchestra_handler
+from .exceptions import ParamError, MaelstroDetail
+from .operations import raise_for_status
 
 
 logger = logging.getLogger()
 
 
-class MaelstroException(HTTPException):
-    def __init__(self, err_dict: dict[str, str]):
-        if not isinstance(err_dict, dict):
-            err_dict = {"data": err_dict}
-        super().__init__(int(err_dict.get("status_code", "500")), err_dict)
-
-
-class AuthError(MaelstroException):
-    def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "401"})
-
-
-class UrlError(MaelstroException):
-    def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "404"})
-
-
-class ParamError(MaelstroException):
-    def __init__(self, err_dict: dict[str, str]):
-        super().__init__({**err_dict, "status_code": "406"})
-
-
 class CloneDataset:
-    def __init__(self, src_name: str, dst_name: str, uuid: str, dry: bool = False):
-        self.op_logger = OpLogger()
+    def __init__(self, src_name: str, dst_name: str, uuid: str):
         self.src_name = src_name
         self.dst_name = dst_name
-        self.set_uuid(uuid)
+        self.uuid = uuid
         self.copy_meta = False
         self.copy_layers = False
         self.copy_styles = False
-        self.dry = dry
+        self.meta: Meta
+        self.geo_hnd: GeorchestraHandler
+        self.checked_workspaces: set[str] = set()
+        self.checked_datastores: set[str] = set()
 
-    def set_uuid(self, uuid: str) -> None:
-        self.uuid = uuid
-        if uuid:
-            gn = get_gn_service(self.src_name, True, self.op_logger)
-            zipdata = gn.get_record_zip(uuid).read()
-            self.meta = Meta(zipdata)
+    @property
+    @cache  # pylint: disable=method-cache-max-size-none
+    def gn_src(self) -> GnApi:
+        return self.geo_hnd.get_gn_service(self.src_name, is_source=True)
+
+    @property
+    @cache  # pylint: disable=method-cache-max-size-none
+    def gn_dst(self) -> GnApi:
+        return self.geo_hnd.get_gn_service(self.dst_name, is_source=False)
+
+    # gs_src cannot be a fixed property since there may be several source Geoservers
+
+    @property
+    @cache  # pylint: disable=method-cache-max-size-none
+    def gs_dst(self) -> RestService:
+        return self.geo_hnd.get_gs_service(self.dst_name, is_source=False)
 
     def clone_dataset(
         self,
@@ -63,201 +54,271 @@ class CloneDataset:
         copy_styles: bool,
         output_format: str = "text/plain",
     ) -> str | list[Any]:
-        if self.meta is None:
-            return []
         self.copy_meta = copy_meta
         self.copy_layers = copy_layers
         self.copy_styles = copy_styles
 
-        if copy_layers or copy_styles:
+        with get_georchestra_handler() as geo_hnd:
+            self.geo_hnd = geo_hnd
+            operations = self._clone_dataset(output_format)
+        return operations
+
+    def _clone_dataset(self, output_format: str) -> str | list[Any]:
+
+        if self.uuid:
+            zipdata = self.gn_src.get_record_zip(self.uuid).read()
+            self.meta = Meta(zipdata)
+            self.geo_hnd.log_handler.properties["src_title"] = self.meta.get_title()
+
+        if self.meta is None:
+            return []
+
+        if self.copy_layers or self.copy_styles:
             self.clone_layers()
 
-        if copy_meta:
-            gn_dst = get_gn_service(self.dst_name, False, self.op_logger)
+        if self.copy_meta:
             mapping: dict[str, list[str]] = {
                 "sources": config.get_gs_sources(),
                 "destinations": [src["gs_url"] for src in config.get_destinations()],
             }
-            self.meta.update_geoverver_urls(mapping)
-            gn_dst.put_record_zip(BytesIO(self.meta.xml_bytes))
+            pre_info, post_info = self.meta.update_geoverver_urls(mapping)
+            self.geo_hnd.log_handler.responses.append(
+                {
+                    "operation": "Update of geoserver links in zip archive",
+                    "before": pre_info,
+                    "after": post_info,
+                }
+            )
+            self.geo_hnd.log_handler.properties["dst_title"] = self.meta.get_title()
+            results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
+            self.geo_hnd.log_handler.responses.append(
+                {
+                    "message": results["msg"],
+                    "detail": results["detail"],
+                }
+            )
 
         if output_format == "text/plain":
-            return self.op_logger.format_operations()
-        return self.op_logger.get_operations()
+            return self.geo_hnd.log_handler.get_formatted_responses()
+        return self.geo_hnd.log_handler.get_json_responses()
 
     def clone_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
-
-        gs_dst = get_gs_service(self.dst_name, False, self.op_logger)
         for gs_url, layer_names in server_layers.items():
             if layer_names:
-                gs_src = get_gs_service(gs_url, True, self.op_logger)
+                gs_src = self.geo_hnd.get_gs_service(gs_url, True)
+                layers = {}
                 for layer_name in layer_names:
                     resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
-                    resp.raise_for_status()
-                    layer_data = resp.json()
+                    raise_for_status(resp)
+                    layers[layer_name] = resp.json()
 
-                    # styles must be cloned first
-                    if self.copy_styles:
-                        self.clone_styles(gs_src, gs_dst, layer_data)
+                stores = {}
+                workspaces = {}
+                styles = {}
 
-                    # styles must be available when cloning layers
-                    if self.copy_layers:
-                        self.clone_layer(gs_src, gs_dst, layer_name, layer_data)
+                # fill in workspaces used in styles
+                if self.copy_styles:
+                    for layer_data in layers.values():
+                        styles.update(self.get_styles_from_layer(layer_data))
+
+                    for style in styles.values():
+                        try:
+                            workspaces.update(self.get_workspaces_from_style(style))
+                        except KeyError:
+                            # skip styles without a workspace
+                            pass
+
+                # fill in workspaces  and datastores used in layers
+                if self.copy_layers:
+                    stores.update(self.get_stores_from_layers(gs_src, layers))
+
+                    for store in stores.values():
+                        workspaces.update(self.get_workspaces_from_store(gs_src, store))
+
+                self.check_workspaces(gs_src, workspaces)
+                self.check_datastores(gs_src, stores)
+
+                # styles must be cloned first
+                if self.copy_styles:
+                    for style in styles.values():
+                        self.clone_style(gs_src, style)
+
+                # styles must be available when cloning layers
+                if self.copy_layers:
+                    for layer_name, layer_data in layers.items():
+                        self.clone_layer(gs_src, layer_name, layer_data)
+
+    def get_styles_from_layer(self, layer_data: dict[str, Any]) -> dict[str, Any]:
+        default_style = layer_data["layer"]["defaultStyle"]
+        additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
+        if isinstance(additional_styles, dict):
+            # in case of a single element in the list, this may be provided by the API
+            # as a dict, it must be converted to a list of dicts
+            additional_styles = [additional_styles]
+        all_styles = {
+            style["name"]: style for style in [default_style] + additional_styles
+        }
+        return all_styles
+
+    def get_workspaces_from_style(self, style: dict[str, Any]) -> dict[str, Any]:
+        return {
+            # workspace references in style data have no href or other details
+            style["workspace"]: None
+        }
+
+    def get_stores_from_layers(
+        self, gs_src: RestService, layers: dict[GsLayer, Any]
+    ) -> dict[str, Any]:
+        stores = {}
+        resources = {
+            layer_data["layer"]["resource"]["name"]: layer_data["layer"]["resource"]
+            for layer_data in layers.values()
+        }
+        for res in resources.values():
+            resource_class = res["@class"]
+            resource_route = res["href"].replace(gs_src.url, "")
+            resource_resp = gs_src.rest_client.get(resource_route)
+            raise_for_status(resource_resp)
+            resource_info = resource_resp.json()
+            store = resource_info[resource_class]["store"]
+            stores[store["name"]] = store
+        return stores
+
+    def get_workspaces_from_store(
+        self, gs_src: RestService, store: dict[str, Any]
+    ) -> dict[str, Any]:
+        store_class = store["@class"]
+        store_route = store["href"].replace(gs_src.url, "")
+        store_resp = gs_src.rest_client.get(store_route)
+        raise_for_status(store_resp)
+        store_info = store_resp.json()
+        workspace = store_info[store_class]["workspace"]
+        return {workspace["name"]: workspace}
+
+    def check_workspaces(self, gs_src: RestService, workspaces: dict[str, Any]) -> None:
+        for workspace_name, workspace in workspaces.items():
+            if workspace is None:
+                workspace_route = f"/rest/workspaces/{workspace_name}"
+            else:
+                workspace_route = workspace["href"].replace(gs_src.url, "")
+            has_workspace = self.gs_dst.rest_client.get(workspace_route)
+            if has_workspace.status_code == 404:
+                raise ParamError(
+                    MaelstroDetail(
+                        context="dst",
+                        key=workspace_route,
+                        err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
+                        operations=self.geo_hnd.log_handler.get_json_responses(),
+                    )
+                )
+            raise_for_status(has_workspace)
+
+    def check_datastores(self, gs_src: RestService, datastores: dict[str, Any]) -> None:
+        for store_name, store in datastores.items():
+            store_route = store["href"].replace(gs_src.url, "")
+            has_datastore = self.gs_dst.rest_client.get(store_route)
+            if has_datastore.status_code == 404:
+                raise ParamError(
+                    MaelstroDetail(
+                        context="dst",
+                        key=store_route,
+                        err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
+                        operations=self.geo_hnd.log_handler.get_json_responses(),
+                    )
+                )
+            raise_for_status(has_datastore)
 
     def clone_layer(
         self,
-        gs_src: GsOpService,
-        gs_dst: GsOpService,
+        gs_src: RestService,
         layer_name: GsLayer,
         layer_data: dict[str, Any],
     ) -> None:
-        resource_url = layer_data["layer"]["resource"]["href"].replace(gs_src.url, "")
+        resource_route = layer_data["layer"]["resource"]["href"].replace(gs_src.url, "")
+
         layer_string = json.dumps(layer_data)
-        layer_data = json.loads(layer_string.replace(gs_src.url, gs_dst.url))
+        layer_data = json.loads(layer_string.replace(gs_src.url, self.gs_dst.url))
 
-        has_resource = gs_dst.rest_client.get(resource_url)
-        has_layer = gs_dst.rest_client.get(f"/rest/layers/{layer_name}")
+        has_resource = self.gs_dst.rest_client.get(resource_route)
+        has_layer = self.gs_dst.rest_client.get(f"/rest/layers/{layer_name}")
 
-        resource_route = resource_url.replace(".json", ".xml")
+        xml_resource_route = resource_route.replace(".json", ".xml")
         resource_post_route = re.sub(
             r"/[^/]*\.xml$",
             "",
-            resource_route,
+            xml_resource_route,
         )
-        resource = gs_src.rest_client.get(resource_route)
+        resource = gs_src.rest_client.get(xml_resource_route)
 
         if has_resource.status_code == 200:
             if has_layer.status_code != 200:
-                resp = gs_dst.rest_client.delete(resource_url)
-                resp.raise_for_status()
-                resp = gs_dst.rest_client.post(
+                resp = self.gs_dst.rest_client.delete(resource_route)
+                raise_for_status(resp)
+                resp = self.gs_dst.rest_client.post(
                     resource_post_route,
                     data=resource.content,
                     headers={"content-type": "application/xml"},
                 )
             else:
-                resp = gs_dst.rest_client.put(
-                    resource_url.replace(".json", ".xml"),
+                resp = self.gs_dst.rest_client.put(
+                    xml_resource_route,
                     data=resource.content,
                     headers={"content-type": "application/xml"},
                 )
         else:
-            resp = gs_dst.rest_client.post(
+            resp = self.gs_dst.rest_client.post(
                 resource_post_route,
                 data=resource.content,
                 headers={"content-type": "application/xml"},
             )
             if resp.status_code == 404:
                 raise ParamError(
-                    {
-                        "context": "dst",
-                        "key": resource_post_route,
-                        "err": "Route not found. Check Workspace and datastore",
-                    }
+                    MaelstroDetail(
+                        context="dst",
+                        key=resource_post_route,
+                        err="Route not found. Check Workspace and datastore",
+                    )
                 )
-        resp.raise_for_status()
+        raise_for_status(resp)
 
-        resp = gs_dst.rest_client.put(f"/rest/layers/{layer_name}", json=layer_data)
-        resp.raise_for_status()
-
-    def clone_styles(
-        self, gs_src: GsOpService, gs_dst: GsOpService, layer_data: dict[str, Any]
-    ) -> None:
-        default_style = layer_data["layer"]["defaultStyle"]
-        additional_styles = layer_data["layer"].get("styles", {}).get("style", [])
-        all_styles = {
-            style["name"]: {
-                "workspace": style.get("workspace"),
-                "href": style.get("href"),
-            }
-            for style in [default_style] + additional_styles
-        }
-        for style in all_styles.values():
-            self.clone_style(gs_src, gs_dst, style)
+        resp = self.gs_dst.rest_client.put(
+            f"/rest/layers/{layer_name}", json=layer_data
+        )
+        raise_for_status(resp)
 
     def clone_style(
         self,
-        gs_src: GsOpService,
-        gs_dst: GsOpService,
+        gs_src: RestService,
         style: dict[str, Any],
     ) -> None:
         if gs_src.url in style["href"]:
             style_route = style["href"].replace(gs_src.url, "")
             resp = gs_src.rest_client.get(style_route)
-            resp.raise_for_status()
+            raise_for_status(resp)
             style_info = resp.json()
             style_format = style_info["style"]["format"]
             style_def_route = style_route.replace(".json", f".{style_format}")
             style_def = gs_src.rest_client.get(style_def_route)
 
-            dst_style = gs_dst.rest_client.get(style_route)
+            dst_style = self.gs_dst.rest_client.get(style_route)
             if dst_style.status_code == 200:
-                dst_style = gs_dst.rest_client.put(style_route, json=style_info)
-                dst_style.raise_for_status()
+                dst_style = self.gs_dst.rest_client.put(style_route, json=style_info)
+                raise_for_status(dst_style)
             else:
                 style_post_route = re.sub(
                     r"/styles/.*\.json",
                     "/styles",
                     style_route,
                 )
-                dst_style = gs_dst.rest_client.post(style_post_route, json=style_info)
-                # dst_style.raise_for_status()
+                dst_style = self.gs_dst.rest_client.post(
+                    style_post_route, json=style_info
+                )
+                # raise_for_status(dst_style)
 
-            dst_style_def = gs_dst.rest_client.put(
+            dst_style_def = self.gs_dst.rest_client.put(
                 style_def_route,
                 data=style_def.content,
                 headers={"content-type": style_def.headers["content-type"]},
             )
-            dst_style_def.raise_for_status()
-
-
-def get_service_info(url: str, is_source: bool, is_geonetwork: bool) -> dict[str, Any]:
-    try:
-        service_info = config.get_access_info(
-            is_src=is_source, is_geonetwork=is_geonetwork, instance_id=url
-        )
-    except ConfigError as err:
-        logger.debug(
-            "Key not found: %s\n Config:\n%s", url, json.dumps(config.config, indent=4)
-        )
-        raise ParamError(
-            {
-                "context": "src" if is_source else "dst",
-                "key": url,
-                "err": f"{'geonetwork' if is_geonetwork else 'geoserver'} not found",
-            }
-        ) from err
-    return service_info
-
-
-def get_gn_service(instance_name: str, is_source: bool, op_logger: OpLogger) -> GnApi:
-    gn_info = get_service_info(instance_name, is_source, True)
-    return op_logger.add_gn_service(
-        GnApi(gn_info["url"], gn_info["auth"]), gn_info["url"], is_source
-    )
-
-
-def get_gs_service(
-    instance_name: str, is_source: bool, op_logger: OpLogger
-) -> GsOpService:
-    gs_info = get_service_info(instance_name, is_source, False)
-    gss = GeoServerService(gs_info["url"], gs_info["auth"])
-    try:
-        resp = gss.rest_client.get("/rest/about/version.json")
-    except HTTPError as err:
-        if err.response.status_code == 401:
-            raise AuthError(
-                {
-                    "server": gs_info["url"],
-                    "user": gs_info["auth"] and gs_info["auth"].login,
-                    "err": "Invalid credentials",
-                }
-            ) from err
-    print(
-        (
-            resp.json()["about"]["resource"][0]["@name"],
-            resp.json()["about"]["resource"][0]["Version"],
-        )
-    )
-    return op_logger.add_gs_service(gss, gs_info["url"], is_source)
+            raise_for_status(dst_style_def)

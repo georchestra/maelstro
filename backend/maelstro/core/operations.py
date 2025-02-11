@@ -1,202 +1,110 @@
-from typing import Any, IO, Callable
+from typing import Any
+import logging
+from logging import Handler
 from requests import Response
-from requests.exceptions import HTTPError
-from geonetwork import GnApi, GnSession
-from geoservercloud.services import RestService  # type: ignore
+from requests.exceptions import RequestException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
+from geonetwork.gn_logger import logger as gn_logger
+from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: ignore
+from geonetwork.exceptions import GnException
+from maelstro.logging.psql_logger import log_request_to_db
 
 
-class OpLogger:
-    def __init__(self) -> None:
-        self.operations: list[dict[str, str]] = []
-        self.services: list[OpService | GnApi] = []
+def setup_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(HTTPException)
+    async def handle_fastapi_exception(request: Request, err: HTTPException) -> Any:
+        if "/copy/" in str(request.url):
+            log_request_to_db(
+                err.status_code,
+                request,
+                log_handler.properties,
+                log_handler.get_json_responses(),
+            )
+        return await http_exception_handler(request, err)
 
-    def add_gn_service(self, gn_service: GnApi, url: str, is_source: bool) -> GnApi:
-        op_service = OpService(self, url, is_source, True)
-        gn_service.session = GnSessionWrapper(
-            op_service, gn_service.session, url
-        )  # type: ignore
-        self.services.append(gn_service)
-        return gn_service
-
-    def add_gs_service(
-        self, gs_service: RestService, url: str, is_source: bool
-    ) -> "GsOpService":
-        service = GsOpService(self, gs_service, url, is_source)
-        self.services.append(service)
-        return service
-
-    def clear_services(self) -> None:
-        self.services.clear()
-
-    def log_operation(
-        self, operation: str, url: str, context: str, service_type: str
-    ) -> None:
-        self.operations.append(
+    @app.exception_handler(GnException)
+    def handle_gn_exception(request: Request, err: GnException) -> None:
+        raise HTTPException(
+            # 404 not found on lib level will rather be a bad request here
+            # error 400 is not truncated by the gateway, whereas 404 is
+            err.code if err.code != 404 else 400,
             {
-                "operation": operation,
-                "url": url,
-                "context": context,
-                "service_type": service_type,
+                "msg": err.detail.message,
+                "url": err.parent_request.url,
+                "operations": log_handler.get_json_responses(),
+                "content": err.detail.info,
+            },
+        ) from err
+
+    @app.exception_handler(RequestException)
+    def handle_gs_exception(request: Request, err: RequestException) -> None:
+        gs_logger.debug(
+            "[%s] %s: %s",
+            request.method,
+            str(request.url),
+            err.__class__.__name__,
+            extra={"response": request},
+        )
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "message": f"HTTP error {err.__class__.__name__} at {request.url}",
+                "operations": log_handler.get_json_responses(),
+                "info": str(err),
+            },
+        ) from err
+
+
+def raise_for_status(response: Response) -> None:
+    if 400 <= response.status_code < 600:
+        raise HTTPException(
+            response.status_code if response.status_code != 404 else 400,
+            {
+                "message": f"HTTP error in [{response.request.method}] {response.url}",
+                "operations": log_handler.get_json_responses(),
+                "info": response.text,
+            },
+        )
+
+
+class LogCollectionHandler(Handler):
+    def __init__(self) -> None:
+        super().__init__()
+        self.responses: list[Response | None | dict[str, Any]] = []
+        self.valid = False
+        self.properties: dict[str, Any] = {}
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            # The response attribute of the record has been added via the `extra` parameter
+            # type checking skipped for simplicity
+            self.responses.append(record.response)  # type: ignore
+        except AttributeError:
+            self.responses.append(None)
+
+    def format_response(self, resp: Response | dict[str, Any]) -> str:
+        if isinstance(resp, Response):
+            return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
+        return " - ".join(f"{k}: {v}" for k, v in resp.items() if k != "detail")
+
+    def json_response(self, resp: Response | dict[str, Any]) -> dict[str, Any]:
+        if isinstance(resp, Response):
+            return {
+                "method": resp.request.method,
+                "status_code": resp.status_code,
+                "url": resp.url,
             }
-        )
+        return resp
 
-    def get_operations(self) -> list[Any]:
-        return self.operations
+    def get_formatted_responses(self) -> list[str]:
+        return [self.format_response(r) for r in self.responses if r is not None]
 
-    def format_operations(self) -> str:
-        return "\n".join(
-            f"{op['operation']} on {op['url']} {op['context']} {op['service_type']}"
-            for op in self.operations
-        )
+    def get_json_responses(self) -> list[dict[str, Any]]:
+        return [self.json_response(r) for r in self.responses if r is not None]
 
 
-class OpService:
-    def __init__(
-        self,
-        op_logger: OpLogger,
-        url: str,
-        is_source: bool,
-        is_geonetwork: bool,
-        dry_run: bool = False,
-    ):
-        self.op_logger = op_logger
-        self.url = url
-        self.context = "source" if is_source else "destination"
-        self.service_type = "geonetwork" if is_geonetwork else "geoserver"
-        self.log_operation("Init and check version")
-        self.dry = dry_run
-
-    def log_operation(self, operation: str) -> None:
-        # print(operation, self.url, self.context, self.service_type)
-        self.op_logger.log_operation(
-            operation, self.url, self.context, self.service_type
-        )
-
-
-class GnOpService(OpService):
-    def __init__(
-        self,
-        op_logger: OpLogger,
-        gn_service: GnApi,
-        url: str,
-        is_source: bool,
-        dry_run: bool = False,
-    ):
-        self.service = gn_service
-        super().__init__(op_logger, url, is_source, True, dry_run)
-
-    def get_record_zip(self, uuid: str) -> IO[bytes]:
-        self.log_operation(f"Download zip record {uuid}")
-        return self.service.get_record_zip(uuid)
-
-    def put_record_zip(self, zipdata: IO[bytes]) -> Any:
-        self.log_operation("Upload zip record")
-        if self.dry:
-            return {"dry-run": True}  # skip writing in dry-run
-        return self.service.put_record_zip(zipdata)
-
-
-class GnSessionWrapper:
-    def __init__(self, op_service: OpService, rest_client: GnSession, url: str):
-        self.rest_client = rest_client
-        self.op_service = op_service
-        self.url = url
-        self._request = rest_client.request
-
-    def __getattribute__(self, key: str) -> Any:
-        if key in ["get", "put", "post", "delete"]:
-
-            def create_request_wrapper(method: str) -> Callable[..., Any]:
-                def request_wrapper(path: str, *args: Any, **kwargs: Any) -> Any:
-                    rest_client = object.__getattribute__(self, "rest_client")
-                    resp = rest_client.__getattribute__(method).__call__(
-                        path, *args, **kwargs
-                    )
-                    op_service = object.__getattribute__(self, "op_service")
-                    url = object.__getattribute__(self, "url")
-                    op_service.log_operation(
-                        f"{method} ({resp.status_code}) {path.replace(url, '')}"
-                    )
-                    return resp
-
-                return request_wrapper
-
-            return create_request_wrapper(key)
-        return object.__getattribute__(self, "rest_client").__getattribute__(key)
-
-
-class GsOpService(OpService):
-    def __init__(
-        self,
-        op_logger: OpLogger,
-        gs_service: Any,
-        url: str,
-        is_source: bool,
-        dry_run: bool = False,
-    ):
-        self.service = gs_service
-        super().__init__(op_logger, url, is_source, False, dry_run)
-
-    def __getattr__(self, key: str) -> Any:
-        class EmptyResponse(Response):
-            status_code = 200
-
-            def raise_for_status(self) -> None:
-                pass
-
-        class OpClient:
-            def __init__(self, rest_client: Any, op_service: OpService):
-                self.rest_client = rest_client
-                self.op_service = op_service
-
-            def get(self, path: str, *args: Any, **kwargs: Any) -> Response:
-                resp: Response = self.rest_client.get(path, *args, **kwargs)
-                self.op_service.log_operation(f"GET ({resp.status_code}) {path}")
-                return resp
-
-            def put(self, path: str, *args: Any, **kwargs: Any) -> Response:
-                if self.op_service.dry:
-                    self.op_service.log_operation(f"PUT {path}")
-                    # skip writing in dry-run
-                    return EmptyResponse()
-                else:
-                    # catch the raise_for_status in geoserverclous lib
-                    try:
-                        resp: Response = self.rest_client.put(path, *args, **kwargs)
-                    except HTTPError as err:
-                        resp = err.response
-                    self.op_service.log_operation(f"PUT ({resp.status_code}) {path}")
-                    return resp
-
-            def post(self, path: str, *args: Any, **kwargs: Any) -> Response:
-                if self.op_service.dry:
-                    self.op_service.log_operation(f"POST {path}")
-                    # skip writing in dry-run
-                    return EmptyResponse()
-                else:
-                    # catch the raise_for_status in geoserverclous lib
-                    try:
-                        resp: Response = self.rest_client.post(path, *args, **kwargs)
-                    except HTTPError as err:
-                        resp = err.response
-                    self.op_service.log_operation(f"POST ({resp.status_code}) {path}")
-                    return resp
-
-            def delete(self, path: str, *args: Any, **kwargs: Any) -> Response:
-                if self.op_service.dry:
-                    self.op_service.log_operation(f"DELETE {path}")
-                    # skip writing in dry-run
-                    return EmptyResponse()
-                else:
-                    # catch the raise_for_status in geoserverclous lib
-                    try:
-                        resp: Response = self.rest_client.delete(path, *args, **kwargs)
-                    except HTTPError as err:
-                        resp = err.response
-                    self.op_service.log_operation(f"DELETE ({resp.status_code}) {path}")
-                    return resp
-
-        if key == "rest_client":
-            return OpClient(self.service.rest_client, self)
-        else:
-            return self.service.__getattr__(key)
+# must use a global variable so that log_handler is accessible from inside exception
+log_handler = LogCollectionHandler()
+gn_logger.addHandler(log_handler)
+gs_logger.addHandler(log_handler)
