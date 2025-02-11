@@ -67,4 +67,28 @@ You should also double check the credentials which are used to perform the API c
 
 ## Header integration 
 
-[TODO]
+In order to add the geOcrhestra header, youy can use the [webcomponent `geor-header`](https://github.com/georchestra/header/) and add it to the `index.html` file. 
+This way you can use either the legacy header or the new one.
+
+In this repo, we use the env `CUSTOM_SCRIPTS_DIRECTORY` in docker-compose file which execute [./scripts/add-header-webcomponent.sh](./scripts/add-header-webcomponent.sh) to add the header.
+
+### Legacy header or new header < geOrchestra 25.0
+
+If you are still using the legacy header, you surely have a fork of the folder `header` in `georchestra/georchestra` repository.
+If you are using the webcomponent header in georchestra 24, you may have a fork of the `georchestra/header` repository.
+You can edit your fork and deploy it.
+
+### New header >= geOrchestra 25.0
+
+Just edit your config file to add an entry for `maelstro` :
+```json
+{
+  "label": "Maelstro",
+  "url": "/maelstro",
+  "activeAppUrl": "/maelstro",
+  "hasRole": "ROLE_MAELSTRO"
+}
+```
+
+
+
