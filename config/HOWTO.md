@@ -94,6 +94,3 @@ Just edit your config file to add an entry for `maelstro` :
   "hasRole": "ROLE_MAELSTRO"
 }
 ```
-
-
-

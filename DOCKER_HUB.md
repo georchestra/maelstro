@@ -23,7 +23,7 @@
 
 # What are `georchestra/maelstro-backend` and `georchestra/maelstro-frontend`
 
-**Maelstro-backend** and **Maelstro-frontend** are modules for geOrchestra which offers
+**Maelstro-backend** and **Maelstro-frontend** are the building blocks of an application which offer data and metadata synchronisation facilities between geOrchestra environments (like preprod to production).
 - Metadata copy tool from different geonetwork and geoserver instances which offer data and metadata synchronisation facilities between geOrchestra environments (like preprod to production).
 
 [//]: # (# How to use this image)
