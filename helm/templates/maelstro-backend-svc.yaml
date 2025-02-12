@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm-maelstro.fullname" . }}-maelstro_backend-svc
+  name: {{ include "helm-maelstro.fullname" . }}-maelstro-backend-svc
   labels:
     {{- include "helm-maelstro.labels" . | nindent 4 }}
 spec:
