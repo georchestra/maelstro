@@ -23,20 +23,20 @@
 
 # What are `georchestra/maelstro-backend` and `georchestra/maelstro-frontend`
 
-**Maelstro-backend** and **Maelstro-frontend** are modules for geOrchestra which offers
-- Metadata copy tool from different geonetwork and geoserver instances
+**Maelstro-backend** and **Maelstro-frontend** are the building blocks of an application which offer data and metadata synchronisation facilities between geOrchestra environments (like preprod to production).
+- Metadata copy tool from different geonetwork and geoserver instances which offer data and metadata synchronisation facilities between geOrchestra environments (like preprod to production).
 
-# How to use this image
+[//]: # (# How to use this image)
 
-As for every other geOrchestra webapp, its configuration resides in the data directory ([datadir](https://github.com/georchestra/datadir)), typically something like /etc/georchestra, where it expects to find a maelstro sub-directory.
+[//]: # (As for every other geOrchestra webapp, its configuration resides in the data directory &#40;[datadir]&#40;https://github.com/georchestra/datadir&#41;&#41;, typically something like /etc/georchestra, where it expects to find a maelstro sub-directory.)
 
-It is recommended to use the official docker composition: https://github.com/georchestra/docker.
+[//]: # (It is recommended to use the official docker composition: https://github.com/georchestra/docker.)
 
-For this specific component, see the section `maelstro` in the [`georchestra/docker/docker-compose.yml`](https://github.com/georchestra/docker/blob/master/docker-compose.yml) file.
+[//]: # (For this specific component, see the section `maelstro` in the [`georchestra/docker/docker-compose.yml`]&#40;https://github.com/georchestra/docker/blob/master/docker-compose.yml&#41; file.)
 
 ## Where is it built
 
-This image is built using Dockerfile in repo's backend sub-folder.
+This image is built using docker compose file in repo's folder.
 
 # License
 
