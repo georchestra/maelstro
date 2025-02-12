@@ -66,6 +66,8 @@ The section db_logging contains all connection information to reach a writable p
 - schema (default: maelstro
 - table: (default: logs)
 
+Substitution of credentials (login and password) can be done for the DB configuration the same way as for server credentials (login_env_var)
+
 
 Example (see [doc_sample_config.yaml](backend/tests/doc_sample_config.yaml)):
 
