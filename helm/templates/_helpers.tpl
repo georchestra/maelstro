@@ -35,7 +35,6 @@ Common labels
 */}}
 {{- define "helm-maelstro.labels" -}}
 helm.sh/chart: {{ include "helm-maelstro.chart" . }}
-{{ include "helm-maelstro.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -47,6 +46,16 @@ Selector labels
 */}}
 {{- define "helm-maelstro.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "helm-maelstro.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- define "helm-maelstro.selectorLabelsFrontend" -}}
+app.kubernetes.io/name: {{ include "helm-maelstro.name" . }}-maelstro-frontend
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- define "helm-maelstro.selectorLabelsBackend" -}}
+app.kubernetes.io/name: {{ include "helm-maelstro.name" . }}-maelstro-backend
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 

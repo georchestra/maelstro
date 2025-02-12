@@ -3,12 +3,13 @@ kind: Deployment
 metadata:
   name: {{ include "helm-maelstro.fullname" . }}-maelstro-backend-deployment
   labels:
+    {{- include "helm-maelstro.selectorLabelsBackend" . | nindent 4 }}
     {{- include "helm-maelstro.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.maelstro_backend.replicaCount }}
   selector:
     matchLabels:
-      {{- include "helm-maelstro.selectorLabels" . | nindent 6 }}
+      {{- include "helm-maelstro.selectorLabelsBackend" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.maelstro_backend.podAnnotations }}
@@ -16,8 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "helm-maelstro.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/name: {{ include "helm-maelstro.fullname" . }}-maelstro-backend-deployment
+        {{- include "helm-maelstro.selectorLabelsBackend" . | nindent 8 }}
     spec:
       {{- if .Values.datadir.git.url }}
       initContainers:

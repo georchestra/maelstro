@@ -18,7 +18,7 @@
   {{- end }}
   volumeMounts:
   - mountPath: /etc/georchestra
-    name: maelstro-configuration
+    name: georchestra-datadir
   {{- if .Values.datadir.git.ssh_secret }}
   - mountPath: /ssh-secret
     name: ssh-secret
