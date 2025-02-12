@@ -72,7 +72,7 @@ You should also double check the credentials which are used to perform the API c
 
 ## Header integration 
 
-In order to add the geOrchestra header to the maelstro application, one can use the [`geor-header` webcomponent](https://github.com/georchestra/header/) webcomponent and add it to the index.html file. 
+In order to add the geOrchestra header to the maelstro application, one can use the [`geor-header` webcomponent](https://github.com/georchestra/header/) and add it to the index.html file. 
 This way you can use either the legacy header or the new one.
 
 In this repo, we use the env `CUSTOM_SCRIPTS_DIRECTORY` in docker-compose file which execute [./scripts/add-header-webcomponent.sh](./scripts/add-header-webcomponent.sh) to add the header.
