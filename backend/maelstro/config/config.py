@@ -1,8 +1,8 @@
 import os
-from typing import Any
-import yaml
-from maelstro.common.types import Credentials, DbConfig
 import re
+import yaml
+from typing import Any
+from maelstro.common.types import Credentials, DbConfig
 
 
 class ConfigError(Exception):
