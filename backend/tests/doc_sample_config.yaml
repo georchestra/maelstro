@@ -1,6 +1,6 @@
 sources:
   login: "admin"
-  password: "${COMMON_PW}
+  password: "${COMMON_PW}"
   geonetwork_instances:
   - name: "a"
     password: "pwA"

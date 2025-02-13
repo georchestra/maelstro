@@ -26,7 +26,7 @@ def test_init():
                 {
                     "url": "https://mastergs.rennesmetropole.fr/geoserver/",
                     "login": "test",
-                    "password": 1234
+                    "password": "1234"
                 },
                 {
                     "url": "https://mastergs.rennesmetropole.fr/geoserver-geofence/",

@@ -8,7 +8,7 @@ sources:
       login: "${DEMO_CRD}"
       password: "${DEMO_CRD}"
     - name: "GeonetworkRennes"
-      api_url: https://public.sig.rennesmetropole.fr/geonetwork/srv/api
+      api_url: "https://public.sig.rennesmetropole.fr/geonetwork/srv/api"
   geoserver_instances: 
     - url: "https://mastergs.rennesmetropole.fr/geoserver/"
       login: "test"
