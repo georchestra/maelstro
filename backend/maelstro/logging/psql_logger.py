@@ -14,6 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.schema import CreateSchema
 from sqlalchemy.orm import Session
 from pydantic import TypeAdapter
 from maelstro.config import app_config as config
@@ -177,4 +178,10 @@ def setup_db_logging() -> None:
 
 def create_db_table() -> None:
     engine = get_engine()
+    create_schema(engine)
     Base.metadata.create_all(engine)
+
+def create_schema(engine: Engine) -> None:
+    with engine.connect() as connection:
+        connection.execute(CreateSchema(DB_CONFIG.schema, if_not_exists=True))
+        connection.commit()
