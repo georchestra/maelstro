@@ -4,6 +4,7 @@ import yaml
 from maelstro.common.types import Credentials, DbConfig
 import re
 
+
 class ConfigError(Exception):
     pass
 
@@ -16,6 +17,7 @@ EMPTY_CONFIG: dict[str, Any] = {
     "destinations": {},
 }
 REGEX_ENV_VAR = "^\${(.*)}$"
+
 
 class Config:
     def __init__(self, env_var_name: str | None = None):
