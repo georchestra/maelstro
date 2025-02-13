@@ -50,3 +50,11 @@ destinations:
       api_url: https://public.sig.rennesmetropole.fr/geonetwork/srv/api
       login: "toto3"
       password: "Str0ng_passW0rd"
+db_logging:
+  host: database
+  port: 5432
+  login: georchestra
+  #password: georchestra
+  password_env_var: PGPASSWORD
+  database: georchestra
+  schema: maelstro

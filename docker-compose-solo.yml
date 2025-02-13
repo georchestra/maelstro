@@ -1,5 +1,24 @@
 
+volumes:
+    postgresql_data:
+
 services:
+  database:
+    image: georchestra/database:24.0.x
+    environment:
+      - PGHOST=database
+      - PGPORT=5432
+      - PGDATABASE=georchestra
+      - PGUSER=georchestra
+      - PGPASSWORD=georchestra
+      - POSTGRES_USER=georchestra
+      - POSTGRES_PASSWORD=georchestra
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    restart: no
+
   maelstro-front:
     build:
       context: ./frontend
