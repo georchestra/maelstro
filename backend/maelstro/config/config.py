@@ -2,7 +2,7 @@ import os
 from typing import Any
 import yaml
 from maelstro.common.types import Credentials, DbConfig
-
+import re
 
 class ConfigError(Exception):
     pass
@@ -15,7 +15,7 @@ EMPTY_CONFIG: dict[str, Any] = {
     },
     "destinations": {},
 }
-
+REGEX_ENV_VAR = "^\${(.*)}$"
 
 class Config:
     def __init__(self, env_var_name: str | None = None):
@@ -138,6 +138,19 @@ def substitute_single_credentials_from_env(
     common_credentials: Credentials = Credentials(None, None),
 ) -> Credentials:
     common_login, common_password = common_credentials
+    current_login = server_instance.get("login")
+    current_password = server_instance.get("password")
+    if current_login is not None:
+        # search for pattern like ${ENV_VAR}
+        login_env = re.match(REGEX_ENV_VAR, current_login)
+        if login_env:
+            if os.environ.get(login_env.group(1)):
+                server_instance["login"] = os.environ.get(login_env.group(1))
+    if current_password is not None:
+        password_env = re.match(REGEX_ENV_VAR, current_password)
+        if password_env:
+            if os.environ.get(password_env.group(1)):
+                server_instance["password"] = os.environ.get(password_env.group(1))
 
     if common_login is not None:
         if server_instance.get("login") is None:
@@ -146,21 +159,7 @@ def substitute_single_credentials_from_env(
         if server_instance.get("password") is None:
             server_instance["password"] = common_password
 
-    read_value_from_env(server_instance, "login")
-    read_value_from_env(server_instance, "password")
-
     return Credentials(server_instance.get("login"), server_instance.get("password"))
-
-
-def read_value_from_env(
-    server_instance: dict[str, Any], value_type: str = "password"
-) -> None:
-    env_var = server_instance.get(f"{value_type}_env_var")
-    if env_var is not None:
-        env_value = os.environ.get(env_var)
-        if env_value is not None:
-            server_instance[value_type] = env_value
-        server_instance.pop(f"{value_type}_env_var")
 
 
 config = Config(env_var_name="MAELSTRO_CONFIG")
