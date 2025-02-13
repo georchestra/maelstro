@@ -7,6 +7,9 @@ sources:
       api_url: "https://demo.georchestra.org/geonetwork/srv/api"
       login: "${DEMO_LOGIN}"
       password: "${DEMO_LOGIN}"
+      transformations:
+        - public_to_prod
+        - prod_to_final_prod
     - name: "GeonetworkRennes"
       api_url: "https://public.sig.rennesmetropole.fr/geonetwork/srv/api"
       login: "${XXX}"
@@ -26,6 +29,8 @@ destinations:
       api_url: "http://proxy:8080/geonetwork/srv/api"
     geoserver:
       url: "http://proxy:8080/geoserver"
+    transformations:
+      - public_to_prod
   "CompoLocaleMaelstro":
     login: "tmaelstro"
     password: "tmaelstro"
@@ -33,6 +38,16 @@ destinations:
       api_url: "http://proxy:8080/geonetwork/srv/api"
     geoserver:
       url: "http://proxy:8080/geoserver"
+
+
+transformations:
+  public_to_prod:
+    xsl_path: ./tests/test_xslt.xsl
+    description: "Transformation from public geoserver to prod server & remove blogs"
+  prod_to_final_prod:
+    xsl_path: ./tests/test_xslt2.xsl
+    description: "Transformation from prod server to final prod"
+
 
 db_logging:
   host: "database"

@@ -79,6 +79,30 @@ class Config:
     def get_db_config(self) -> DbConfig:
         return DbConfig(**self.config.get("db_logging", {}))
 
+    def get_transformations(self) -> dict[str, Any]:
+        return self.config.get("transformations", {})  # type: ignore
+
+    def get_transformation_pair(self, src: str, dst: str) -> list[dict[str, Any]]:
+        return self.get_transformation_pairs()[f"{src} -> {dst}"]  # type: ignore
+
+    def get_transformation_pairs(self) -> dict[str, Any]:
+        transformations = {}
+        for src in self.config["sources"]["geonetwork_instances"]:
+            for dst_name, dst in self.config["destinations"].items():
+                current_transformations = [
+                    self.get_transformations().get(k)
+                    for k in src.get("transformations", [])
+                ]
+                current_transformations += [
+                    self.get_transformations().get(k)
+                    for k in dst.get("transformations", [])
+                ]
+                if current_transformations:
+                    transformations[f"{src.get('name')} -> {dst_name}"] = (
+                        current_transformations
+                    )
+        return transformations
+
     def get_access_info(
         self, is_src: bool, is_geonetwork: bool, instance_id: str
     ) -> dict[str, Any]:

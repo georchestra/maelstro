@@ -52,7 +52,7 @@ def test_replace_geoserver():
     with open(os.path.join(os.path.dirname(__file__), 'demo_iso19139.zip'), 'rb') as zf:
         mm = Meta(zf.read())
     assert mm.xml_bytes.find(b"https://public.sig.rennesmetropole.fr/geoserver") >= 0
-    mm.update_geoverver_urls(
+    mm.replace_geoserver_src_by_dst_urls(
         {
             "sources": ["https://public.sig.rennesmetropole.fr/geoserver"],
             "destinations": ["https://prod.sig.rennesmetropole.fr/geoserver"],
@@ -60,3 +60,28 @@ def test_replace_geoserver():
     )
     assert mm.xml_bytes.find(b"https://public.sig.rennesmetropole.fr/geoserver") == -1
     assert mm.xml_bytes.find(b"https://prod.sig.rennesmetropole.fr/geoserver") >= 0
+
+
+def test_xslt():
+    with open(os.path.join(os.path.dirname(__file__), 'demo_iso19139.zip'), 'rb') as zf:
+        mm = Meta(zf.read())
+    assert mm.xml_bytes.find(b"https://public.sig.rennesmetropole.fr/geoserver") >= 0
+    assert mm.xml_bytes.find("Lien de téléchargement direct (GML3 EPSG:3948)".encode()) >= 0
+    mm.apply_xslt(os.path.join(os.path.dirname(__file__), "test_xslt.xsl"))
+    assert mm.xml_bytes.find(b"https://prod.sig.rennesmetropole.fr/geoserver") >= 0
+    assert mm.xml_bytes.find("Lien de téléchargement direct (GML3 EPSG:3948)".encode()) == -1
+
+
+def test_xslt_chain():
+    with open(os.path.join(os.path.dirname(__file__), 'demo_iso19139.zip'), 'rb') as zf:
+        mm = Meta(zf.read())
+    assert mm.xml_bytes.find(b"https://public.sig.rennesmetropole.fr/geoserver") >= 0
+    assert mm.xml_bytes.find("Lien de téléchargement direct (GML3 EPSG:3948)".encode()) >= 0
+    mm.apply_xslt_chain(
+        [
+            os.path.join(os.path.dirname(__file__), "test_xslt.xsl"),
+            os.path.join(os.path.dirname(__file__), "test_xslt2.xsl"),
+        ]
+    )
+    assert mm.xml_bytes.find(b"https://final_prod.sig.rennesmetropole.fr/geoserver") >= 0
+    assert mm.xml_bytes.find("Lien de téléchargement direct (GML3 EPSG:3948)".encode()) == -1
