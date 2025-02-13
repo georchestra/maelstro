@@ -77,7 +77,6 @@ class Config:
         return "db_logging" in self.config
 
     def get_db_config(self) -> DbConfig:
-        print(DbConfig ** self.config.get("db_logging", {}))
         return DbConfig(**self.config.get("db_logging", {}))
 
     def get_access_info(
@@ -173,7 +172,7 @@ def substitute_single_credentials_from_env(
     return Credentials(server_instance.get("login"), server_instance.get("password"))
 
 
-def check_for_env(current_to_test: str) -> str:
+def check_for_env(current_to_test: str | Any | None) -> str | None:
     if current_to_test is not None:
         current_env = re.match(REGEX_ENV_VAR, current_to_test)
         if current_env:
