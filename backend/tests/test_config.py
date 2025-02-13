@@ -1,10 +1,11 @@
 import os
 import pytest
 from maelstro.config import Config, ConfigError
-from maelstro.common.types import Credentials
+from maelstro.common.types import Credentials, DbConfig
 
 
 os.environ["CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_config.yaml")
+os.environ["DB_CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_db_config.yaml")
 
 
 def test_init():
@@ -86,6 +87,14 @@ def test_subst_env():
     conf.config["sources"]["geonetwork_instances"][0]["password"] == "demo"
     conf.config["destinations"]["CompoLocale"]["geonetwork"]["login"] == "test"
     conf.config["destinations"]["CompoLocale"]["geonetwork"]["password"] == "test"
+
+
+def test_subst_env_db():
+    os.environ["DB_LOGIN"] = "user"
+    os.environ["DB_PW"] = "pass"
+    conf = Config("DB_CONFIG_PATH")
+    assert conf.has_db_logging()
+    assert conf.get_db_config() == DbConfig('database', 5432, 'user', 'pass', 'log', 'maelstro', 'logs')
 
 
 def test_get_info():

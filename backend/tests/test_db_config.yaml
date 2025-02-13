@@ -1,0 +1,8 @@
+sources:
+  geonetwork_instances: []
+  geoserver_instances: []
+destinations: {}
+db_logging:
+  login_env_var: DB_LOGIN
+  password_env_var: DB_PW
+  database: log
