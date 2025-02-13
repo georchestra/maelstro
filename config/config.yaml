@@ -4,15 +4,15 @@ sources:
     # This name value will be used in v2 (not financed yet), user will be able to use catalog source
     - name: "GeonetworkMaster"
       # api_url: https://mastergn.rennesmetropole.fr/geonetwork/srv/api
-      api_url: https://demo.georchestra.org/geonetwork/srv/api
-      login_env_var: DEMO_CRD
-      password_env_var: DEMO_CRD
+      api_url: "https://demo.georchestra.org/geonetwork/srv/api"
+      login: "${DEMO_CRD}"
+      password: "${DEMO_CRD}"
     - name: "GeonetworkRennes"
-      api_url: https://public.sig.rennesmetropole.fr/geonetwork/srv/api
+      api_url: "https://public.sig.rennesmetropole.fr/geonetwork/srv/api"
   geoserver_instances: 
     - url: "https://mastergs.rennesmetropole.fr/geoserver/"
-      login: test
-      password: 1234
+      login: "test"
+      password: "1234"
     - url: "https://mastergs.rennesmetropole.fr/geoserver-geofence/"
       login: "toto6"
       password: "Str0ng_passW0rd"
@@ -26,11 +26,11 @@ destinations:
   # Instance name of geOrchestra destination will be printed in user interface of maelstro
   "CompoLocale":
     geonetwork:
-      api_url: https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api
-      login_env_var: LOCAL_LOGIN
-      password_env_var: LOCAL_PASSWORD
+      api_url: "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api"
+      login: "${LOCAL_LOGIN}"
+      password: "${LOCAL_PASSWORD}"
     geoserver:
-      url: https://georchestra-127-0-0-1.nip.io/geoserver
+      url: "https://georchestra-127-0-0-1.nip.io/geoserver"
   "PlateformeProfessionnelle":
     # If login and password are set in the plateform level, it will be shared between geoserver and geonetwork
     login: "toto" 
@@ -38,23 +38,23 @@ destinations:
     geoserver:
       # if credentials are set in lower section it gets the priority
       password: "overridePW"
-      url: https://portail.sig.rennesmetropole.fr/geoserver
+      url: "https://portail.sig.rennesmetropole.fr/geoserver"
     geonetwork:
-      api_url: https://portail.sig.rennesmetropole.fr/geonetwork/srv/api
+      api_url: "https://portail.sig.rennesmetropole.fr/geonetwork/srv/api"
   "PlateformePublique":
     geoserver: 
-      url: https://public.sig.rennesmetropole.fr/geoserver
+      url: "https://public.sig.rennesmetropole.fr/geoserver"
       login: "toto2"
       password: "Str0ng_passW0rd"
     geonetwork:
-      api_url: https://public.sig.rennesmetropole.fr/geonetwork/srv/api
+      api_url: "https://public.sig.rennesmetropole.fr/geonetwork/srv/api"
       login: "toto3"
       password: "Str0ng_passW0rd"
 db_logging:
-  host: database
-  port: 5432
-  login: georchestra
+  host: "database"
+  port: "5432"
+  login: "georchestra"
   #password: georchestra
-  password_env_var: PGPASSWORD
-  database: georchestra
-  schema: maelstro
+  password: "${PGPASSWORD}"
+  database: "georchestra"
+  schema: "maelstro"

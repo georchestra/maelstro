@@ -41,11 +41,14 @@ services:
       context: ./backend
       target: server
     volumes:
+      - ./backend:/app
       - ./config/:/etc/maelstro/:ro
     environment:
       MAELSTRO_CONFIG: /etc/maelstro/config.yaml
-      LOCAL_LOGIN: testadmin
-      LOCAL_PASSWORD: testadmin
+      LOCAL_LOGIN: "testadmin"
+      LOCAL_PASSWORD: "testadmin"
+      DEMO_CRD: "test12"
+      PGPASSWORD: "georchestra"
     healthcheck:
       test: "health_check"
       interval: 10s
