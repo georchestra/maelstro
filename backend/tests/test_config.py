@@ -90,11 +90,15 @@ def test_subst_env():
 
 
 def test_subst_env_db():
-    os.environ["DB_LOGIN"] = "user"
-    os.environ["DB_PW"] = "pass"
+    os.environ["${PGHOST}"] = "database"
+    os.environ["${PGPORT}"] = "5432"
+    os.environ["${PGDATABASE}"] = "log"
+    os.environ["PGUSER"] = "user"
+    os.environ["PGPASSWORD"] = "pass"
+
     conf = Config("DB_CONFIG_PATH")
     assert conf.has_db_logging()
-    assert conf.get_db_config() == DbConfig('database', 5432, 'user', 'pass', 'log', 'maelstro', 'logs')
+    assert conf.get_db_config() == DbConfig('database', '5432', 'user', 'pass', 'log', 'maelstro', 'logs')
 
 
 def test_get_info():

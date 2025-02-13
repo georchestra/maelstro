@@ -3,6 +3,9 @@ sources:
   geoserver_instances: []
 destinations: {}
 db_logging:
-  login: "${DB_LOGIN}"
-  password: "${DB_PW}"
-  database: "log"
+  host: "${PGHOST}"
+  port: "${PGPORT}"
+  login: "${PGUSER}"
+  password: "${PGPASSWORD}"
+  database: "${PGDATABASE}"
+  schema: "maelstro"
