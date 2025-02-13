@@ -173,7 +173,7 @@ def setup_db_logging() -> None:
     if not LOGGING_ACTIVE:
         return
     # this call is safe in init: by default sqlalchemy checks first if the table exists
-    create_schema(engine)
+    create_schema()
     create_db_table()
 
 
@@ -182,7 +182,8 @@ def create_db_table() -> None:
     Base.metadata.create_all(engine)
 
 
-def create_schema(engine: Engine) -> None:
+def create_schema() -> None:
+    engine = get_engine()
     with engine.connect() as connection:
         connection.execute(CreateSchema(DB_CONFIG.schema, if_not_exists=True))
         connection.commit()
