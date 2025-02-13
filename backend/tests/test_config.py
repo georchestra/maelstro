@@ -16,6 +16,8 @@ def test_init():
                 {
                     "name": "GeonetworkMaster",
                     "api_url": "https://demo.georchestra.org/geonetwork/srv/api",
+                    'password': '${DEMO_CRD}',
+                    'login': '${DEMO_CRD}',
                 },
                 {
                     "name": "GeonetworkRennes",
@@ -42,11 +44,12 @@ def test_init():
             "CompoLocale": {
                 "geonetwork": {
                     "api_url": "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api",
-                    "login": "${LOCAL_LOGIN}",
-                    "password": "${LOCAL_LOGIN}",
+                    "login": "testadmin",
+                    "password": "testadmin",
                 },
                 "geoserver": {
                     "url": "https://georchestra-127-0-0-1.nip.io/geoserver"
+
                 }
             },
             "PlateformeProfessionnelle": {
@@ -131,11 +134,11 @@ def test_doc_sample():
     conf = Config("SAMPLE_PATH")
     assert conf.config == {
         "sources": {
-            "login": "admin",
+            "login": "admin", 'password': '${COMMON_PW}',
             "geonetwork_instances": [
                 {"name": "a", "login": "admin", "password": "pwA"},
                 {"name": "b", "login": "B", "password": "pwB"},
-                {"name": "c", "login": "C"},
+                {"name": "c", "login": "C", 'password': '${COMMON_PW}'},
             ],
             "geoserver_instances": [],
         },

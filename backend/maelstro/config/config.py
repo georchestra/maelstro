@@ -141,9 +141,12 @@ def substitute_single_credentials_from_env(
 ) -> Credentials:
     common_login, common_password = common_credentials
     current_login = server_instance.get("login")
-    server_instance["login"] = check_for_env(current_login)
+    if current_login is not None:
+        server_instance["login"] = check_for_env(current_login)
+
     current_password = server_instance.get("password")
-    server_instance["password"] = check_for_env(current_password)
+    if current_password is not None:
+        server_instance["password"] = check_for_env(current_password)
 
     # en support for db
     current_host = check_for_env(server_instance.get("host"))
