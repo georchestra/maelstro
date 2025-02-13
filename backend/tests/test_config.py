@@ -34,7 +34,7 @@ def test_init():
                     "password": "Str0ng_passW0rd"
                 },
                 {
-                    'url': 'https://data.lillemetropole.fr/geoserver/',
+                    "url": "https://data.lillemetropole.fr/geoserver/"
                 },
             ]
         },
@@ -43,7 +43,7 @@ def test_init():
                 "geonetwork": {
                     "api_url": "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api",
                     "login": "${LOCAL_LOGIN}",
-                    "password": "${LOCAL_PASSWORD}",
+                    "password": "${LOCAL_LOGIN}",
                 },
                 "geoserver": {
                     "url": "https://georchestra-127-0-0-1.nip.io/geoserver"
