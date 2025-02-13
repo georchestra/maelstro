@@ -181,6 +181,7 @@ def create_db_table() -> None:
     create_schema(engine)
     Base.metadata.create_all(engine)
 
+
 def create_schema(engine: Engine) -> None:
     with engine.connect() as connection:
         connection.execute(CreateSchema(DB_CONFIG.schema, if_not_exists=True))
