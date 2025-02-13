@@ -3,6 +3,6 @@ sources:
   geoserver_instances: []
 destinations: {}
 db_logging:
-  login_env_var: DB_LOGIN
-  password_env_var: DB_PW
-  database: log
+  login: "${DB_LOGIN}"
+  password: "${DB_PW}"
+  database: "log"

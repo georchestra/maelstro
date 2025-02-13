@@ -73,15 +73,14 @@ Example (see [doc_sample_config.yaml](backend/tests/doc_sample_config.yaml)):
 
 ```yaml
 sources:
-  login: admin
-  password_env_var: COMMON_PW
+  login: "admin"
+  password: "${COMMON_PW}"
   geonetwork_instances:
     - name: "a"
       password: "pwA"
     - name: "b"
       login: "B"
-      password: default_unused
-      password_env_var: "PASSWORD_B"
+      password: "${PASSWORD_B}"
     - name: "c"
       login: "C"
 ```
