@@ -136,6 +136,14 @@ def get_destinations() -> list[dict[str, str]]:
 def get_transformations(with_src_dst: bool = False) -> dict[str, Any]:
     return {
         "Registered transformations": config.get_transformations(),
+        **(config.get_transformation_pairs() if with_src_dst else {}),
+    }
+
+
+@app.get("/transformations")
+def get_transformations(with_src_dst: bool = False) -> dict[str, Any]:
+    return {
+        "Registered transformations": config.get_transformations(),
         **(config.get_all_transformation_pairs() if with_src_dst else {}),
     }
 
