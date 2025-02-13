@@ -48,6 +48,10 @@ services:
       LOCAL_LOGIN: "testadmin"
       LOCAL_PASSWORD: "testadmin"
       DEMO_CRD: "test12"
+      PGHOST: "database"
+      PGPORT: "5432"
+      PGDATABASE: "georchestra"
+      PGUSER: "georchestra"
       PGPASSWORD: "georchestra"
     healthcheck:
       test: "health_check"
@@ -58,4 +62,16 @@ services:
     command:
       - serve_docker_dev
 
-
+  check:
+    profiles:
+      - check
+    build:
+      context: ./backend
+      target: check
+    environment:
+      MAELSTRO_CONFIG: /app/tests/test_config.yaml
+      LOCAL_LOGIN: testadmin
+      LOCAL_PASSWORD: testadmin
+      DEMO_CRD: test
+    volumes:
+      - ./backend:/app

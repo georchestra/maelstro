@@ -51,10 +51,10 @@ destinations:
       login: "toto3"
       password: "Str0ng_passW0rd"
 db_logging:
-  host: "database"
-  port: "5432"
-  login: "georchestra"
+  host: "${PGHOST}"
+  port: "${PGPORT}"
+  login: "${PGUSER}"
   #password: georchestra
   password: "${PGPASSWORD}"
-  database: "georchestra"
+  database: "${PGDATABASE}"
   schema: "maelstro"
