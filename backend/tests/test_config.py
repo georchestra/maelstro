@@ -42,8 +42,8 @@ def test_init():
             "CompoLocale": {
                 "geonetwork": {
                     "api_url": "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api",
-                    "login": "testadmin",
-                    "password": "testadmin",
+                    "login": "${LOCAL_LOGIN}",
+                    "password": "${LOCAL_PASSWORD}",
                 },
                 "geoserver": {
                     "url": "https://georchestra-127-0-0-1.nip.io/geoserver"

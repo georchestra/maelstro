@@ -4,7 +4,7 @@ sources:
     # ce nom sera utilisé dans une V2 (non financée) pour que l'utilisateur final choisisse l'instance GN source 
     - name: "GeonetworkMaster"
       # api_url: https://mastergn.rennesmetropole.fr/geonetwork/srv/api
-      api_url: https://demo.georchestra.org/geonetwork/srv/api
+      api_url: "https://demo.georchestra.org/geonetwork/srv/api"
       login: "${DEMO_CRD}"
       password: "${DEMO_CRD}"
     - name: "GeonetworkRennes"
@@ -28,7 +28,7 @@ destinations:
     geonetwork:
       api_url: "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api"
       login: "${LOCAL_LOGIN}"
-      password: "${LOCAL_PASSWORD}"
+      password: "${LOCAL_LOGIN}"
     geoserver:
       url: "https://georchestra-127-0-0-1.nip.io/geoserver"
   "PlateformeProfessionnelle":
