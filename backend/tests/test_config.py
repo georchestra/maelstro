@@ -90,9 +90,9 @@ def test_subst_env():
 
 
 def test_subst_env_db():
-    os.environ["${PGHOST}"] = "database"
-    os.environ["${PGPORT}"] = "5432"
-    os.environ["${PGDATABASE}"] = "log"
+    os.environ["PGHOST"] = "database"
+    os.environ["PGPORT"] = "5432"
+    os.environ["PGDATABASE"] = "log"
     os.environ["PGUSER"] = "user"
     os.environ["PGPASSWORD"] = "pass"
 
