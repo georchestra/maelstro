@@ -16,7 +16,7 @@ EMPTY_CONFIG: dict[str, Any] = {
     },
     "destinations": {},
 }
-REGEX_ENV_VAR = r'^\${(.*)}$'
+REGEX_ENV_VAR = r"^\${(.*)}$"
 
 
 class Config:
