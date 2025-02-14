@@ -1,6 +1,7 @@
 import os
-from typing import Any
+import re
 import yaml
+from typing import Any
 from maelstro.common.types import Credentials, DbConfig
 
 
@@ -15,6 +16,7 @@ EMPTY_CONFIG: dict[str, Any] = {
     },
     "destinations": {},
 }
+REGEX_ENV_VAR = r"^\${(.*)}$"
 
 
 class Config:
@@ -138,6 +140,30 @@ def substitute_single_credentials_from_env(
     common_credentials: Credentials = Credentials(None, None),
 ) -> Credentials:
     common_login, common_password = common_credentials
+    current_login = server_instance.get("login")
+    if current_login is not None:
+        server_instance["login"] = check_for_env(current_login)
+
+    current_password = server_instance.get("password")
+    if current_password is not None:
+        server_instance["password"] = check_for_env(current_password)
+
+    # en support for db
+    current_host = check_for_env(server_instance.get("host"))
+    if current_host is not None:
+        server_instance["host"] = current_host
+    current_port = check_for_env(server_instance.get("port"))
+    if current_port is not None:
+        server_instance["port"] = current_port
+    current_login = check_for_env(server_instance.get("login"))
+    if current_login is not None:
+        server_instance["login"] = current_login
+    current_database = check_for_env(server_instance.get("database"))
+    if current_database is not None:
+        server_instance["database"] = current_database
+    current_schema = check_for_env(server_instance.get("schema"))
+    if current_schema is not None:
+        server_instance["schema"] = current_schema
 
     if common_login is not None:
         if server_instance.get("login") is None:
@@ -145,22 +171,17 @@ def substitute_single_credentials_from_env(
     if common_password is not None:
         if server_instance.get("password") is None:
             server_instance["password"] = common_password
-
-    read_value_from_env(server_instance, "login")
-    read_value_from_env(server_instance, "password")
-
+    print(server_instance)
     return Credentials(server_instance.get("login"), server_instance.get("password"))
 
 
-def read_value_from_env(
-    server_instance: dict[str, Any], value_type: str = "password"
-) -> None:
-    env_var = server_instance.get(f"{value_type}_env_var")
-    if env_var is not None:
-        env_value = os.environ.get(env_var)
-        if env_value is not None:
-            server_instance[value_type] = env_value
-        server_instance.pop(f"{value_type}_env_var")
+def check_for_env(current_to_test: str | Any | None) -> str | None:
+    if current_to_test is not None:
+        current_env = re.match(REGEX_ENV_VAR, current_to_test)
+        if current_env:
+            if os.environ.get(current_env.group(1)):
+                return os.environ.get(current_env.group(1))
+    return current_to_test
 
 
 config = Config(env_var_name="MAELSTRO_CONFIG")

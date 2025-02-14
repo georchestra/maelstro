@@ -16,6 +16,8 @@ def test_init():
                 {
                     "name": "GeonetworkMaster",
                     "api_url": "https://demo.georchestra.org/geonetwork/srv/api",
+                    'password': '${DEMO_CRD}',
+                    'login': '${DEMO_CRD}',
                 },
                 {
                     "name": "GeonetworkRennes",
@@ -26,7 +28,7 @@ def test_init():
                 {
                     "url": "https://mastergs.rennesmetropole.fr/geoserver/",
                     "login": "test",
-                    "password": 1234
+                    "password": "1234"
                 },
                 {
                     "url": "https://mastergs.rennesmetropole.fr/geoserver-geofence/",
@@ -34,7 +36,7 @@ def test_init():
                     "password": "Str0ng_passW0rd"
                 },
                 {
-                    'url': 'https://data.lillemetropole.fr/geoserver/',
+                    "url": "https://data.lillemetropole.fr/geoserver/"
                 },
             ]
         },
@@ -47,6 +49,7 @@ def test_init():
                 },
                 "geoserver": {
                     "url": "https://georchestra-127-0-0-1.nip.io/geoserver"
+
                 }
             },
             "PlateformeProfessionnelle": {
@@ -90,11 +93,15 @@ def test_subst_env():
 
 
 def test_subst_env_db():
-    os.environ["DB_LOGIN"] = "user"
-    os.environ["DB_PW"] = "pass"
+    os.environ["PGHOST"] = "database"
+    os.environ["PGPORT"] = "5432"
+    os.environ["PGDATABASE"] = "log"
+    os.environ["PGUSER"] = "user"
+    os.environ["PGPASSWORD"] = "pass"
+
     conf = Config("DB_CONFIG_PATH")
     assert conf.has_db_logging()
-    assert conf.get_db_config() == DbConfig('database', 5432, 'user', 'pass', 'log', 'maelstro', 'logs')
+    assert conf.get_db_config() == DbConfig('database', '5432', 'user', 'pass', 'log', 'maelstro', 'logs')
 
 
 def test_get_info():
@@ -127,11 +134,11 @@ def test_doc_sample():
     conf = Config("SAMPLE_PATH")
     assert conf.config == {
         "sources": {
-            "login": "admin",
+            "login": "admin", 'password': '${COMMON_PW}',
             "geonetwork_instances": [
                 {"name": "a", "login": "admin", "password": "pwA"},
                 {"name": "b", "login": "B", "password": "pwB"},
-                {"name": "c", "login": "C"},
+                {"name": "c", "login": "C", 'password': '${COMMON_PW}'},
             ],
             "geoserver_instances": [],
         },

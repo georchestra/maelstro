@@ -51,7 +51,7 @@ Destinations is a dict of geonetwork / geoserver combinations, each with their `
 
 The logics for credentials is by decreasing order of importance:
 
-1. env var: if the keys "login_env_var" and/or "password_env_var" are found in a single server definitions and if the corrensponding environment variable is defined, this value is read and applied as login /password
+1. env var: automatic detection with regex, if match "${..}" (classic usage of env var) it will try to resolv it
 2. if no env vars are configured, the keys "login" and/or password for a single server instance are used
 3. if still no login/password is found, the configuration file is parsed at the parent hierarchy level. First env vars are used like in 1.
 4. Then constant login/password keys are read
@@ -73,15 +73,14 @@ Example (see [doc_sample_config.yaml](backend/tests/doc_sample_config.yaml)):
 
 ```yaml
 sources:
-  login: admin
-  password_env_var: COMMON_PW
+  login: "admin"
+  password: "${COMMON_PW}"
   geonetwork_instances:
     - name: "a"
       password: "pwA"
     - name: "b"
       login: "B"
-      password: default_unused
-      password_env_var: "PASSWORD_B"
+      password: "${PASSWORD_B}"
     - name: "c"
       login: "C"
 ```
