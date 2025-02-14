@@ -104,6 +104,19 @@ const backToForm = () => {
 
     <div v-if="!confirmation">
       <Form class="flex flex-col gap-5" @submit="onFormSubmit">
+        <div name="src_name" class="flex gap-5 items-center">
+          <label for="src_name" class="w-36">{{ $t('Source platform') }}</label>
+          <Select
+            id="src_name"
+            name="src_name"
+            v-model="parameters.src_name"
+            :options="configStore.sources.map((d) => d.name)"
+            placeholder=""
+            disabled
+          />
+          <Message v-if="errors.src_name" severity="error">{{ errors.src_name }}</Message>
+        </div>
+
         <div class="flex flex-col gap-1">
           <div class="flex gap-5 items-center">
             <label for="metadataUuid" class="w-36">{{ $t('Source dataset') }}</label>
