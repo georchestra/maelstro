@@ -56,9 +56,9 @@ services:
       PGDATABASE: "georchestra"
       PGUSER: "georchestra"
       PGPASSWORD: "georchestra"
-
     command:
       - serve_docker_dev
+
   check:
     profiles:
       - check
