@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Log } from '@/services/synchronize.service'
+import type { LogDetail } from '@/services/logs.service'
 
-defineProps<{ logs: Log[] }>()
+defineProps<{ logs: LogDetail[] }>()
 
 const logClass = (status_code: number) => {
   if (status_code >= 200 && status_code < 300) {
@@ -13,7 +13,7 @@ const logClass = (status_code: number) => {
 </script>
 
 <template>
-  <div class="mb-4 font-semibold">Logs</div>
+  <div class="mb-4 font-semibold">Details</div>
   <div v-for="(log, index) in logs" :key="index">
     <div v-if="['POST', 'PUT'].includes(log.method!)" :class="logClass(log.status_code!)">
       {{ log.method }} {{ log.url }}
