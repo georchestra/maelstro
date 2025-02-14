@@ -144,9 +144,12 @@ def get_involved_resources(
     src_name: str,
     dst_name: str,
     metadataUuid: str,
-) -> list[dict[str, Any]]:
+    copy_meta: bool = True,
+    copy_layers: bool = True,
+    copy_styles: bool = True,
+) -> dict[str, Any]:
     clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
-    return clone_ds.involved_resources()
+    return clone_ds.involved_resources(copy_meta, copy_layers, copy_styles)
 
 
 @app.put(

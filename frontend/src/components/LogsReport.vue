@@ -3,43 +3,22 @@ import type { Log } from '@/services/synchronize.service'
 
 defineProps<{ logs: Log[] }>()
 
-const logClass = (service_type: string) => {
-  switch (service_type) {
-    case 'geoserver':
-      return 'log-info'
-    case 'geonetwork':
-      return 'log-warning'
+const logClass = (status_code: number) => {
+  if (status_code >= 200 && status_code < 300) {
+    return 'log-success'
+  } else {
+    return 'log-error'
   }
-  // return {
-  //   'log-info': level === 'info',
-  //   'log-warning': level === 'warning',
-  //   'log-error': level === 'error',
-  // }
-
-  // return {
-  //   'log-info': level === 'info',
-  //   'log-warning': level === 'warning',
-  //   'log-error': level === 'error',
-  // }
 }
-
-// const logClass = (service_type: string) => {
-//   switch (service_type) {
-//     case 'geonetwork':
-//       return 'log-info'
-//     case 'geoserver':
-//       return 'log-warning'
-//     case 'geoserver_style':
-//       return 'log-error'
-//     default:
-//       return 'log-info'
-//   }
-// }
 </script>
 
 <template>
-  <div v-for="(log, index) in logs" :key="index" :class="logClass(log.service_type)">
-    {{ log.operation }}
+  <div class="mb-4 font-semibold">Logs</div>
+  <div v-for="(log, index) in logs" :key="index">
+    <div v-if="['POST', 'PUT'].includes(log.method!)" :class="logClass(log.status_code!)">
+      {{ log.method }} {{ log.url }}
+    </div>
+    <div v-if="log.operation" class="log-info">{{ log.operation }}</div>
   </div>
 </template>
 
@@ -52,9 +31,9 @@ const logClass = (service_type: string) => {
   border-radius: 5px;
 }
 
-.log-warning {
-  background-color: #fff3cd; /* Jaune */
-  border-left: 5px solid #ffa000;
+.log-success {
+  background-color: #e8f5e9; /* Vert pâle */
+  border-left: 5px solid #43a047; /* Bordure vert plus foncé */
   padding: 10px;
   margin-bottom: 5px;
   border-radius: 5px;

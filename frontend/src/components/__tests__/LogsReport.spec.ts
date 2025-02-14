@@ -8,14 +8,13 @@ describe('LogsReport', () => {
       props: {
         logs: [
           {
-            operation: 'Test operation',
-            url: 'https://demo.georchestra.org/geonetwork/srv/api',
-            context: 'source',
-            service_type: 'geonetwork',
+            method: 'PUT',
+            status_code: 200,
+            url: 'http://proxy:8080/geoserver/rest/styles/point.sld',
           },
         ],
       },
     })
-    expect(wrapper.text()).toContain('Test operation')
+    expect(wrapper.text()).toContain('http://proxy:8080/geoserver/rest/styles/point.sld')
   })
 })

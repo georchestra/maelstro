@@ -9,13 +9,35 @@ export type SynchronizeParams = {
 }
 
 export type Log = {
-  operation: string
-  url: string
-  context: string
-  service_type: string
+  method?: string
+  status_code?: number
+  url?: string
+  operation?: string
 }
 
-function toSearchParams(params: SynchronizeParams): URLSearchParams {
+export type InvolvedMetadata = {
+  title: string
+}
+
+export type InvolvedGeonetwork = {
+  src: string
+  dst: string
+  metadata: InvolvedMetadata[]
+}
+
+export type InvolvedGeoserver = {
+  src: string
+  dst: string
+  layers: string[]
+  styles: string[]
+}
+
+export type InvolvedResources = {
+  metadata: InvolvedGeonetwork[]
+  data: InvolvedGeoserver[]
+}
+
+function toSynchronizeParams(params: SynchronizeParams): URLSearchParams {
   const stringParams: Record<string, string> = Object.fromEntries(
     Object.entries(params).map(([key, value]) => [key, String(value)]),
   )
@@ -23,8 +45,18 @@ function toSearchParams(params: SynchronizeParams): URLSearchParams {
 }
 
 export const synchronizeService = {
+  async getInvolvedResources(params: SynchronizeParams): Promise<InvolvedResources> {
+    const response = await fetch(
+      '/maelstro-backend/involved_resources?' + toSynchronizeParams(params),
+      {
+        method: 'GET',
+      },
+    )
+    return await response.json()
+  },
+
   async synchronize(params: SynchronizeParams): Promise<Log[]> {
-    const response = await fetch('/maelstro-backend/copy?' + toSearchParams(params), {
+    const response = await fetch('/maelstro-backend/copy?' + toSynchronizeParams(params), {
       method: 'PUT',
       headers: {
         Accept: 'application/json',

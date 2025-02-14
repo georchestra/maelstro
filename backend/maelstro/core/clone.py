@@ -47,18 +47,60 @@ class CloneDataset:
     def gs_dst(self) -> RestService:
         return self.geo_hnd.get_gs_service(self.dst_name, is_source=False)
 
-    def involved_resources(self) -> list[dict[str, Any]]:
+    def involved_resources(
+        self,
+        copy_meta: bool,
+        copy_layers: bool,
+        copy_styles: bool,
+    ) -> dict[str, list[dict[str, Any]]]:
+        self.copy_meta = copy_meta
+        self.copy_layers = copy_layers
+        self.copy_styles = copy_styles
+
         with get_georchestra_handler() as geo_hnd:
             self.geo_hnd = geo_hnd
 
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
             self.meta = Meta(zipdata)
 
-            resources = []
+            resources: dict[str, list[dict[str, Any]]] = {
+                "metadata": [],
+                "data": [],
+            }
+
+            src_gn_info = self.geo_hnd.get_service_info(
+                self.src_name, is_source=True, is_geonetwork=True
+            )
+            src_gn_url = src_gn_info["url"]
+            dst_gn_info = self.geo_hnd.get_service_info(
+                self.dst_name, is_source=False, is_geonetwork=True
+            )
+            dst_gn_url = dst_gn_info["url"]
+
+            resources["metadata"].append(
+                {
+                    "src": src_gn_url,
+                    "dst": dst_gn_url,
+                    "metadata": (
+                        [
+                            {
+                                "title": self.meta.get_title(),
+                            }
+                        ]
+                        if self.copy_meta
+                        else []
+                    ),
+                }
+            )
+
+            dst_gs_info = self.geo_hnd.get_service_info(
+                self.dst_name, is_source=False, is_geonetwork=False
+            )
+            dst_gs_url = dst_gs_info["url"]
 
             geoservers = self.meta.get_gs_layers(config.get_gs_sources())
             for server_url, layer_names in geoservers.items():
-                styles = set()
+                styles: set[str] = set()
                 for layer_name in layer_names:
 
                     gs_src = self.geo_hnd.get_gs_service(server_url, True)
@@ -71,11 +113,18 @@ class CloneDataset:
                     for layer in layers.values():
                         styles.update(self.get_styles_from_layer(layer).keys())
 
-                resources.append({
-                    'server_url': server_url,
-                    'layers': [str(layer_name) for layer_name in layer_names],
-                    'styles': list(styles)
-                })
+                resources["data"].append(
+                    {
+                        "src": server_url,
+                        "dst": dst_gs_url,
+                        "layers": (
+                            [str(layer_name) for layer_name in layer_names]
+                            if self.copy_layers
+                            else []
+                        ),
+                        "styles": list(styles) if self.copy_styles else [],
+                    }
+                )
 
         return resources
 

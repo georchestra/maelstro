@@ -3,11 +3,19 @@ export type SearchResult = {
   resourceTitleObject: {
     default: string
   }
+  resourceAbstractObject: {
+    default: string
+  }
 }
 
 interface GnSource {
   uuid: string
-  resourceTitleObject: string
+  resourceTitleObject: {
+    default: string
+  }
+  resourceAbstractObject: {
+    default: string
+  }
 }
 
 interface GnHit {
@@ -55,7 +63,7 @@ export const geonetworkSearchService = {
             ],
           },
         },
-        _source: ['resourceTitleObject', 'uuid'],
+        _source: ['resourceTitleObject', 'resourceAbstractObject', 'uuid'],
         from: 0,
         size: 20,
       }),
@@ -67,6 +75,7 @@ export const geonetworkSearchService = {
     return hits.map((hit: GnHit) => ({
       uuid: hit._source.uuid,
       resourceTitleObject: hit._source.resourceTitleObject,
+      resourceAbstractObject: hit._source.resourceAbstractObject,
     }))
   },
 }
