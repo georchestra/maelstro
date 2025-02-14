@@ -47,6 +47,38 @@ class CloneDataset:
     def gs_dst(self) -> RestService:
         return self.geo_hnd.get_gs_service(self.dst_name, is_source=False)
 
+    def involved_resources(self) -> list[dict[str, Any]]:
+        with get_georchestra_handler() as geo_hnd:
+            self.geo_hnd = geo_hnd
+
+            zipdata = self.gn_src.get_record_zip(self.uuid).read()
+            self.meta = Meta(zipdata)
+
+            resources = []
+
+            geoservers = self.meta.get_gs_layers(config.get_gs_sources())
+            for server_url, layer_names in geoservers.items():
+                styles = set()
+                for layer_name in layer_names:
+
+                    gs_src = self.geo_hnd.get_gs_service(server_url, True)
+                    layers = {}
+                    for layer_name in layer_names:
+                        resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
+                        raise_for_status(resp)
+                        layers[layer_name] = resp.json()
+
+                    for layer in layers.values():
+                        styles.update(self.get_styles_from_layer(layer).keys())
+
+                resources.append({
+                    'server_url': server_url,
+                    'layers': [str(layer_name) for layer_name in layer_names],
+                    'styles': list(styles)
+                })
+
+        return resources
+
     def clone_dataset(
         self,
         copy_meta: bool,

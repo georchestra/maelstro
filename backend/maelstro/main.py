@@ -139,6 +139,16 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
         return meta.get_ogc_geoserver_layers()
 
 
+@app.get("/involved_resources")
+def get_involved_resources(
+    src_name: str,
+    dst_name: str,
+    metadataUuid: str,
+) -> list[dict[str, Any]]:
+    clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
+    return clone_ds.involved_resources()
+
+
 @app.put(
     "/copy",
     responses={
