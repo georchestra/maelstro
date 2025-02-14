@@ -4,16 +4,12 @@ include:
 
 services:
   maelstro-front:
-    build:
-      context: ./frontend
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/maelstro/"]
-      interval: 10s
-      retries: 5
-      start_period: 10s
-      timeout: 10s
+    extends:
+      file: docker-compose-solo.yml
+      service: maelstro-front
     volumes:
       - georchestra_datadir:/etc/georchestra
+    ports: []
     environment:
       CUSTOM_SCRIPTS_DIRECTORY: /etc/georchestra/maelstro/scripts
     depends_on:
@@ -21,39 +17,26 @@ services:
         condition: service_completed_successfully
 
   maelstro-back:
-    build:
-      context: ./backend
-      target: server
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
+    extends:
+      file: docker-compose-solo.yml
+      service: maelstro-back
     volumes:
       - ./backend:/app
       - georchestra_datadir:/etc/georchestra
+    depends_on:
+      envsubst:
+        condition: service_completed_successfully
     environment:
       MAELSTRO_CONFIG: /app/dev_config.yaml
       LOCAL_LOGIN: testadmin
       LOCAL_PASSWORD: testadmin
-    healthcheck:
-      test: "health_check"
-      interval: 10s
-      retries: 5
-      start_period: 10s
-      timeout: 10s
-    command:
-      - serve_docker_dev
-    ports:
-      - 127.0.0.1:8000:8000 # Used for frontend development
+      PGHOST: "database"
+      PGPORT: "5432"
+      PGDATABASE: "georchestra"
+      PGUSER: "georchestra"
+      PGPASSWORD: "georchestra"
 
   check:
-    profiles:
-      - check
-    build:
-      context: ./backend
-      target: check
-    environment:
-      MAELSTRO_CONFIG: /app/tests/test_config.yaml
-      LOCAL_LOGIN: testadmin
-      LOCAL_PASSWORD: testadmin
-    volumes:
-      - ./backend:/app
+    extends:
+      file: docker-compose-solo.yml
+      service: check
