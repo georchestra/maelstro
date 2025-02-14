@@ -91,8 +91,13 @@ const confirm = async () => {
     metadataUuid: selectedDataset.value?.uuid,
   } as unknown as SynchronizeParams
 
-  logs.value = await synchronizeService.synchronize(params)
-  isRunning.value = false
+  try {
+    logs.value = await synchronizeService.synchronize(params)
+  } catch (error) {
+    console.error(error)
+  } finally {
+    isRunning.value = false
+  }
 }
 
 const backToForm = () => {

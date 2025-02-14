@@ -1,3 +1,5 @@
+import type { LogDetail } from './logs.service'
+
 export type SynchronizeParams = {
   src_name: string
   dst_name: string
@@ -6,13 +8,6 @@ export type SynchronizeParams = {
   copy_layers: boolean
   copy_styles: boolean
   dry_run: boolean
-}
-
-export type Log = {
-  method?: string
-  status_code?: number
-  url?: string
-  operation?: string
 }
 
 export type CopyPreviewMetadata = {
@@ -52,7 +47,7 @@ export const synchronizeService = {
     return await response.json()
   },
 
-  async synchronize(params: SynchronizeParams): Promise<Log[]> {
+  async synchronize(params: SynchronizeParams): Promise<LogDetail[]> {
     const response = await fetch('/maelstro-backend/copy?' + toSynchronizeParams(params), {
       method: 'PUT',
       headers: {
