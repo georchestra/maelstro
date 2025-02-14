@@ -31,7 +31,9 @@ services:
       - ./backend:/app
       - georchestra_datadir:/etc/georchestra
     environment:
-      MAELSTRO_CONFIG: /app/config.yaml
+      MAELSTRO_CONFIG: /app/dev_config.yaml
+      DEMO_LOGIN: testadmin
+      DEMO_PASSWORD: testadmin
       LOCAL_LOGIN: testadmin
       LOCAL_PASSWORD: testadmin
     healthcheck:
