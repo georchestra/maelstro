@@ -14,7 +14,7 @@ from maelstro.logging.psql_logger import log_request_to_db
 def setup_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def handle_fastapi_exception(request: Request, err: HTTPException) -> Any:
-        if "/copy/" in str(request.url):
+        if "/copy" in str(request.url):
             log_request_to_db(
                 err.status_code,
                 request,
