@@ -14,6 +14,7 @@ import {
   AutoComplete,
   Button,
   Message,
+  ProgressSpinner,
   Select,
   ToggleSwitch,
   type AutoCompleteCompleteEvent,
@@ -81,13 +82,17 @@ const onFormSubmit = async () => {
   confirmation.value = true
 }
 
+const isRunning = ref(false)
+
 const confirm = async () => {
+  isRunning.value = true
   const params = {
     ...parameters.value,
     metadataUuid: selectedDataset.value?.uuid,
   } as unknown as SynchronizeParams
 
   logs.value = await synchronizeService.synchronize(params)
+  isRunning.value = false
 }
 
 const backToForm = () => {
@@ -201,9 +206,10 @@ const backToForm = () => {
           </ul>
         </div>
 
-        <div class="mt-4 flex justify-between">
+        <div class="mt-4 flex justify-between items-center">
           <Button :label="$t('Go back to form')" severity="secondary" @click.stop="backToForm" />
-          <Button :label="$t('Confirm')" @click.stop="confirm" />
+          <ProgressSpinner v-if="isRunning" class="w-8 h-8" strokeWidth="8" fill="transparent" />
+          <Button :label="$t('Confirm')" @click.stop="confirm" :disabled="isRunning" />
         </div>
       </div>
 
