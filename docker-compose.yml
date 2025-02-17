@@ -13,7 +13,6 @@ services:
     environment:
       CUSTOM_SCRIPTS_DIRECTORY: /etc/georchestra/maelstro/scripts
       MAELSTRO_BACK_HOST: maelstro-back
-      MAELSTRO_FRONT_HOST: maelstro-front
     depends_on:
       envsubst:
         condition: service_completed_successfully
@@ -30,8 +29,6 @@ services:
         condition: service_completed_successfully
     environment:
       MAELSTRO_CONFIG: /app/dev_config.yaml
-      MAELSTRO_BACK_HOST: maelstro-back
-      MAELSTRO_FRONT_HOST: maelstro-front
       DEMO_LOGIN: testadmin
       DEMO_PASSWORD: testadmin
       LOCAL_LOGIN: testadmin

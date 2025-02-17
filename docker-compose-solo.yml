@@ -32,7 +32,6 @@ services:
       - ./config/:/etc/maelstro/:ro
     environment:
       MAELSTRO_BACK_HOST: maelstro-back
-      MAELSTRO_FRONT_HOST: maelstro-front
     ports:
       - "8080:8080"
 
@@ -51,7 +50,6 @@ services:
       - ./config/:/etc/maelstro/:ro
     environment:
       MAELSTRO_CONFIG: /etc/maelstro/config.yaml
-      MAELSTRO_BACK_HOST: maelstro-back
       MAELSTRO_FRONT_HOST: maelstro-front
       LOCAL_LOGIN: "testadmin"
       LOCAL_PASSWORD: "testadmin"
