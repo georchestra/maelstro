@@ -2,7 +2,8 @@ maelstro_frontend:
   enabled: true
   replicaCount: 1
   image:
-    repository: test
+    repository: georchestra/maelstro-frontend
+    tag: latest
   tolerations: []
   affinity: {}
   extra_environment: []
@@ -21,7 +22,8 @@ maelstro_backend:
   enabled: true
   replicaCount: 1
   image:
-    repository: test
+    repository: georchestra/maelstro-backend
+    tag: latest
   tolerations: []
   affinity: {}
   extra_environment: []
