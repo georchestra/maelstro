@@ -47,6 +47,7 @@ def test_search4():
     assert response.json()['hits']['total']['value'] == 22
 
 
+@pytest.mark.skip("Depends on extenal data")
 def test_search5():
     response = client.post("/search/GeonetworkRennes", json={
         "source": [],
