@@ -2,6 +2,7 @@
 Main backend app setup
 """
 
+import os
 from typing import Annotated, Any
 from fastapi import (
     FastAPI,
@@ -25,6 +26,8 @@ from maelstro.logging.psql_logger import (
     DbNotSetup,
 )
 from maelstro.common.models import SearchQuery
+
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 
 app = FastAPI(root_path="/maelstro-backend")
@@ -65,45 +68,46 @@ def user_page(
     }
 
 
-# pylint: disable=fixme
-# TODO: deactivate for prod
-@app.head("/debug")
-@app.get("/debug")
-@app.put("/debug")
-@app.post("/debug")
-@app.delete("/debug")
-@app.options("/debug")
-@app.patch("/debug")
-async def debug_page(request: Request) -> dict[str, Any]:
-    """
-    Display details of query including headers.
-    This may be useful in development to check all the headers provided by the gateway.
-    This entrypoint should be deactivated in prod.
-    """
-    return {
-        **{
-            k: str(request.get(k))
-            for k in [
-                "method",
-                "type",
-                "asgi",
-                "http_version",
-                "server",
-                "client",
-                "scheme",
-                "url",
-                "base_url",
-                "root_path",
-            ]
-        },
-        "data": await request.body(),
-        "headers": dict(request.headers),
-        "query_params": request.query_params.multi_items(),
-    }
+if DEBUG:
+
+    @app.head("/debug")
+    @app.get("/debug")
+    @app.put("/debug")
+    @app.post("/debug")
+    @app.delete("/debug")
+    @app.options("/debug")
+    @app.patch("/debug")
+    async def debug_page(request: Request) -> dict[str, Any]:
+        """
+        Display details of query including headers.
+        This may be useful in development to check all the headers provided by the gateway.
+        This entrypoint should be deactivated in prod.
+        """
+        return {
+            **{
+                k: str(request.get(k))
+                for k in [
+                    "method",
+                    "type",
+                    "asgi",
+                    "http_version",
+                    "server",
+                    "client",
+                    "scheme",
+                    "url",
+                    "base_url",
+                    "root_path",
+                ]
+            },
+            "data": await request.body(),
+            "headers": dict(request.headers),
+            "query_params": request.query_params.multi_items(),
+        }
 
 
 @app.get("/check_config")
 def check_config(check_credentials: bool = True) -> dict[str, bool]:
+    # pylint: disable=fixme
     # TODO: implement check of all servers configured in the config file
     return {"test_conf.yaml": True, "check_credentials": check_credentials}
 
