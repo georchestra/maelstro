@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import LogsReport from '@/components/LogsReport.vue'
 import type { SearchResult } from '@/services/geonetworkSearch.service'
+import type { LogDetail } from '@/services/logs.service'
 import {
   synchronizeService,
   type CopyPreview,
-  type Log,
   type SynchronizeParams,
 } from '@/services/synchronize.service'
 import { useConfigStore } from '@/stores/config.store'
@@ -51,7 +51,7 @@ const copyPreview = ref<CopyPreview>({
   data: [],
 })
 
-const logs = ref<Log[]>([])
+const logs = ref<LogDetail[]>([])
 
 const synchronizeParams = computed(
   () =>

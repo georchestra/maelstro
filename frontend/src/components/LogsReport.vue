@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { LogDetail } from '@/services/logs.service'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{ logs: LogDetail[] }>()
+
+useI18n()
 
 const logClass = (log: LogDetail) => {
   if (log.status_code) {
