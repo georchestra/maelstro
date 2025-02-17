@@ -19,6 +19,7 @@ function detectBrowserLanguage() {
 }
 
 const i18n = createI18n({
+  legacy: false,
   locale: detectBrowserLanguage(),
   fallbackLocale: 'en',
   messages: {
@@ -48,7 +49,7 @@ app.use(PrimeVue, {
       },
     },
   },
-  locale: primeLocales[i18n.global.locale],
+  locale: primeLocales[i18n.global.locale.value],
 })
 
 app.mount('#app')

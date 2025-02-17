@@ -1,24 +1,40 @@
 <script setup lang="ts">
-import type { Log } from '@/services/synchronize.service'
+import type { LogDetail } from '@/services/logs.service'
+import { useI18n } from 'vue-i18n'
 
-defineProps<{ logs: Log[] }>()
+defineProps<{ logs: LogDetail[] }>()
 
-const logClass = (status_code: number) => {
-  if (status_code >= 200 && status_code < 300) {
-    return 'log-success'
-  } else {
-    return 'log-error'
+useI18n()
+
+const logClass = (log: LogDetail) => {
+  if (log.status_code) {
+    if (log.status_code >= 200 && log.status_code < 300) {
+      return 'log-success'
+    } else {
+      return 'log-error'
+    }
   }
+  return 'log-info'
+}
+
+const logMessage = (log: LogDetail) => {
+  if (log.message) {
+    return log.message
+  }
+  if (log.operation) {
+    return log.operation
+  }
+  if (log.method) {
+    return log.method + ' ' + log.url
+  }
+  return JSON.stringify(log)
 }
 </script>
 
 <template>
-  <div class="mb-4 font-semibold">Logs</div>
+  <div class="my-5 font-semibold">{{ $t('Details') }}</div>
   <div v-for="(log, index) in logs" :key="index">
-    <div v-if="['POST', 'PUT'].includes(log.method!)" :class="logClass(log.status_code!)">
-      {{ log.method }} {{ log.url }}
-    </div>
-    <div v-if="log.operation" class="log-info">{{ log.operation }}</div>
+    <div :class="logClass(log)">{{ logMessage(log) }}</div>
   </div>
 </template>
 
