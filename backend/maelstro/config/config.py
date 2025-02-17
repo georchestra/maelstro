@@ -4,6 +4,7 @@ import yaml
 from functools import cache
 from typing import Any
 from maelstro.common.types import Credentials, DbConfig
+from maelstro.common.models import SourcesResponseElement, DestinationsResponseElement
 
 
 class ConfigError(Exception):
@@ -55,22 +56,22 @@ class Config:
                 geor_instance["geoserver"], common_credentials
             )
 
-    def get_gn_sources(self) -> list[dict[str, str]]:
+    def get_gn_sources(self) -> list[SourcesResponseElement]:
         return [
-            {"name": gn["name"], "url": gn["api_url"]}
+            SourcesResponseElement(name=gn["name"], url=gn["api_url"])
             for gn in self.config["sources"]["geonetwork_instances"]
         ]
 
     def get_gs_sources(self) -> list[str]:
         return [gs["url"] for gs in self.config["sources"]["geoserver_instances"]]
 
-    def get_destinations(self) -> list[dict[str, str]]:
+    def get_destinations(self) -> list[DestinationsResponseElement]:
         return [
-            {
-                "name": k,
-                "gn_url": v["geonetwork"]["api_url"],
-                "gs_url": v["geoserver"]["url"],
-            }
+            DestinationsResponseElement(
+                name=k,
+                gn_url=v["geonetwork"]["api_url"],
+                gs_url=v["geoserver"]["url"],
+            )
             for k, v in self.config["destinations"].items()
         ]
 

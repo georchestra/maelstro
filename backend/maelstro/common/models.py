@@ -32,14 +32,14 @@ class UserResponse(BaseModel):
     - sec_orgname: Organization name
     """
 
-    username: str
-    org: str
-    roles: str
+    username: Optional[str]
+    org: Optional[str]
+    roles: Optional[str]
     external_authentication: Annotated[
-        str, Field(None, serialization_alias="external-authentication")
+        Optional[str], Field(None, serialization_alias="external-authentication")
     ]
-    proxy: str
-    orgname: str
+    proxy: Optional[str]
+    orgname: Optional[str]
 
 
 class SourcesResponseElement(BaseModel):

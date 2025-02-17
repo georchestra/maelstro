@@ -31,6 +31,7 @@ from maelstro.common.models import (
     UserResponse,
     user_response_description,
     SourcesResponseElement,
+    DestinationsResponseElement,
     RegisteredTransformation,
     LinkedLayer,
     JsonLogRecord,
@@ -57,7 +58,6 @@ def root_page() -> dict[str, str]:
 
 @app.get(
     "/user",
-    response_model=UserResponse,
     response_description=user_response_description,
 )
 def user_page(
@@ -69,18 +69,18 @@ def user_page(
     ] = None,
     sec_proxy: Annotated[str | None, Header(include_in_schema=False)] = None,
     sec_orgname: Annotated[str | None, Header(include_in_schema=False)] = None,
-) -> dict[str, str | None]:
+) -> UserResponse:
     """
     Display user information provided by gateway
     """
-    return {
-        "username": sec_username,
-        "org": sec_org,
-        "roles": sec_roles,
-        "external-authentication": sec_external_authentication,
-        "proxy": sec_proxy,
-        "orgname": sec_orgname,
-    }
+    return UserResponse(
+        username=sec_username,
+        org=sec_org,
+        roles=sec_roles,
+        external_authentication=sec_external_authentication,
+        proxy=sec_proxy,
+        orgname=sec_orgname,
+    )
 
 
 debug_response_description = """
@@ -153,18 +153,20 @@ def check_config(
 
 @app.get(
     "/sources",
-    response_model=list[SourcesResponseElement],
     response_description="A list of each server with the name defined in the config file and the API URL",
 )
-def get_sources() -> list[dict[str, str]]:
+def get_sources() -> list[SourcesResponseElement]:
     """
     List all the geonetwork source servers registered in the config file
     """
     return config.get_gn_sources()
 
 
-@app.get("/destinations")
-def get_destinations() -> list[dict[str, str]]:
+@app.get(
+    "/destinations",
+    response_description="A list of destinations with name, URL of geonetwork server and URL of geoserver for each",
+)
+def get_destinations() -> list[DestinationsResponseElement]:
     """
     List all the geonetwork/geoserver combinations registered in the config file
     """
