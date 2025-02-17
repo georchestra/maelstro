@@ -1,0 +1,73 @@
+
+volumes:
+    postgresql_data:
+
+services:
+  database:
+    image: postgres:16
+    environment:
+      - PGHOST=database
+      - PGPORT=5432
+      - PGDATABASE=georchestra
+      - PGUSER=georchestra
+      - PGPASSWORD=georchestra
+      - POSTGRES_USER=georchestra
+      - POSTGRES_PASSWORD=georchestra
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    restart: no
+
+  maelstro-front:
+    build:
+      context: ./frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/maelstro/"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    volumes:
+      - ./config/:/etc/maelstro/:ro
+    ports:
+      - "8080:8080"
+
+  maelstro-back:
+    build:
+      context: ./backend
+      target: server
+    healthcheck:
+      test: "health_check"
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    volumes:
+      - ./backend:/app
+      - ./config/:/etc/maelstro/:ro
+    environment:
+      MAELSTRO_CONFIG: /etc/maelstro/config.yaml
+      LOCAL_LOGIN: "testadmin"
+      LOCAL_PASSWORD: "testadmin"
+      DEMO_CRD: "test12"
+      PGHOST: "database"
+      PGPORT: "5432"
+      PGDATABASE: "georchestra"
+      PGUSER: "georchestra"
+      PGPASSWORD: "georchestra"
+    command:
+      - serve_docker_dev
+
+  check:
+    profiles:
+      - check
+    build:
+      context: ./backend
+      target: check
+    environment:
+      MAELSTRO_CONFIG: /app/tests/test_config.yaml
+      LOCAL_LOGIN: testadmin
+      LOCAL_PASSWORD: testadmin
+    volumes:
+      - ./backend:/app

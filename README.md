@@ -2,7 +2,7 @@
 
 geOrchestra Maelstro is an application which helps synchronise geonetwork and geoserver instances
 
-## Quick start
+## Quick start with geOrchestra
 
 Before starting developement you need to setup some geOrchestra configurations.
 
@@ -23,6 +23,15 @@ With credentials:
 
 - testadmin:testadmin
 - tmaelstro:tmaelstro
+
+## Solo quick start
+Maelstro can be used outside geOrchestra.
+
+```
+docker compose -f docker-compose-solo.yml up 
+```
+Open : http://127.0.0.1:8080/maelstro/ 
+There is no authentication to access the page but if needed it can be done with basic auth in the [nginx config](./config/nginx-solo.conf) (or another way)
 
 ## Frontend developement
 

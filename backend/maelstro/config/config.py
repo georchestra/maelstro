@@ -171,7 +171,7 @@ def substitute_single_credentials_from_env(
     if common_password is not None:
         if server_instance.get("password") is None:
             server_instance["password"] = common_password
-    print(server_instance)
+
     return Credentials(server_instance.get("login"), server_instance.get("password"))
 
 
