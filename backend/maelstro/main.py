@@ -8,7 +8,6 @@ from fastapi import (
     HTTPException,
     status,
     Request,
-    Response,
     Header,
     Body,
 )
@@ -31,8 +30,6 @@ from maelstro.common.models import SearchQuery
 app = FastAPI(root_path="/maelstro-backend")
 setup_exception_handlers(app)
 setup_db_logging()
-
-app.state.health_countdown = 5
 
 
 @app.head("/")
@@ -208,7 +205,6 @@ def get_logs(
 
 @app.get("/health")
 def health_check(
-    response: Response,
     sec_username: Annotated[str | None, Header(include_in_schema=False)] = None,
 ) -> dict[str, str | None]:
     """
@@ -216,8 +212,4 @@ def health_check(
     For test purposes, the server is reported healthy only from the 5th request onwards
     """
     health_status: str = "healthy"
-    if app.state.health_countdown > 0:
-        app.state.health_countdown -= 1
-        response.status_code = 404
-        health_status = "unhealthy"
     return {"status": health_status, "user": sec_username}
