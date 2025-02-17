@@ -1,6 +1,8 @@
 from typing import Any
 import logging
 from logging import Handler
+
+from fastapi.responses import JSONResponse, PlainTextResponse
 from requests import Response
 from requests.exceptions import RequestException
 from fastapi import FastAPI, HTTPException, Request
@@ -14,12 +16,17 @@ from maelstro.logging.psql_logger import log_request_to_db
 def setup_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def handle_fastapi_exception(request: Request, err: HTTPException) -> Any:
-        if "/copy/" in str(request.url):
+        # Seems that this could be done in copy route
+        if "/copy" in str(request.url):
             log_request_to_db(
-                err.status_code,
+                500,
                 request,
                 log_handler.properties,
                 log_handler.get_json_responses(),
+            )
+            return JSONResponse(
+                log_handler.get_json_responses(),
+                status_code=500,
             )
         return await http_exception_handler(request, err)
 
