@@ -52,6 +52,7 @@ spec:
           env:
             - name: MAELSTRO_CONFIG
               value: "/etc/georchestra/maelstro/config.yaml"
+            {{- include "maelstro.bootstrap_maelstro_database_envs" . | nindent 12 }}
             {{- range .Values.credentials }}
             - name: {{ .name }}_USERNAME
               valueFrom:
