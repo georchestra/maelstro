@@ -57,13 +57,13 @@ spec:
             - name: {{ .name }}_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm-maelstro.fullname" . }}-creds-ext-plateform-secret
+                  name: maelstro-creds-ext-plateform-secret
                   key: {{ .name }}_USERNAME
                   optional: false
             - name: {{ .name }}_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm-maelstro.fullname" . }}-creds-ext-plateform-secret
+                  name: maelstro-creds-ext-plateform-secret
                   key: {{ .name }}_PASSWORD
                   optional: false
             {{- end }}
