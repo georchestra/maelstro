@@ -80,7 +80,7 @@ def log_request_to_db(
     request: Request,
     properties: dict[str, Any],
     operations: list[dict[str, Any]],
-) -> None:
+) -> Log | None:
     record = {
         "start_time": properties.get("start_time"),
         "end_time": datetime.now(),
@@ -97,15 +97,17 @@ def log_request_to_db(
         "copy_styles": to_bool(request.query_params.get("copy_styles")),
         "details": operations,
     }
-    log_to_db(record)
+    return log_to_db(record)
 
 
-def log_to_db(record: dict[str, Any]) -> None:
+def log_to_db(record: dict[str, Any]) -> Log | None:
     if not LOGGING_ACTIVE:
         return
     with Session(get_engine()) as session:
-        session.add(Log(**record))
+        log = Log(**record)
+        session.add(log)
         session.commit()
+        return log
 
 
 def get_raw_logs(

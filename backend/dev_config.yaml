@@ -1,7 +1,7 @@
 sources:
   geonetwork_instances:
     # une seule instance geonetwork source supportée dans la v1
-    # ce nom sera utilisé dans une V2 (non financée) pour que l'utilisateur final choisisse l'instance GN source 
+    # ce nom sera utilisé dans une V2 (non financée) pour que l'utilisateur final choisisse l'instance GN source
     - name: "GeonetworkDemo"
       # api_url: https://mastergn.rennesmetropole.fr/geonetwork/srv/api
       api_url: "https://demo.georchestra.org/geonetwork/srv/api"
@@ -11,12 +11,11 @@ sources:
       api_url: "https://public.sig.rennesmetropole.fr/geonetwork/srv/api"
       login: "${XXX}"
       password: "${XXX}"
-  geoserver_instances: 
+  geoserver_instances:
     - url: "https://demo.georchestra.org/geoserver"
       login: "${DEMO_LOGIN}"
       password: "${DEMO_LOGIN}"
-  
-  
+
 destinations:
   # nom de l'instance geOrchestra destination, telle qu'il apparaitra dans la UI
   "CompoLocale":
@@ -29,6 +28,11 @@ destinations:
   "CompoLocaleMaelstro":
     login: "tmaelstro"
     password: "tmaelstro"
+    geonetwork:
+      api_url: "http://proxy:8080/geonetwork/srv/api"
+    geoserver:
+      url: "http://proxy:8080/geoserver"
+  "CompoLocaleNoAuth":
     geonetwork:
       api_url: "http://proxy:8080/geonetwork/srv/api"
     geoserver:
