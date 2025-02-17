@@ -54,8 +54,6 @@ spec:
               value: "/etc/georchestra/maelstro/scripts"
             - name: MAELSTRO_BACK_HOST
               value: "{{ include "helm-maelstro.fullname" . }}-maelstro-backend-svc"
-            - name: MAELSTRO_FRONT_HOST
-              value: "{{ include "helm-maelstro.fullname" . }}-maelstro-frontend-svc"
           {{- with .Values.maelstro_frontend.extra_environment }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

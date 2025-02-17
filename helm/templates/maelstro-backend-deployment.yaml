@@ -52,10 +52,6 @@ spec:
           env:
             - name: MAELSTRO_CONFIG
               value: "/etc/georchestra/maelstro/config.yaml"
-            - name: MAELSTRO_BACK_HOST
-              value: {{ include "helm-maelstro.fullname" . }}-maelstro-backend-svc
-            - name: MAELSTRO_FRONT_HOST
-              value: {{ include "helm-maelstro.fullname" . }}-maelstro-frontend-svc
             {{- include "maelstro.bootstrap_maelstro_database_envs" . | nindent 12 }}
             {{- range .Values.credentials }}
             - name: {{ .name }}_USERNAME
