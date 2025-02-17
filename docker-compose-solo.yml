@@ -5,14 +5,8 @@ volumes:
 services:
   database:
     image: postgres:16
-    environment:
-      - PGHOST=database
-      - PGPORT=5432
-      - PGDATABASE=georchestra
-      - PGUSER=georchestra
-      - PGPASSWORD=georchestra
-      - POSTGRES_USER=georchestra
-      - POSTGRES_PASSWORD=georchestra
+    env_file:
+      - .envs-database
     ports:
       - "5432:5432"
     volumes:
@@ -46,16 +40,13 @@ services:
     volumes:
       - ./backend:/app
       - ./config/:/etc/maelstro/:ro
+    env_file:
+      - .envs-database
     environment:
       MAELSTRO_CONFIG: /etc/maelstro/config.yaml
       LOCAL_LOGIN: "testadmin"
       LOCAL_PASSWORD: "testadmin"
       DEMO_CRD: "test12"
-      PGHOST: "database"
-      PGPORT: "5432"
-      PGDATABASE: "georchestra"
-      PGUSER: "georchestra"
-      PGPASSWORD: "georchestra"
     command:
       - serve_docker_dev
 

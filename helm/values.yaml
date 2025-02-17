@@ -53,3 +53,14 @@ datadir:
   git:
     url: https://github.com/georchestra/datadir.git
     ref: docker-master
+
+database:
+  auth:
+    database: georchestra
+    host: georchestra
+    port: "5432"
+    username: georchestra
+    password: georchestra
+    # here specify the name of the secret to use
+    # existingSecret: mysecret
+
