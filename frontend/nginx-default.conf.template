@@ -14,7 +14,7 @@ server {
     }
 
     location /maelstro-backend {
-      proxy_pass http://maelstro-back:8000;
+      proxy_pass http://${MAELSTRO_BACK_HOST}:8000;
       add_header Cache-Control "public, max-age=0, s-maxage=0, must-revalidate" always;
     }
 
