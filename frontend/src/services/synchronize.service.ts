@@ -15,26 +15,26 @@ export type Log = {
   operation?: string
 }
 
-export type InvolvedMetadata = {
+export type CopyPreviewMetadata = {
   title: string
 }
 
-export type InvolvedGeonetwork = {
+export type CopyPreviewGeonetwork = {
   src: string
   dst: string
-  metadata: InvolvedMetadata[]
+  metadata: CopyPreviewMetadata[]
 }
 
-export type InvolvedGeoserver = {
+export type CopyPreviewGeoserver = {
   src: string
   dst: string
   layers: string[]
   styles: string[]
 }
 
-export type InvolvedResources = {
-  metadata: InvolvedGeonetwork[]
-  data: InvolvedGeoserver[]
+export type CopyPreview = {
+  metadata: CopyPreviewGeonetwork[]
+  data: CopyPreviewGeoserver[]
 }
 
 function toSynchronizeParams(params: SynchronizeParams): URLSearchParams {
@@ -45,13 +45,10 @@ function toSynchronizeParams(params: SynchronizeParams): URLSearchParams {
 }
 
 export const synchronizeService = {
-  async getInvolvedResources(params: SynchronizeParams): Promise<InvolvedResources> {
-    const response = await fetch(
-      '/maelstro-backend/involved_resources?' + toSynchronizeParams(params),
-      {
-        method: 'GET',
-      },
-    )
+  async getCopyPreview(params: SynchronizeParams): Promise<CopyPreview> {
+    const response = await fetch('/maelstro-backend/copy_preview?' + toSynchronizeParams(params), {
+      method: 'GET',
+    })
     return await response.json()
   },
 

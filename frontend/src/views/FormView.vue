@@ -3,7 +3,7 @@ import LogsReport from '@/components/LogsReport.vue'
 import type { SearchResult } from '@/services/geonetworkSearch.service'
 import {
   synchronizeService,
-  type InvolvedResources,
+  type CopyPreview,
   type Log,
   type SynchronizeParams,
 } from '@/services/synchronize.service'
@@ -46,7 +46,7 @@ const parameters = ref({
   dry_run: false,
 })
 
-const involvedResources = ref<InvolvedResources>({
+const copyPreview = ref<CopyPreview>({
   metadata: [],
   data: [],
 })
@@ -74,7 +74,7 @@ const onFormSubmit = async () => {
   }
 
   try {
-    involvedResources.value = await synchronizeService.getInvolvedResources(synchronizeParams.value)
+    copyPreview.value = await synchronizeService.getCopyPreview(synchronizeParams.value)
   } catch (error) {
     console.error(error)
   }
@@ -174,11 +174,13 @@ const backToForm = () => {
 
     <div v-else>
       <div class="w-[600px] mx-auto">
-        <div class="mt-4 font-semibold">Les données suivantes seront synchronisées :</div>
+        <div class="mt-4 font-semibold">
+          {{ $t('Following data and metadata will be copied:') }}
+        </div>
 
         <div
           class="mt-4 p-4 border rounded shadow"
-          v-for="(geonetwork, index) in involvedResources.metadata"
+          v-for="(geonetwork, index) in copyPreview.metadata"
           :key="index"
         >
           <div class="my-1">{{ $t('Source:') }} {{ geonetwork.src }}</div>
@@ -191,7 +193,7 @@ const backToForm = () => {
 
         <div
           class="mt-4 p-4 border rounded shadow"
-          v-for="(server, index) in involvedResources.data"
+          v-for="(server, index) in copyPreview.data"
           :key="index"
         >
           <div class="my-1">{{ $t('Source:') }} {{ server.src }}</div>

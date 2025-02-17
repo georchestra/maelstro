@@ -47,7 +47,7 @@ class CloneDataset:
     def gs_dst(self) -> RestService:
         return self.geo_hnd.get_gs_service(self.dst_name, is_source=False)
 
-    def involved_resources(
+    def copy_preview(
         self,
         copy_meta: bool,
         copy_layers: bool,
@@ -63,7 +63,7 @@ class CloneDataset:
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
             self.meta = Meta(zipdata)
 
-            resources: dict[str, list[dict[str, Any]]] = {
+            preview: dict[str, list[dict[str, Any]]] = {
                 "metadata": [],
                 "data": [],
             }
@@ -77,7 +77,7 @@ class CloneDataset:
             )
             dst_gn_url = dst_gn_info["url"]
 
-            resources["metadata"].append(
+            preview["metadata"].append(
                 {
                     "src": src_gn_url,
                     "dst": dst_gn_url,
@@ -113,7 +113,7 @@ class CloneDataset:
                     for layer in layers.values():
                         styles.update(self.get_styles_from_layer(layer).keys())
 
-                resources["data"].append(
+                preview["data"].append(
                     {
                         "src": server_url,
                         "dst": dst_gs_url,
@@ -126,7 +126,7 @@ class CloneDataset:
                     }
                 )
 
-        return resources
+        return preview
 
     def clone_dataset(
         self,

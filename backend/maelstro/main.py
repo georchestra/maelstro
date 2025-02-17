@@ -139,8 +139,8 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
         return meta.get_ogc_geoserver_layers()
 
 
-@app.get("/involved_resources")
-def get_involved_resources(
+@app.get("/copy_preview")
+def get_copy_preview(
     src_name: str,
     dst_name: str,
     metadataUuid: str,
@@ -149,7 +149,7 @@ def get_involved_resources(
     copy_styles: bool = True,
 ) -> dict[str, Any]:
     clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
-    return clone_ds.involved_resources(copy_meta, copy_layers, copy_styles)
+    return clone_ds.copy_preview(copy_meta, copy_layers, copy_styles)
 
 
 @app.put(
