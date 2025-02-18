@@ -1,5 +1,6 @@
 import os
 from maelstro.metadata import Meta
+from maelstro.common.models import LinkedLayer
 
 
 def test_iso19139():
@@ -8,18 +9,18 @@ def test_iso19139():
     assert mm.properties["schema"] == "iso19139"
 
     assert mm.get_ogc_geoserver_layers() == [
-        {
-            'server_url': 'https://public.sig.rennesmetropole.fr/geoserver/ows?service=wms&request=GetCapabilities',
-            'name': 'trp_doux:reparation_velo',
-            'description': 'Stations de réparation et gonflage pour vélo sur Rennes Métropole',
-            'protocol': 'OGC:WMS'
-        },
-        {
+        LinkedLayer(**{
+                'server_url': 'https://public.sig.rennesmetropole.fr/geoserver/ows?service=wms&request=GetCapabilities',
+                'name': 'trp_doux:reparation_velo',
+                'description': 'Stations de réparation et gonflage pour vélo sur Rennes Métropole',
+                'protocol': 'OGC:WMS'
+        }),
+        LinkedLayer(**{
             'server_url': 'https://public.sig.rennesmetropole.fr/geoserver/ows?service=wfs&request=GetCapabilities',
             'name': 'trp_doux:reparation_velo',
             'description': 'Stations de réparation et gonflage pour vélo sur Rennes Métropole',
             'protocol': 'OGC:WFS'
-        }
+        })
     ]
 
     assert mm.get_title() == "Stations de réparation et gonflage pour vélo sur Rennes Métropole"
@@ -31,18 +32,18 @@ def test_iso19115():
     assert mm.properties["schema"] == "iso19115-3.2018"
 
     assert mm.get_ogc_geoserver_layers() == [
-        {
+        LinkedLayer(**{
             'server_url': 'https://data.lillemetropole.fr/geoserver/ows',
             'name': 'mel_espacepublic:voies_vertes_chemins',
             'description': 'mel_espacepublic:voies_vertes_chemins',
             'protocol': 'OGC:WMS'
-        },
-        {
+        }),
+        LinkedLayer(**{
             'server_url': 'https://data.lillemetropole.fr/geoserver/ows',
             'name': 'mel_espacepublic:voies_vertes_chemins',
             'description': 'mel_espacepublic:voies_vertes_chemins',
             'protocol': 'OGC:WFS'
-        }
+        })
     ]
 
     assert mm.get_title() == "Voies Vertes MEL à horizon 2026"

@@ -3,6 +3,7 @@ from zipfile import ZipFile
 from csv import DictReader
 from lxml import etree
 from maelstro.common.types import GsLayer
+from maelstro.common.models import LinkedLayer
 
 
 NS_PREFIXES = {
@@ -44,7 +45,7 @@ class MetaXml:
             return title_node.text or ""
         return ""
 
-    def get_ogc_geoserver_layers(self) -> list[dict[str, str]]:
+    def get_ogc_geoserver_layers(self) -> list[LinkedLayer]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
         return [
             self.layerproperties_from_link(link_node)
@@ -61,9 +62,9 @@ class MetaXml:
             gs_servers = []
         return {
             url: set(
-                self.get_gslayer_from_gn_link(l["name"], l["server_url"], gs_servers)
+                self.get_gslayer_from_gn_link(l.name, l.server_url, gs_servers)
                 for l in self.get_ogc_geoserver_layers()
-                if url in l["server_url"]
+                if url in l.server_url
             )
             for url in gs_servers
         }
@@ -132,13 +133,15 @@ class MetaXml:
             return False
         return link_protocol[:7].lower() in ["ogc:wms", "ogc:wfs", "ogc:wcs"]
 
-    def layerproperties_from_link(self, link_node: etree._Element) -> dict[str, str]:
-        return {
-            "server_url": self.url_from_link(link_node) or "",
-            "name": self.name_from_link(link_node) or "",
-            "description": self.desc_from_link(link_node) or "",
-            "protocol": self.protocol_from_link(link_node) or "",
-        }
+    def layerproperties_from_link(self, link_node: etree._Element) -> LinkedLayer:
+        return LinkedLayer(
+            **{
+                "server_url": self.url_from_link(link_node) or "",
+                "name": self.name_from_link(link_node) or "",
+                "description": self.desc_from_link(link_node) or "",
+                "protocol": self.protocol_from_link(link_node) or "",
+            }
+        )
 
     def url_from_link(self, link_node: etree._Element) -> str | None:
         return self.property_from_link(link_node, f"{self.prefix}:linkage")

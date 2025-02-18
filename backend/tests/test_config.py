@@ -6,7 +6,7 @@ from maelstro.common.types import Credentials, DbConfig
 
 os.environ["CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_config.yaml")
 os.environ["DB_CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_db_config.yaml")
-os.environ["XSLT_CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_xslst_config.yaml")
+os.environ["XSLT_CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_xslt_config.yaml")
 
 
 def test_init():
