@@ -67,7 +67,7 @@ def test_xslt():
         mm = Meta(zf.read())
     assert mm.xml_bytes.find(b"https://public.sig.rennesmetropole.fr/geoserver") >= 0
     assert mm.xml_bytes.find("Lien de téléchargement direct (GML3 EPSG:3948)".encode()) >= 0
-    mm.apply_xslt(os.path.join(os.path.dirname(__file__), "test_xslt.xsl"))
+    mm.apply_xslt(os.path.join(os.path.dirname(__file__), "test_public_to_prod.xsl"))
     assert mm.xml_bytes.find(b"https://prod.sig.rennesmetropole.fr/geoserver") >= 0
     assert mm.xml_bytes.find("Lien de téléchargement direct (GML3 EPSG:3948)".encode()) == -1
 
@@ -79,8 +79,8 @@ def test_xslt_chain():
     assert mm.xml_bytes.find("Lien de téléchargement direct (GML3 EPSG:3948)".encode()) >= 0
     mm.apply_xslt_chain(
         [
-            os.path.join(os.path.dirname(__file__), "test_xslt.xsl"),
-            os.path.join(os.path.dirname(__file__), "test_xslt2.xsl"),
+            os.path.join(os.path.dirname(__file__), "test_public_to_prod.xsl"),
+            os.path.join(os.path.dirname(__file__), "test_prod_to_final_prod.xsl"),
         ]
     )
     assert mm.xml_bytes.find(b"https://final_prod.sig.rennesmetropole.fr/geoserver") >= 0

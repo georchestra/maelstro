@@ -6,6 +6,7 @@ from maelstro.common.types import Credentials, DbConfig
 
 os.environ["CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_config.yaml")
 os.environ["DB_CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_db_config.yaml")
+os.environ["XSLT_CONFIG_PATH"] = os.path.join(os.path.dirname(__file__), "test_xslst_config.yaml")
 
 
 def test_init():
@@ -126,6 +127,28 @@ def test_get_info():
     }
     with pytest.raises(ConfigError) as err:
         conf.get_access_info(False, False, "MissingKey")
+
+
+def test_xslts():
+    conf = Config("XSLT_CONFIG_PATH")
+    assert set(conf.get_all_transformation_pairs().keys()) == {
+        'GeonetworkMaster -> PlateformeProfessionnelle',
+        'GeonetworkMaster -> PlateformePublique',
+        'GeonetworkMaster -> CompoLocale',
+        'GeonetworkRennes -> PlateformePublique',
+        'GeonetworkRennes -> CompoLocale'
+    }
+    assert len(conf.get_transformation_pair("GeonetworkMaster", "CompoLocale")) == 2
+    assert len(conf.get_transformation_pair("GeonetworkRennes", "CompoLocale")) == 1
+    assert len(conf.get_transformation_pair("GeonetworkRennes", "PlateformeProfessionelle")) == 0
+    assert [
+        el["xsl_path"]
+        for el in conf.get_transformation_pair("GeonetworkMaster", "CompoLocale")
+    ] == ["./tests/test_public_to_prod.xsl", "./tests/test_xslt_prod_to_final_prod.xsl"]
+    assert [
+        el["xsl_path"]
+        for el in conf.get_transformation_pair("GeonetworkRennes", "PlateformePublique")
+    ] == ["./tests/test_xslt_prod_to_final_prod.xsl", "./tests/test_public_to_prod.xsl"]
 
 
 def test_doc_sample():

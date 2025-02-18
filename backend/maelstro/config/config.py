@@ -1,6 +1,7 @@
 import os
 import re
 import yaml
+from functools import cache
 from typing import Any
 from maelstro.common.types import Credentials, DbConfig
 
@@ -83,9 +84,10 @@ class Config:
         return self.config.get("transformations", {})  # type: ignore
 
     def get_transformation_pair(self, src: str, dst: str) -> list[dict[str, Any]]:
-        return self.get_transformation_pairs()[f"{src} -> {dst}"]  # type: ignore
+        return self.get_all_transformation_pairs().get(f"{src} -> {dst}", [])  # type: ignore
 
-    def get_transformation_pairs(self) -> dict[str, Any]:
+    @cache  # pylint: disable=method-cache-max-size-none
+    def get_all_transformation_pairs(self) -> dict[str, Any]:
         transformations = {}
         for src in self.config["sources"]["geonetwork_instances"]:
             for dst_name, dst in self.config["destinations"].items():
