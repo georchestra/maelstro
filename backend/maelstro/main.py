@@ -186,15 +186,7 @@ def get_transformation_pairs() -> dict[str, list[RegisteredTransformation]]:
     """
     List all the transformations registered for each src/dst geonetwork pair
     """
-    return config.get_transformation_pairs()
-
-
-@app.get("/transformations")
-def get_transformations(with_src_dst: bool = False) -> dict[str, Any]:
-    return {
-        "Registered transformations": config.get_transformations(),
-        **(config.get_all_transformation_pairs() if with_src_dst else {}),
-    }
+    return config.get_all_transformation_pairs()
 
 
 @app.post("/search/{src_name}")
