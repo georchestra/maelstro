@@ -158,18 +158,23 @@ class CloneDataset:
             self.clone_layers()
 
         if self.copy_meta:
-            mapping: dict[str, list[str]] = {
-                "sources": config.get_gs_sources(),
-                "destinations": [src["gs_url"] for src in config.get_destinations()],
-            }
-            pre_info, post_info = self.meta.update_geoverver_urls(mapping)
-            self.geo_hnd.log_handler.responses.append(
-                {
-                    "operation": "Update of geoserver links in zip archive",
-                    "before": pre_info,
-                    "after": post_info,
-                }
+            xsl_transformations = config.get_transformation_pair(
+                self.src_name, self.dst_name
             )
+            if xsl_transformations:
+                transformation_paths = [
+                    trans["xsl_path"] for trans in xsl_transformations
+                ]
+
+                pre_info, post_info = self.meta.apply_xslt_chain(transformation_paths)
+                self.geo_hnd.log_handler.responses.append(
+                    {
+                        "operation": "Apply XSL transformations in zip archive",
+                        "transformations": xsl_transformations,
+                        "before": pre_info,
+                        "after": post_info,
+                    }
+                )
             self.geo_hnd.log_handler.properties["dst_title"] = self.meta.get_title()
             results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
             self.geo_hnd.log_handler.responses.append(

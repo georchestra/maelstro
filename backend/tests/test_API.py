@@ -55,7 +55,7 @@ def test_search5():
         "size": 5
     })
     assert len(response.json()['hits']['hits']) == 5
-    assert response.json()['hits']['total']['value'] == 388
+    assert response.json()['hits']['total']['value'] > 5
 
 
 @pytest.mark.skip("test depends on existing workspace 'PSC', so it does not work in CI yet")

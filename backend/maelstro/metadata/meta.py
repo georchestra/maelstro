@@ -79,7 +79,35 @@ class MetaXml:
             workspace_name=ows_url.lstrip("/").split("/")[0], layer_name=layer_name
         )
 
-    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> tuple[str, str]:
+    def _apply_xslt(self, xslt_path: str) -> bytes:
+        with open(xslt_path, encoding="utf8") as xslt_file:
+            xslt = etree.parse(xslt_file)
+        transform = etree.XSLT(xslt)
+        xml_root = etree.parse(BytesIO(self.xml_bytes))
+        return self.dump_tree_to_bytes(transform(xml_root))
+
+    def apply_xslt(self, xslt_path: str) -> tuple[str, str]:
+        pre = len(self.xml_bytes)
+        self.xml_bytes = self._apply_xslt(xslt_path)
+        post = len(self.xml_bytes)
+        return f"Before: {pre} bytes", f"After: {post} bytes"
+
+    def apply_xslt_chain(self, xslt_paths: list[str]) -> tuple[str, str]:
+        pre = len(self.xml_bytes)
+        for xslt_path in xslt_paths:
+            self.xml_bytes = self._apply_xslt(xslt_path)
+        post = len(self.xml_bytes)
+        return f"Before: {pre} bytes", f"After: {post} bytes"
+
+    def dump_tree_to_bytes(self, xml_root: etree._ElementTree) -> bytes:
+        b_io = BytesIO()
+        xml_root.write(b_io)
+        b_io.seek(0)
+        return b_io.read()
+
+    def replace_geoserver_src_by_dst_urls(
+        self, mapping: dict[str, list[str]]
+    ) -> tuple[str, str]:
         xml_root = etree.parse(BytesIO(self.xml_bytes))
         for url_node in xml_root.findall(
             f".//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage/",
@@ -96,7 +124,7 @@ class MetaXml:
         pre = len(self.xml_bytes)
         self.xml_bytes = b_io.read()
         post = len(self.xml_bytes)
-        return f"Before: {pre} bytes", f"Before: {post} bytes"
+        return f"Before: {pre} bytes", f"After: {post} bytes"
 
     def is_ogc_layer(self, link_node: etree._Element) -> bool:
         link_protocol = self.protocol_from_link(link_node)
@@ -147,8 +175,24 @@ class MetaZip(MetaXml):
 
         super().__init__(xml_bytes, schema)
 
-    def update_geoverver_urls(self, mapping: dict[str, list[str]]) -> tuple[str, str]:
-        super().update_geoverver_urls(mapping)
+    def replace_geoserver_src_by_dst_urls(
+        self, mapping: dict[str, list[str]]
+    ) -> tuple[str, str]:
+        ret = super().replace_geoserver_src_by_dst_urls(mapping)
+        self.update_zip()
+        return ret
+
+    def apply_xslt(self, xslt_path: str) -> tuple[str, str]:
+        ret = super().apply_xslt(xslt_path)
+        self.update_zip()
+        return ret
+
+    def apply_xslt_chain(self, xslt_paths: list[str]) -> tuple[str, str]:
+        ret = super().apply_xslt_chain(xslt_paths)
+        self.update_zip()
+        return ret
+
+    def update_zip(self) -> tuple[str, str]:
         new_bytes = BytesIO(b"")
         with ZipFile(BytesIO(self.zipfile), "r") as zf_src:
             # get compression type from non directory elements of zip archive

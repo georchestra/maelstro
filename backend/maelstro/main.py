@@ -104,18 +104,40 @@ async def debug_page(request: Request) -> dict[str, Any]:
 
 @app.get("/check_config")
 def check_config(check_credentials: bool = True) -> dict[str, bool]:
+    """
+    This entrypoint is meant to validate the configuration.
+    - path of the config file (tbc. security issue ??)
+    - check that the format is correct
+    - check that all mandatory information is given
+    - tell which default values are used
+    :param check_credentials if true, all configured credentials are confirmaed to be valid via
+            a test connection to each server
+    To be implemented
+    """
     # TODO: implement check of all servers configured in the config file
     return {"test_conf.yaml": True, "check_credentials": check_credentials}
 
 
 @app.get("/sources")
 def get_sources() -> list[dict[str, str]]:
+    """
+    List all the geonetwork source servers registered in the config file
+    :returns: A list of each server with the name defined in the config file and the API URL
+    """
     return config.get_gn_sources()
 
 
 @app.get("/destinations")
 def get_destinations() -> list[dict[str, str]]:
     return config.get_destinations()
+
+
+@app.get("/transformations")
+def get_transformations(with_src_dst: bool = False) -> dict[str, Any]:
+    return {
+        "Registered transformations": config.get_transformations(),
+        **(config.get_all_transformation_pairs() if with_src_dst else {}),
+    }
 
 
 @app.post("/search/{src_name}")
