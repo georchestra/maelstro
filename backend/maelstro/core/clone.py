@@ -77,17 +77,19 @@ class CloneDataset:
             self.clone_layers()
 
         if self.copy_meta:
-            xsl_transformations = [
-                trans["xsl_path"]
-                for trans in config.get_transformation_pair(
-                    self.src_name, self.dst_name
-                )
-            ]
+            xsl_transformations = config.get_transformation_pair(
+                self.src_name, self.dst_name
+            )
             if xsl_transformations:
-                pre_info, post_info = self.meta.apply_xslt_chain(xsl_transformations)
+                transformation_paths = [
+                    trans["xsl_path"] for trans in xsl_transformations
+                ]
+
+                pre_info, post_info = self.meta.apply_xslt_chain(transformation_paths)
                 self.geo_hnd.log_handler.responses.append(
                     {
-                        "operation": "Update of geoserver links in zip archive",
+                        "operation": "Apply XSL transformations in zip archive",
+                        "transformations": xsl_transformations,
                         "before": pre_info,
                         "after": post_info,
                     }
