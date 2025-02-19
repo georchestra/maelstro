@@ -47,8 +47,8 @@ const parameters = ref({
 })
 
 const copyPreview = ref<CopyPreview>({
-  metadata: [],
-  data: [],
+  geonetwork_resources: [],
+  geoserver_resources: [],
 })
 
 const logs = ref<LogDetail[]>([])
@@ -185,7 +185,7 @@ const backToForm = () => {
 
         <div
           class="mt-4 p-4 border rounded shadow"
-          v-for="(geonetwork, index) in copyPreview.metadata"
+          v-for="(geonetwork, index) in copyPreview.geonetwork_resources"
           :key="index"
         >
           <div class="my-1">{{ $t('Source:') }} {{ geonetwork.src }}</div>
@@ -198,7 +198,7 @@ const backToForm = () => {
 
         <div
           class="mt-4 p-4 border rounded shadow"
-          v-for="(server, index) in copyPreview.data"
+          v-for="(server, index) in copyPreview.geoserver_resources"
           :key="index"
         >
           <div class="my-1">{{ $t('Source:') }} {{ server.src }}</div>
