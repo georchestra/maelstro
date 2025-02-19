@@ -34,6 +34,7 @@ from maelstro.common.models import (
     DestinationsResponseElement,
     RegisteredTransformation,
     LinkedLayer,
+    PreviewClone,
     JsonLogRecord,
     sample_json_log_records,
 )
@@ -221,15 +222,46 @@ def get_layers(
         return meta.get_ogc_geoserver_layers()
 
 
-@app.get("/copy_preview")
+@app.get(
+    "/copy_preview",
+    responses={
+        200: {
+            "content": {
+                "application/json": {},
+            }
+        },
+        400: {"description": "400 may also be an uuid which is not found, see details"},
+    },
+)
 def get_copy_preview(
-    src_name: str,
-    dst_name: str,
-    metadataUuid: str,
-    copy_meta: bool = True,
-    copy_layers: bool = True,
-    copy_styles: bool = True,
-) -> dict[str, Any]:
+    src_name: Annotated[
+        str,
+        Query(
+            description="Name of the source Geonetwork to be used for the copy operation"
+        ),
+    ],
+    dst_name: Annotated[
+        str,
+        Query(
+            description="Name of the destination Geonetwork to be used for the copy operation"
+        ),
+    ],
+    metadataUuid: Annotated[
+        str, Query(description="UUID which references the dataset")
+    ],
+    copy_meta: Annotated[
+        bool, Query(description="Enable copying metadata to destination Geonetwork")
+    ] = True,
+    copy_layers: Annotated[
+        bool, Query(description="Enable copying linked layers to destination Geoserver")
+    ] = True,
+    copy_styles: Annotated[
+        bool,
+        Query(
+            description="Enable copying styles of linked layers to destination Geoserver"
+        ),
+    ] = True,
+) -> PreviewClone:
     clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
     return clone_ds.copy_preview(copy_meta, copy_layers, copy_styles)
 

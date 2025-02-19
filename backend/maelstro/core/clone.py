@@ -9,6 +9,7 @@ from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
+from maelstro.common.models import PreviewClone
 from .georchestra import GeorchestraHandler, get_georchestra_handler
 from .exceptions import ParamError, MaelstroDetail
 from .operations import raise_for_status
@@ -52,7 +53,7 @@ class CloneDataset:
         copy_meta: bool,
         copy_layers: bool,
         copy_styles: bool,
-    ) -> dict[str, list[dict[str, Any]]]:
+    ) -> PreviewClone:
         self.copy_meta = copy_meta
         self.copy_layers = copy_layers
         self.copy_styles = copy_styles
@@ -64,8 +65,8 @@ class CloneDataset:
             self.meta = Meta(zipdata)
 
             preview: dict[str, list[dict[str, Any]]] = {
-                "metadata": [],
-                "data": [],
+                "geonetwork_resources": [],
+                "geoserver_resources": [],
             }
 
             src_gn_info = self.geo_hnd.get_service_info(
@@ -77,7 +78,7 @@ class CloneDataset:
             )
             dst_gn_url = dst_gn_info["url"]
 
-            preview["metadata"].append(
+            preview["geonetwork_resources"].append(
                 {
                     "src": src_gn_url,
                     "dst": dst_gn_url,
@@ -85,6 +86,7 @@ class CloneDataset:
                         [
                             {
                                 "title": self.meta.get_title(),
+                                "iso_standard": self.meta.schema,
                             }
                         ]
                         if self.copy_meta
@@ -113,7 +115,7 @@ class CloneDataset:
                     for layer in layers.values():
                         styles.update(self.get_styles_from_layer(layer).keys())
 
-                preview["data"].append(
+                preview["geoserver_resources"].append(
                     {
                         "src": server_url,
                         "dst": dst_gs_url,
@@ -126,7 +128,7 @@ class CloneDataset:
                     }
                 )
 
-        return preview
+        return PreviewClone(**preview)  # type: ignore
 
     def clone_dataset(
         self,

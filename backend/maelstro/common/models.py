@@ -69,11 +69,34 @@ class TransformationResponse(BaseModel):
     ]
 
 
+class Metadata(BaseModel):
+    title: str
+    iso_standard: Optional[str] = ""
+
+
 class LinkedLayer(BaseModel):
     server_url: str
     name: str
     description: str
     protocol: str
+
+
+class PreviewGN(BaseModel):
+    src: str
+    dst: str
+    metadata: list[Metadata]
+
+
+class PreviewGS(BaseModel):
+    src: str
+    dst: str
+    layers: list[str]
+    styles: list[str]
+
+
+class PreviewClone(BaseModel):
+    geonetwork_resources: list[PreviewGN]
+    geoserver_resources: list[PreviewGS]
 
 
 class JsonLogRecord(BaseModel):
