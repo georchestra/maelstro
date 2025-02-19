@@ -7,6 +7,8 @@ from fastapi import (
     FastAPI,
     HTTPException,
     status,
+    Path,
+    Query,
     Request,
     Header,
     Body,
@@ -24,7 +26,18 @@ from maelstro.logging.psql_logger import (
     format_logs,
     DbNotSetup,
 )
-from maelstro.common.models import SearchQuery
+from maelstro.common.models import (
+    SearchQuery,
+    UserResponse,
+    user_response_description,
+    SourcesResponseElement,
+    DestinationsResponseElement,
+    RegisteredTransformation,
+    LinkedLayer,
+    PreviewClone,
+    JsonLogRecord,
+    sample_json_log_records,
+)
 
 
 app = FastAPI(root_path="/maelstro-backend")
@@ -33,7 +46,10 @@ setup_db_logging()
 
 
 @app.head("/")
-@app.get("/")
+@app.get(
+    "/",
+    response_description="Hello world dict",
+)
 def root_page() -> dict[str, str]:
     """
     Hello world dummy route
@@ -41,7 +57,10 @@ def root_page() -> dict[str, str]:
     return {"Hello": "World"}
 
 
-@app.get("/user")
+@app.get(
+    "/user",
+    response_description=user_response_description,
+)
 def user_page(
     sec_username: Annotated[str | None, Header(include_in_schema=False)] = None,
     sec_org: Annotated[str | None, Header(include_in_schema=False)] = None,
@@ -51,18 +70,23 @@ def user_page(
     ] = None,
     sec_proxy: Annotated[str | None, Header(include_in_schema=False)] = None,
     sec_orgname: Annotated[str | None, Header(include_in_schema=False)] = None,
-) -> dict[str, str | None]:
+) -> UserResponse:
     """
     Display user information provided by gateway
     """
-    return {
-        "username": sec_username,
-        "org": sec_org,
-        "roles": sec_roles,
-        "external-authentication": sec_external_authentication,
-        "proxy": sec_proxy,
-        "orgname": sec_orgname,
-    }
+    return UserResponse(
+        username=sec_username,
+        org=sec_org,
+        roles=sec_roles,
+        external_authentication=sec_external_authentication,
+        proxy=sec_proxy,
+        orgname=sec_orgname,
+    )
+
+
+debug_response_description = """
+Contents of query including headers, data, query_params
+"""
 
 
 # pylint: disable=fixme
@@ -77,7 +101,9 @@ def user_page(
 async def debug_page(request: Request) -> dict[str, Any]:
     """
     Display details of query including headers.
+
     This may be useful in development to check all the headers provided by the gateway.
+
     This entrypoint should be deactivated in prod.
     """
     return {
@@ -103,54 +129,92 @@ async def debug_page(request: Request) -> dict[str, Any]:
 
 
 @app.get("/check_config")
-def check_config(check_credentials: bool = True) -> dict[str, bool]:
+def check_config(
+    check_credentials: Annotated[
+        bool,
+        Query(
+            description=(
+                "if true, all configured credentials are confirmed to be valid via "
+                "a test connection to each server"
+            )
+        ),
+    ] = True
+) -> dict[str, bool]:
     """
     This entrypoint is meant to validate the configuration.
     - path of the config file (tbc. security issue ??)
     - check that the format is correct
     - check that all mandatory information is given
     - tell which default values are used
-    :param check_credentials if true, all configured credentials are confirmaed to be valid via
-            a test connection to each server
     To be implemented
     """
     # TODO: implement check of all servers configured in the config file
     return {"test_conf.yaml": True, "check_credentials": check_credentials}
 
 
-@app.get("/sources")
-def get_sources() -> list[dict[str, str]]:
+@app.get(
+    "/sources",
+    response_description="A list of each server with the name defined in the config file and the API URL",
+)
+def get_sources() -> list[SourcesResponseElement]:
     """
     List all the geonetwork source servers registered in the config file
-    :returns: A list of each server with the name defined in the config file and the API URL
     """
     return config.get_gn_sources()
 
 
-@app.get("/destinations")
-def get_destinations() -> list[dict[str, str]]:
+@app.get(
+    "/destinations",
+    response_description="A list of destinations with name, URL of geonetwork server and URL of geoserver for each",
+)
+def get_destinations() -> list[DestinationsResponseElement]:
+    """
+    List all the geonetwork/geoserver combinations registered in the config file
+    """
     return config.get_destinations()
 
 
 @app.get("/transformations")
-def get_transformations(with_src_dst: bool = False) -> dict[str, Any]:
-    return {
-        "Registered transformations": config.get_transformations(),
-        **(config.get_all_transformation_pairs() if with_src_dst else {}),
-    }
+def get_transformations() -> dict[str, RegisteredTransformation]:
+    """
+    List all XSL transformations registered in the config file with their descriptions
+    """
+    return config.get_transformations()
+
+
+@app.get("/transformation_pairs")
+def get_transformation_pairs() -> dict[str, list[RegisteredTransformation]]:
+    """
+    List all the transformations registered for each src/dst geonetwork pair
+    """
+    return config.get_all_transformation_pairs()
 
 
 @app.post("/search/{src_name}")
 def post_search(
-    src_name: str, search_query: Annotated[SearchQuery, Body()]
+    src_name: Annotated[
+        str, Path(description="Name of the source Geonetwork to be used for the search")
+    ],
+    search_query: Annotated[SearchQuery, Body()],
 ) -> dict[str, Any]:
+    """
+    Transmit search query to selected Geonetwork server select among the sources
+    """
     with get_georchestra_handler() as geo_hnd:
         gn = geo_hnd.get_gn_service(src_name, True)
         return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
 
 
 @app.get("/sources/{src_name}/data/{uuid}/layers")
-def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
+def get_layers(
+    src_name: Annotated[
+        str, Path(description="Name of the source Geonetwork to be used for the search")
+    ],
+    uuid: Annotated[str, Path(description="UUID which references the dataset")],
+) -> list[LinkedLayer]:
+    """
+    Extract linked layers from a dataset on the source Geonetwork server
+    """
     with get_georchestra_handler() as geo_hnd:
         gn = geo_hnd.get_gn_service(src_name, True)
         zipdata = gn.get_record_zip(uuid).read()
@@ -158,15 +222,46 @@ def get_layers(src_name: str, uuid: str) -> list[dict[str, str]]:
         return meta.get_ogc_geoserver_layers()
 
 
-@app.get("/copy_preview")
+@app.get(
+    "/copy_preview",
+    responses={
+        200: {
+            "content": {
+                "application/json": {},
+            }
+        },
+        400: {"description": "400 may also be an uuid which is not found, see details"},
+    },
+)
 def get_copy_preview(
-    src_name: str,
-    dst_name: str,
-    metadataUuid: str,
-    copy_meta: bool = True,
-    copy_layers: bool = True,
-    copy_styles: bool = True,
-) -> dict[str, Any]:
+    src_name: Annotated[
+        str,
+        Query(
+            description="Name of the source Geonetwork to be used for the copy operation"
+        ),
+    ],
+    dst_name: Annotated[
+        str,
+        Query(
+            description="Name of the destination Geonetwork to be used for the copy operation"
+        ),
+    ],
+    metadataUuid: Annotated[
+        str, Query(description="UUID which references the dataset")
+    ],
+    copy_meta: Annotated[
+        bool, Query(description="Enable copying metadata to destination Geonetwork")
+    ] = True,
+    copy_layers: Annotated[
+        bool, Query(description="Enable copying linked layers to destination Geoserver")
+    ] = True,
+    copy_styles: Annotated[
+        bool,
+        Query(
+            description="Enable copying styles of linked layers to destination Geoserver"
+        ),
+    ] = True,
+) -> PreviewClone:
     clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
     return clone_ds.copy_preview(copy_meta, copy_layers, copy_styles)
 
@@ -174,20 +269,52 @@ def get_copy_preview(
 @app.put(
     "/copy",
     responses={
-        200: {"content": {"text/plain": {}, "application/json": {}}},
+        200: {
+            "content": {
+                "text/plain": {"example": ["string"]},
+                "application/json": {"example": [{}]},
+            }
+        },
         400: {"description": "400 may also be an uuid which is not found, see details"},
     },
 )
 def put_dataset_copy(
     request: Request,
-    src_name: str,
-    dst_name: str,
-    metadataUuid: str,
-    copy_meta: bool = True,
-    copy_layers: bool = True,
-    copy_styles: bool = True,
+    src_name: Annotated[
+        str,
+        Query(
+            description="Name of the source Geonetwork to be used for the copy operation"
+        ),
+    ],
+    dst_name: Annotated[
+        str,
+        Query(
+            description="Name of the destination Geonetwork to be used for the copy operation"
+        ),
+    ],
+    metadataUuid: Annotated[
+        str, Query(description="UUID which references the dataset")
+    ],
+    copy_meta: Annotated[
+        bool, Query(description="Enable copying metadata to destination Geonetwork")
+    ] = True,
+    copy_layers: Annotated[
+        bool, Query(description="Enable copying linked layers to destination Geoserver")
+    ] = True,
+    copy_styles: Annotated[
+        bool,
+        Query(
+            description="Enable copying styles of linked layers to destination Geoserver"
+        ),
+    ] = True,
     accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
 ) -> Any:
+    """
+    Complex operation: copy source dataset to destination including:
+    - metadata (if copy_meta == true)
+    - all linked geoserver layers (if copy_layers == true)
+    - all styles of linked layers (if copy_styles == true)
+    """
     if accept not in ["text/plain", "application/json"]:
         raise HTTPException(
             status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -207,20 +334,35 @@ def put_dataset_copy(
 @app.get(
     "/logs",
     responses={
-        200: {"content": {"text/plain": {}, "application/json": {}}},
-        500: {"content": {"text/plain": {}, "application/json": {}}},
+        200: {
+            "content": {
+                "text/plain": {"example": "OP1\nOP2"},
+                "application/json": {"example": sample_json_log_records},
+            }
+        },
+        500: {},
     },
 )
 def get_logs(
-    size: int = 5,
-    offset: int = 0,
-    get_details: bool = False,
+    size: Annotated[int, Query(description="Number of log record to retrieve")] = 5,
+    offset: Annotated[
+        int, Query(description="Offset of first log record to retrieve")
+    ] = 0,
+    get_details: Annotated[
+        bool,
+        Query(
+            description="Retrieve an additional field with the elementary operations (API calls)"
+        ),
+    ] = False,
     accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
-) -> Any:
+) -> str | list[JsonLogRecord]:
+    """
+    Get a defined number of log records in json or plain text format
+    """
     try:
         if accept == "application/json":
             return get_raw_logs(size, offset, get_details)
-        return PlainTextResponse("\n".join(format_logs(size, offset)))
+        return PlainTextResponse("\n".join(format_logs(size, offset)))  # type: ignore
     except DbNotSetup as err:
         raise HTTPException(500, "DB logging not configured") from err
 

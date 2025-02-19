@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from pydantic import TypeAdapter
 from maelstro.config import app_config as config
 from maelstro.common.types import DbConfig
+from maelstro.common.models import JsonLogRecord
 
 
 class DbNotSetup(Exception):
@@ -110,12 +111,12 @@ def log_to_db(record: dict[str, Any]) -> None:
 
 def get_raw_logs(
     size: int, offset: int, get_details: bool = False
-) -> list[dict[str, Any]]:
+) -> list[JsonLogRecord]:
     if not LOGGING_ACTIVE:
         raise DbNotSetup
     with Session(get_engine()) as session:
         return [
-            row.to_dict(get_details)
+            JsonLogRecord(**row.to_dict(get_details))
             for row in session.query(Log)
             .order_by(Log.id.desc())
             .offset(offset)

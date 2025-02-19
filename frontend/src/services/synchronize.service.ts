@@ -28,8 +28,8 @@ export type CopyPreviewGeoserver = {
 }
 
 export type CopyPreview = {
-  metadata: CopyPreviewGeonetwork[]
-  data: CopyPreviewGeoserver[]
+  geonetwork_resources: CopyPreviewGeonetwork[]
+  geoserver_resources: CopyPreviewGeoserver[]
 }
 
 function toSynchronizeParams(params: SynchronizeParams): URLSearchParams {
