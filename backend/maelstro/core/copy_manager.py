@@ -9,7 +9,7 @@ from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
-from maelstro.common.models import PreviewClone
+from maelstro.common.models import CopyPreview
 from .georchestra import GeorchestraHandler, get_georchestra_handler
 from .exceptions import ParamError, MaelstroDetail
 from .operations import raise_for_status
@@ -18,14 +18,14 @@ from .operations import raise_for_status
 logger = logging.getLogger()
 
 
-class CloneDataset:
+class CopyManager:
     def __init__(self, src_name: str, dst_name: str, uuid: str):
         self.src_name = src_name
         self.dst_name = dst_name
         self.uuid = uuid
-        self.copy_meta = False
-        self.copy_layers = False
-        self.copy_styles = False
+        self.include_meta = False
+        self.include_layers = False
+        self.include_styles = False
         self.meta: Meta
         self.geo_hnd: GeorchestraHandler
         self.checked_workspaces: set[str] = set()
@@ -50,13 +50,13 @@ class CloneDataset:
 
     def copy_preview(
         self,
-        copy_meta: bool,
-        copy_layers: bool,
-        copy_styles: bool,
-    ) -> PreviewClone:
-        self.copy_meta = copy_meta
-        self.copy_layers = copy_layers
-        self.copy_styles = copy_styles
+        include_meta: bool,
+        include_layers: bool,
+        include_styles: bool,
+    ) -> CopyPreview:
+        self.include_meta = include_meta
+        self.include_layers = include_layers
+        self.include_styles = include_styles
 
         with get_georchestra_handler() as geo_hnd:
             self.geo_hnd = geo_hnd
@@ -89,7 +89,7 @@ class CloneDataset:
                                 "iso_standard": self.meta.schema,
                             }
                         ]
-                        if self.copy_meta
+                        if self.include_meta
                         else []
                     ),
                 }
@@ -121,32 +121,32 @@ class CloneDataset:
                         "dst": dst_gs_url,
                         "layers": (
                             [str(layer_name) for layer_name in layer_names]
-                            if self.copy_layers
+                            if self.include_layers
                             else []
                         ),
-                        "styles": list(styles) if self.copy_styles else [],
+                        "styles": list(styles) if self.include_styles else [],
                     }
                 )
 
-        return PreviewClone(**preview)  # type: ignore
+        return CopyPreview(**preview)  # type: ignore
 
-    def clone_dataset(
+    def copy_dataset(
         self,
-        copy_meta: bool,
-        copy_layers: bool,
-        copy_styles: bool,
+        include_meta: bool,
+        include_layers: bool,
+        include_styles: bool,
         output_format: str = "text/plain",
     ) -> str | list[Any]:
-        self.copy_meta = copy_meta
-        self.copy_layers = copy_layers
-        self.copy_styles = copy_styles
+        self.include_meta = include_meta
+        self.include_layers = include_layers
+        self.include_styles = include_styles
 
         with get_georchestra_handler() as geo_hnd:
             self.geo_hnd = geo_hnd
-            operations = self._clone_dataset(output_format)
+            operations = self._copy_dataset(output_format)
         return operations
 
-    def _clone_dataset(self, output_format: str) -> str | list[Any]:
+    def _copy_dataset(self, output_format: str) -> str | list[Any]:
 
         if self.uuid:
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
@@ -156,10 +156,10 @@ class CloneDataset:
         if self.meta is None:
             return []
 
-        if self.copy_layers or self.copy_styles:
-            self.clone_layers()
+        if self.include_layers or self.include_styles:
+            self.copy_layers()
 
-        if self.copy_meta:
+        if self.include_meta:
             xsl_transformations = config.get_transformation_pair(
                 self.src_name, self.dst_name
             )
@@ -190,7 +190,7 @@ class CloneDataset:
             return self.geo_hnd.log_handler.get_formatted_responses()
         return self.geo_hnd.log_handler.get_json_responses()
 
-    def clone_layers(self) -> None:
+    def copy_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
         for gs_url, layer_names in server_layers.items():
             if layer_names:
@@ -206,7 +206,7 @@ class CloneDataset:
                 styles = {}
 
                 # fill in workspaces used in styles
-                if self.copy_styles:
+                if self.include_styles:
                     for layer_data in layers.values():
                         styles.update(self.get_styles_from_layer(layer_data))
 
@@ -218,7 +218,7 @@ class CloneDataset:
                             pass
 
                 # fill in workspaces  and datastores used in layers
-                if self.copy_layers:
+                if self.include_layers:
                     stores.update(self.get_stores_from_layers(gs_src, layers))
 
                     for store in stores.values():
@@ -227,15 +227,15 @@ class CloneDataset:
                 self.check_workspaces(gs_src, workspaces)
                 self.check_datastores(gs_src, stores)
 
-                # styles must be cloned first
-                if self.copy_styles:
+                # styles must be copieed first
+                if self.include_styles:
                     for style in styles.values():
-                        self.clone_style(gs_src, style)
+                        self.copy_style(gs_src, style)
 
                 # styles must be available when cloning layers
-                if self.copy_layers:
+                if self.include_layers:
                     for layer_name, layer_data in layers.items():
-                        self.clone_layer(gs_src, layer_name, layer_data)
+                        self.copy_layer(gs_src, layer_name, layer_data)
 
     def get_styles_from_layer(self, layer_data: dict[str, Any]) -> dict[str, Any]:
         default_style = layer_data["layer"]["defaultStyle"]
@@ -317,7 +317,7 @@ class CloneDataset:
                 )
             raise_for_status(has_datastore)
 
-    def clone_layer(
+    def copy_layer(
         self,
         gs_src: RestService,
         layer_name: GsLayer,
@@ -375,7 +375,7 @@ class CloneDataset:
         )
         raise_for_status(resp)
 
-    def clone_style(
+    def copy_style(
         self,
         gs_src: RestService,
         style: dict[str, Any],

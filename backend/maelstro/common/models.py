@@ -94,7 +94,7 @@ class PreviewGS(BaseModel):
     styles: list[str]
 
 
-class PreviewClone(BaseModel):
+class CopyPreview(BaseModel):
     geonetwork_resources: list[PreviewGN]
     geoserver_resources: list[PreviewGS]
 
