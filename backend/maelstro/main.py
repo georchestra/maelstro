@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse
 from maelstro.core.georchestra import get_georchestra_handler
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
-from maelstro.core import CloneDataset
+from maelstro.core import CopyManager
 from maelstro.core.operations import log_handler, setup_exception_handlers
 from maelstro.logging.psql_logger import (
     setup_db_logging,
@@ -34,7 +34,7 @@ from maelstro.common.models import (
     DestinationsResponseElement,
     RegisteredTransformation,
     LinkedLayer,
-    PreviewClone,
+    CopyPreview,
     JsonLogRecord,
     sample_json_log_records,
 )
@@ -261,9 +261,9 @@ def get_copy_preview(
             description="Enable copying styles of linked layers to destination Geoserver"
         ),
     ] = True,
-) -> PreviewClone:
-    clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
-    return clone_ds.copy_preview(copy_meta, copy_layers, copy_styles)
+) -> CopyPreview:
+    copy_mgr = CopyManager(src_name, dst_name, metadataUuid)
+    return copy_mgr.copy_preview(copy_meta, copy_layers, copy_styles)
 
 
 @app.put(
@@ -321,8 +321,8 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
-    clone_ds = CloneDataset(src_name, dst_name, metadataUuid)
-    operations = clone_ds.clone_dataset(copy_meta, copy_layers, copy_styles, accept)
+    copy_mgr = CopyManager(src_name, dst_name, metadataUuid)
+    operations = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles, accept)
     log_request_to_db(
         200, request, log_handler.properties, log_handler.get_json_responses()
     )
