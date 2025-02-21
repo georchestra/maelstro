@@ -9,7 +9,7 @@ from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
-from maelstro.common.models import CopyPreview
+from maelstro.common.models import CopyPreview, InfoRecord
 from .georchestra import GeorchestraHandler, get_georchestra_handler
 from .exceptions import ParamError, MaelstroDetail
 from .operations import raise_for_status
@@ -19,7 +19,7 @@ logger = logging.getLogger()
 
 
 class CopyManager:
-    def __init__(self, src_name: str, dst_name: str, uuid: str):
+    def __init__(self, src_name: str, dst_name: str, uuid: str, geo_hnd: GeorchestraHandler):
         self.src_name = src_name
         self.dst_name = dst_name
         self.uuid = uuid
@@ -27,7 +27,7 @@ class CopyManager:
         self.include_layers = False
         self.include_styles = False
         self.meta: Meta
-        self.geo_hnd: GeorchestraHandler
+        self.geo_hnd: GeorchestraHandler = geo_hnd
         self.checked_workspaces: set[str] = set()
         self.checked_datastores: set[str] = set()
 
@@ -58,9 +58,7 @@ class CopyManager:
         self.include_layers = include_layers
         self.include_styles = include_styles
 
-        with get_georchestra_handler() as geo_hnd:
-            self.geo_hnd = geo_hnd
-
+        if True:
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
             self.meta = Meta(zipdata)
 
@@ -135,18 +133,10 @@ class CopyManager:
         include_meta: bool,
         include_layers: bool,
         include_styles: bool,
-        output_format: str = "text/plain",
-    ) -> str | list[Any]:
+    ) -> None:
         self.include_meta = include_meta
         self.include_layers = include_layers
         self.include_styles = include_styles
-
-        with get_georchestra_handler() as geo_hnd:
-            self.geo_hnd = geo_hnd
-            operations = self._copy_dataset(output_format)
-        return operations
-
-    def _copy_dataset(self, output_format: str) -> str | list[Any]:
 
         if self.uuid:
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
@@ -170,25 +160,23 @@ class CopyManager:
 
                 pre_info, post_info = self.meta.apply_xslt_chain(transformation_paths)
                 self.geo_hnd.log_handler.log_info(
-                    {
-                        "operation": "Apply XSL transformations in zip archive",
-                        "transformations": xsl_transformations,
-                        "before": pre_info,
-                        "after": post_info,
-                    }
+                    InfoRecord(
+                        message="Apply XSL transformations in zip archive",
+                        detail={
+                            "transformations": xsl_transformations,
+                            "before": pre_info,
+                            "after": post_info,
+                        }
+                    )
                 )
             self.geo_hnd.log_handler.set_property("dst_title", self.meta.get_title())
             results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
             self.geo_hnd.log_handler.log_info(
-                {
-                    "message": results["msg"],
-                    "detail": results["detail"],
-                }
+                InfoRecord(
+                    message=results["msg"],
+                    detail={"info": results["detail"]},
+                )
             )
-
-        if output_format == "text/plain":
-            return self.geo_hnd.log_handler.pop_formatted_responses()
-        return self.geo_hnd.log_handler.pop_json_responses()
 
     def copy_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())

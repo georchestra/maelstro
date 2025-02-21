@@ -18,7 +18,9 @@ from maelstro.core.georchestra import get_georchestra_handler
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CopyManager
-from maelstro.core.operations import log_handler, setup_exception_handlers
+# from maelstro.core.operations import log_handler, setup_exception_handlers
+from maelstro.core.operations import format_responses
+from maelstro.middleware import setup_middleware
 from maelstro.logging.psql_logger import (
     setup_db_logging,
     log_request_to_db,
@@ -41,7 +43,7 @@ from maelstro.common.models import (
 
 
 app = FastAPI(root_path="/maelstro-backend")
-setup_exception_handlers(app)
+setup_middleware(app)
 setup_db_logging()
 
 
@@ -234,6 +236,7 @@ def get_layers(
     },
 )
 def get_copy_preview(
+    request: Request,
     src_name: Annotated[
         str,
         Query(
@@ -262,7 +265,7 @@ def get_copy_preview(
         ),
     ] = True,
 ) -> CopyPreview:
-    copy_mgr = CopyManager(src_name, dst_name, metadataUuid)
+    copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
     return copy_mgr.copy_preview(copy_meta, copy_layers, copy_styles)
 
 
@@ -321,14 +324,15 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
-    copy_mgr = CopyManager(src_name, dst_name, metadataUuid)
-    operations = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles, accept)
+    copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
+    copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles)
+    operations = request.state.geo_handler.log_handler.pop_json_responses()
     log_request_to_db(
-        200, request, log_handler.pop_properties(), log_handler.pop_json_responses()
+        200, request, request.state.geo_handler.log_handler.pop_properties(), operations
     )
     if accept == "application/json":
         return operations
-    return PlainTextResponse("\n".join(operations))
+    return PlainTextResponse("\n".join(format_responses(operations)))
 
 
 @app.get(

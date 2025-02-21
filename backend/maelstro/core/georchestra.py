@@ -1,19 +1,21 @@
 from contextlib import contextmanager
 import json
+import uuid
 from typing import Any, Iterator
 from geonetwork import GnApi
+from geonetwork.gn_logger import logger as gn_logger
 from geoservercloud.services import RestService  # type: ignore
 from requests.exceptions import HTTPError
 from maelstro.config import ConfigError, app_config as config
 from .operations import (
-    log_handler,
+    LogCollectionHandler,
     gs_logger,
 )
 from .exceptions import ParamError, MaelstroDetail, AuthError
 
 
 class GeorchestraHandler:
-    def __init__(self) -> None:
+    def __init__(self, log_handler) -> None:
         self.log_handler = log_handler
 
     def get_gn_service(self, instance_name: str, is_source: bool) -> GnApi:
@@ -80,5 +82,11 @@ class GeorchestraHandler:
 
 @contextmanager
 def get_georchestra_handler() -> Iterator[GeorchestraHandler]:
+    id = uuid.uuid4()
+    log_handler = LogCollectionHandler(id)
     log_handler.init_thread()
-    yield GeorchestraHandler()
+    gn_logger.addHandler(log_handler)
+    gs_logger.addHandler(log_handler)
+    yield GeorchestraHandler(log_handler)
+    gn_logger.removeHandler(log_handler)
+    gs_logger.removeHandler(log_handler)
