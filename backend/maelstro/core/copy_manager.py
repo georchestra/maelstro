@@ -151,7 +151,7 @@ class CopyManager:
         if self.uuid:
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
             self.meta = Meta(zipdata)
-            self.geo_hnd.log_handler.properties["src_title"] = self.meta.get_title()
+            self.geo_hnd.log_handler.set_property("src_title", self.meta.get_title())
 
         if self.meta is None:
             return []
@@ -169,7 +169,7 @@ class CopyManager:
                 ]
 
                 pre_info, post_info = self.meta.apply_xslt_chain(transformation_paths)
-                self.geo_hnd.log_handler.responses.append(
+                self.geo_hnd.log_handler.log_info(
                     {
                         "operation": "Apply XSL transformations in zip archive",
                         "transformations": xsl_transformations,
@@ -177,9 +177,9 @@ class CopyManager:
                         "after": post_info,
                     }
                 )
-            self.geo_hnd.log_handler.properties["dst_title"] = self.meta.get_title()
+            self.geo_hnd.log_handler.set_property("dst_title", self.meta.get_title())
             results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
-            self.geo_hnd.log_handler.responses.append(
+            self.geo_hnd.log_handler.log_info(
                 {
                     "message": results["msg"],
                     "detail": results["detail"],
@@ -187,8 +187,8 @@ class CopyManager:
             )
 
         if output_format == "text/plain":
-            return self.geo_hnd.log_handler.get_formatted_responses()
-        return self.geo_hnd.log_handler.get_json_responses()
+            return self.geo_hnd.log_handler.pop_formatted_responses()
+        return self.geo_hnd.log_handler.pop_json_responses()
 
     def copy_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
@@ -297,7 +297,7 @@ class CopyManager:
                         context="dst",
                         key=workspace_route,
                         err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
-                        operations=self.geo_hnd.log_handler.get_json_responses(),
+                        operations=self.geo_hnd.log_handler.pop_json_responses(),
                     )
                 )
             raise_for_status(has_workspace)
@@ -312,7 +312,7 @@ class CopyManager:
                         context="dst",
                         key=store_route,
                         err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
-                        operations=self.geo_hnd.log_handler.get_json_responses(),
+                        operations=self.geo_hnd.log_handler.pop_json_responses(),
                     )
                 )
             raise_for_status(has_datastore)

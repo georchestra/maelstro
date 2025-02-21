@@ -324,7 +324,7 @@ def put_dataset_copy(
     copy_mgr = CopyManager(src_name, dst_name, metadataUuid)
     operations = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles, accept)
     log_request_to_db(
-        200, request, log_handler.properties, log_handler.get_json_responses()
+        200, request, log_handler.pop_properties(), log_handler.pop_json_responses()
     )
     if accept == "application/json":
         return operations

@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from datetime import datetime
 import json
 from typing import Any, Iterator
 from geonetwork import GnApi
@@ -20,7 +19,7 @@ class GeorchestraHandler:
     def get_gn_service(self, instance_name: str, is_source: bool) -> GnApi:
         if not self.log_handler.valid:
             raise RuntimeError(
-                "GeorchestraHandler context invalid, handler already close"
+                "GeorchestraHandler context invalid, handler already closed"
             )
         gn_info = self.get_service_info(instance_name, is_source, True)
         return GnApi(gn_info["url"], gn_info["auth"])
@@ -28,7 +27,7 @@ class GeorchestraHandler:
     def get_gs_service(self, instance_name: str, is_source: bool) -> RestService:
         if not self.log_handler.valid:
             raise RuntimeError(
-                "GeorchestraHandler context invalid, handler already close"
+                "GeorchestraHandler context invalid, handler already closed"
             )
         gs_info = self.get_service_info(instance_name, is_source, False)
         gsapi = RestService(gs_info["url"], gs_info["auth"])
@@ -81,8 +80,5 @@ class GeorchestraHandler:
 
 @contextmanager
 def get_georchestra_handler() -> Iterator[GeorchestraHandler]:
-    log_handler.responses.clear()
-    log_handler.properties["start_time"] = datetime.now()
-    log_handler.valid = True
+    log_handler.init_thread()
     yield GeorchestraHandler()
-    log_handler.valid = False
