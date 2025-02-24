@@ -198,7 +198,7 @@ def post_search(
         str, Path(description="Name of the source Geonetwork to be used for the search")
     ],
     search_query: Annotated[SearchQuery, Body()],
-) -> dict[str, Any]:
+) -> Any:
     """
     Transmit search query to selected Geonetwork server select among the sources
     """
@@ -273,11 +273,11 @@ def get_copy_preview(
     responses={
         200: {
             "content": {
-                "text/plain": {"example": ["string"]},
-                "application/json": {"example": [{}]},
+                "text/plain": {"response_model": str, "example": ["string"]},
+                "application/json": {"response_model": DetailedResponse, "example": [{}]},
             }
         },
-        400: {"description": "400 may also be an uuid which is not found, see details"},
+        400: {"response_model": DetailedResponse, "description": "400 may also be an uuid which is not found, see details"},
     },
 )
 def put_dataset_copy(
@@ -310,7 +310,7 @@ def put_dataset_copy(
         ),
     ] = True,
     accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
-) -> str | DetailedResponse:
+) -> DetailedResponse | PlainTextResponse:
     """
     Complex operation: copy source dataset to destination including:
     - metadata (if copy_meta == true)
@@ -330,10 +330,7 @@ def put_dataset_copy(
         200, request, request.state.geo_handler.log_handler.pop_properties(), operations
     )
     if accept == "application/json":
-        return {
-            "summary": success,
-            "operations": operations
-        }
+        return DetailedResponse(summary=success, operations=operations)
     return PlainTextResponse("\n".join(format_responses(operations)))
 
 

@@ -6,16 +6,14 @@ from geonetwork import GnApi
 from geonetwork.gn_logger import logger as gn_logger
 from geoservercloud.services import RestService  # type: ignore
 from requests.exceptions import HTTPError
+from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: ignore
 from maelstro.config import ConfigError, app_config as config
-from .operations import (
-    LogCollectionHandler,
-    gs_logger,
-)
+from .operations import LogCollectionHandler
 from maelstro.common.exceptions import ParamError, AuthError
 
 
 class GeorchestraHandler:
-    def __init__(self, log_handler) -> None:
+    def __init__(self, log_handler: LogCollectionHandler) -> None:
         self.log_handler = log_handler
 
     def get_gn_service(self, instance_name: str, is_source: bool) -> GnApi:
@@ -69,17 +67,17 @@ class GeorchestraHandler:
                 json.dumps(config.config, indent=4),
             )
             raise ParamError(
-                    context="src" if is_source else "dst",
-                    key=url,
-                    err=f"{'geonetwork' if is_geonetwork else 'geoserver'} not found in config",
+                context="src" if is_source else "dst",
+                key=url,
+                err=f"{'geonetwork' if is_geonetwork else 'geoserver'} not found in config",
             ) from err
         return service_info
 
 
 @contextmanager
 def get_georchestra_handler() -> Iterator[GeorchestraHandler]:
-    id = uuid.uuid4()
-    log_handler = LogCollectionHandler(id)
+    hnd_id = str(uuid.uuid4())
+    log_handler = LogCollectionHandler(hnd_id)
     log_handler.init_thread()
     gn_logger.addHandler(log_handler)
     gs_logger.addHandler(log_handler)

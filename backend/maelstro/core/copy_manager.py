@@ -19,7 +19,9 @@ logger = logging.getLogger()
 
 
 class CopyManager:
-    def __init__(self, src_name: str, dst_name: str, uuid: str, geo_hnd: GeorchestraHandler):
+    def __init__(
+        self, src_name: str, dst_name: str, uuid: str, geo_hnd: GeorchestraHandler
+    ):
         self.src_name = src_name
         self.dst_name = dst_name
         self.uuid = uuid
@@ -58,73 +60,72 @@ class CopyManager:
         self.include_layers = include_layers
         self.include_styles = include_styles
 
-        if True:
-            zipdata = self.gn_src.get_record_zip(self.uuid).read()
-            self.meta = Meta(zipdata)
+        zipdata = self.gn_src.get_record_zip(self.uuid).read()
+        self.meta = Meta(zipdata)
 
-            preview: dict[str, list[dict[str, Any]]] = {
-                "geonetwork_resources": [],
-                "geoserver_resources": [],
+        preview: dict[str, list[dict[str, Any]]] = {
+            "geonetwork_resources": [],
+            "geoserver_resources": [],
+        }
+
+        src_gn_info = self.geo_hnd.get_service_info(
+            self.src_name, is_source=True, is_geonetwork=True
+        )
+        src_gn_url = src_gn_info["url"]
+        dst_gn_info = self.geo_hnd.get_service_info(
+            self.dst_name, is_source=False, is_geonetwork=True
+        )
+        dst_gn_url = dst_gn_info["url"]
+
+        preview["geonetwork_resources"].append(
+            {
+                "src": src_gn_url,
+                "dst": dst_gn_url,
+                "metadata": (
+                    [
+                        {
+                            "title": self.meta.get_title(),
+                            "iso_standard": self.meta.schema,
+                        }
+                    ]
+                    if self.include_meta
+                    else []
+                ),
             }
+        )
 
-            src_gn_info = self.geo_hnd.get_service_info(
-                self.src_name, is_source=True, is_geonetwork=True
-            )
-            src_gn_url = src_gn_info["url"]
-            dst_gn_info = self.geo_hnd.get_service_info(
-                self.dst_name, is_source=False, is_geonetwork=True
-            )
-            dst_gn_url = dst_gn_info["url"]
+        dst_gs_info = self.geo_hnd.get_service_info(
+            self.dst_name, is_source=False, is_geonetwork=False
+        )
+        dst_gs_url = dst_gs_info["url"]
 
-            preview["geonetwork_resources"].append(
+        geoservers = self.meta.get_gs_layers(config.get_gs_sources())
+        for server_url, layer_names in geoservers.items():
+            styles: set[str] = set()
+            for layer_name in layer_names:
+
+                gs_src = self.geo_hnd.get_gs_service(server_url, True)
+                layers = {}
+                for layer_name in layer_names:
+                    resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
+                    raise_for_status(resp)
+                    layers[layer_name] = resp.json()
+
+                for layer in layers.values():
+                    styles.update(self.get_styles_from_layer(layer).keys())
+
+            preview["geoserver_resources"].append(
                 {
-                    "src": src_gn_url,
-                    "dst": dst_gn_url,
-                    "metadata": (
-                        [
-                            {
-                                "title": self.meta.get_title(),
-                                "iso_standard": self.meta.schema,
-                            }
-                        ]
-                        if self.include_meta
+                    "src": server_url,
+                    "dst": dst_gs_url,
+                    "layers": (
+                        [str(layer_name) for layer_name in layer_names]
+                        if self.include_layers
                         else []
                     ),
+                    "styles": list(styles) if self.include_styles else [],
                 }
             )
-
-            dst_gs_info = self.geo_hnd.get_service_info(
-                self.dst_name, is_source=False, is_geonetwork=False
-            )
-            dst_gs_url = dst_gs_info["url"]
-
-            geoservers = self.meta.get_gs_layers(config.get_gs_sources())
-            for server_url, layer_names in geoservers.items():
-                styles: set[str] = set()
-                for layer_name in layer_names:
-
-                    gs_src = self.geo_hnd.get_gs_service(server_url, True)
-                    layers = {}
-                    for layer_name in layer_names:
-                        resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
-                        raise_for_status(resp)
-                        layers[layer_name] = resp.json()
-
-                    for layer in layers.values():
-                        styles.update(self.get_styles_from_layer(layer).keys())
-
-                preview["geoserver_resources"].append(
-                    {
-                        "src": server_url,
-                        "dst": dst_gs_url,
-                        "layers": (
-                            [str(layer_name) for layer_name in layer_names]
-                            if self.include_layers
-                            else []
-                        ),
-                        "styles": list(styles) if self.include_styles else [],
-                    }
-                )
 
         return CopyPreview(**preview)  # type: ignore
 
@@ -166,7 +167,7 @@ class CopyManager:
                             "transformations": xsl_transformations,
                             "before": pre_info,
                             "after": post_info,
-                        }
+                        },
                     )
                 )
             self.geo_hnd.log_handler.set_property("dst_title", self.meta.get_title())
@@ -177,7 +178,7 @@ class CopyManager:
                     detail={"info": results["detail"]},
                 )
             )
-            return results["msg"]
+            return str(results["msg"])
         return "copy_successful"
 
     def copy_layers(self) -> None:
@@ -283,10 +284,10 @@ class CopyManager:
             has_workspace = self.gs_dst.rest_client.get(workspace_route)
             if has_workspace.status_code == 404:
                 raise ParamError(
-                        context="dst",
-                        key=workspace_route,
-                        err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
-                        operations=self.geo_hnd.log_handler.pop_json_responses(),
+                    context="dst",
+                    key=workspace_route,
+                    err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
+                    operations=self.geo_hnd.log_handler.pop_json_responses(),
                 )
             raise_for_status(has_workspace)
 
@@ -296,10 +297,10 @@ class CopyManager:
             has_datastore = self.gs_dst.rest_client.get(store_route)
             if has_datastore.status_code == 404:
                 raise ParamError(
-                        context="dst",
-                        key=store_route,
-                        err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
-                        operations=self.geo_hnd.log_handler.pop_json_responses(),
+                    context="dst",
+                    key=store_route,
+                    err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
+                    operations=self.geo_hnd.log_handler.pop_json_responses(),
                 )
             raise_for_status(has_datastore)
 
@@ -348,9 +349,9 @@ class CopyManager:
             )
             if resp.status_code == 404:
                 raise ParamError(
-                        context="dst",
-                        key=resource_post_route,
-                        err="Route not found. Check Workspace and datastore",
+                    context="dst",
+                    key=resource_post_route,
+                    err="Route not found. Check Workspace and datastore",
                 )
         raise_for_status(resp)
 

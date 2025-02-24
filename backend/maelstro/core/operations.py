@@ -18,31 +18,32 @@ def raise_for_status(response: Response) -> None:
 
 
 class LogCollectionHandler(Handler):
-    def __init__(self, id=None) -> None:
+    def __init__(self, hnd_id: None | str = None) -> None:
         super().__init__()
-        self._id = id
-        self.responses: dict[int, list[OperationsRecord]] = {}
-        self.properties: dict[str, Any] = {}
+        self._id = hnd_id
+        self.responses: dict[str, list[OperationsRecord]] = {}
+        self.properties: dict[str, dict[str, Any]] = {}
 
     @property
-    def valid(self):
+    def valid(self) -> bool:
         return self.id in self.responses
 
     @property
-    def id(self):
-        return self._id or threading.current_thread().ident
+    def id(self) -> str:
+        return self._id or str(threading.current_thread().ident) or "0"
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
             # The response attribute of the record has been added via the `extra` parameter
             # type checking skipped for simplicity
+            response = record.response  # type: ignore
             api_record = ApiRecord(
                 type="response",
-                method=record.response.request.method,
-                status_code=record.response.status_code,
-                url=record.response.url,
+                method=response.request.method,
+                status_code=response.status_code,
+                url=response.url,
             )
-            self.responses[self.id].append(api_record)  # type: ignore
+            self.responses[self.id].append(api_record)
         except AttributeError:
             self.responses[self.id].append(
                 InfoRecord(
@@ -54,11 +55,9 @@ class LogCollectionHandler(Handler):
     def init_thread(self) -> None:
         self.clear_current_thread()
         self.responses[self.id] = []
-        self.properties[self.id] = {
-            "start_time": datetime.now()
-        }
+        self.properties[self.id] = {"start_time": datetime.now()}
 
-    def log_info(self, info: dict[str, Any]) -> None:
+    def log_info(self, info: InfoRecord) -> None:
         self.responses[self.id].append(info)
 
     def set_property(self, key: str, value: Any) -> None:
@@ -76,13 +75,16 @@ class LogCollectionHandler(Handler):
         return [r.dict() for r in responses if r is not None]
 
 
-def format_response(self, resp: Response | dict[str, Any]) -> str:
-    if isinstance(resp, Response):
-        return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
-    return " - ".join(f"{k}: {v}" for k, v in resp.items() if k != "detail")
+def format_response(record: OperationsRecord) -> str:
+    if isinstance(record, ApiRecord):
+        return f"[{record.method}] - ({record.status_code}) : {record.url}"
+    elif isinstance(record, InfoRecord):
+        return f"{record.message}: {' - '.join(f'{k}: {v}' for k, v in record.detail.items())}"
+        # return " - ".join(f"{k}: {v}" for k, v in record.items() if k != "detail")
+    return ""
 
 
-def format_responses(responses: list[dict[str, Any]]) -> list[str]:
+def format_responses(responses: list[OperationsRecord]) -> list[str]:
     return [format_response(r) for r in responses]
 
 

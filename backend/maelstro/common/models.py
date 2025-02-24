@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional, Annotated, Union
+from typing import Any, Optional, Annotated
 from pydantic import BaseModel, Field
 
 
@@ -99,11 +99,19 @@ class CopyPreview(BaseModel):
     geoserver_resources: list[PreviewGS]
 
 
-class ApiRecord(BaseModel):
+class OperationsRecord(BaseModel):
+    def string_format(self) -> str:
+        return "Generic Record"
+
+
+class ApiRecord(OperationsRecord):
     type: str
     method: str
     status_code: int
     url: str
+
+    def string_format(self) -> str:
+        return ""
 
 
 class GnApiRecord(ApiRecord):
@@ -114,12 +122,9 @@ class GsApiRecord(ApiRecord):
     type: str = "gs_api"
 
 
-class InfoRecord(BaseModel):
+class InfoRecord(OperationsRecord):
     message: str
     detail: dict[str, Any]
-
-
-OperationsRecord = Union[InfoRecord, GnApiRecord, GsApiRecord]
 
 
 class DetailedResponse(BaseModel):

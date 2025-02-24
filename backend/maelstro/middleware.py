@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from requests.exceptions import RequestException
@@ -10,13 +11,13 @@ from maelstro.common.exceptions import MaelstroException
 
 def setup_middleware(app: FastAPI) -> None:
     @app.middleware("http")
-    async def exception_wrapper(request, call_next):
+    async def exception_wrapper(request: Any, call_next: Any) -> Any:
         with get_georchestra_handler() as geo_hnd:
             try:
                 request.state.geo_handler = geo_hnd
                 return await call_next(request)
             except (MaelstroException, GnException, RequestException) as err:
-                response = {}
+                response: dict[str, Any] = {}
                 status_code = 400
                 if isinstance(err, MaelstroException):
                     if err.details.status_code not in [400, 404]:
