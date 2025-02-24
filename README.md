@@ -49,24 +49,23 @@ The configuration is based on a YAML file containing connection information abou
 
 For dev use of the platform, there is a sample config in the backend folder: [dev_config.yaml](backend/dev_config.yaml). This config is used by default in the docker compo.
 
-The file has 3 categories:
+The file has 4 distict parts:
 - sources
 - destinations
 - db_logging
+- transformations
 
-Sources contains 2 list of servers: `geonetwork_instances` and `geoserver_instances`. Each instance is described by its `url` (`api_url` for geonetwork), and their credentials.
+#### Sources
 
-Destinations is a dict of geonetwork / geoserver combinations, each with their `url` and credentials.
+`Sources` contains 2 list of servers: `geonetwork_instances` and `geoserver_instances`. Each instance is described by its `url` (`api_url` for geonetwork), and their credentials.
 
-The logics for credentials is by decreasing order of importance:
+#### Destinations
 
-1. env var: automatic detection with regex, if match "${..}" (classic usage of env var) it will try to resolv it
-2. if no env vars are configured, the keys "login" and/or password for a single server instance are used
-3. if still no login/password is found, the configuration file is parsed at the parent hierarchy level. First env vars are used like in 1.
-4. Then constant login/password keys are read
-5. I still either "login" or "password" is not defined, the credentials are considered invalid and anonymous acces is used for the instance without authentication
+`Destinations` is a dict of geonetwork / geoserver combinations, each with their `url` and credentials.
 
-The section db_logging contains all connection information to reach a writable postgres DB to use for writing and reading application logs:
+#### DB logging
+
+The section db_logging contains all connection information to reach a writable postgres DB to use for writing and reading operation logs:
 - host (default: database)
 - port (default: 5432)
 - login (default: georchestra)
@@ -75,10 +74,43 @@ The section db_logging contains all connection information to reach a writable p
 - schema (default: maelstro
 - table: (default: logs)
 
-Substitution of credentials (login and password) can be done for the DB configuration the same way as for server credentials (login_env_var)
+Substitution of credentials (login and password) can be done for the DB configuration the same way as for server credentials (see below)
+
+#### Transformations
+
+The `transformations` section conatains a list of xsl transformations which can be applied to the xml metadata of source or destination servers.
+
+Each named `transformation` item must conatain
+- `xslt_path`: local path on the server to an xsl file in which the trasformation is defind (typically in the datadir)
+- `description`: Details of the transformation content to easily identify which transformation is applied
+
+For each geonetwork item of the source and destination servers, a specific key is added to the configuration file:
+- transformations: list of xslt keys to be applied to the metadata of the corresponding geonetwork server
+
+If a list of transformations is defined for both the source and destination server, the copy operation is executed in the way described below:
+- read metadata from source
+- apply all source transformations
+- apply all destination transformations
+- write metadata to destination server
+
+for an example of a transformation chain source -> destination, you can refer to the configuration https://github.com/georchestra/maelstro/blob/main/backend/tests/test_xslt_config.yaml used in the test: https://github.com/georchestra/maelstro/blob/main/backend/tests/test_meta.py#L76
+
+#### Credentials
+
+All credentials (for source, destination or DB server) can be read from an ENV var or can be hard-coded into the conf file
+
+The logics for credentials is by decreasing order of importance:
+
+1. env var: automatic detection with regex, if match "${..}" (classic usage of env var) it will try to resolve it
+2. if no env vars can be found for the key, the keys "login" and/or password are read literrally from the config file
+3. if still no login/password is found, the configuration file is parsed at the parent hierarchy level. First env vars are used like in 1.
+4. Then constant login/password keys are read
+5. If still either "login" or "password" is not defined, the credentials are considered invalid and anonymous acces is used for the instance without authentication
 
 
-Example (see [doc_sample_config.yaml](backend/tests/doc_sample_config.yaml)):
+#### Example
+
+(see [doc_sample_config.yaml](backend/tests/doc_sample_config.yaml)):
 
 ```yaml
 sources:
