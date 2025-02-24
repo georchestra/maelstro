@@ -9,7 +9,7 @@ from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
-from maelstro.common.models import CopyPreview, InfoRecord
+from maelstro.common.models import CopyPreview, InfoRecord, SuccessRecord
 from maelstro.common.exceptions import ParamError
 from .georchestra import GeorchestraHandler
 from .operations import raise_for_status
@@ -171,13 +171,15 @@ class CopyManager:
                     )
                 )
             self.geo_hnd.log_handler.set_property("dst_title", self.meta.get_title())
-            results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
-            self.geo_hnd.log_handler.log_info(
-                InfoRecord(
-                    message=results["msg"],
-                    detail={"info": results["detail"]},
+
+            with self.geo_hnd.log_handler.logger_context("Meta"):
+                results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
+                self.geo_hnd.log_handler.log_info(
+                    SuccessRecord(
+                        message=results["msg"],
+                        detail={"info": results["detail"]},
+                    )
                 )
-            )
             return str(results["msg"])
         return "copy_successful"
 
@@ -220,13 +222,27 @@ class CopyManager:
 
                 # styles must be copieed first
                 if self.include_styles:
-                    for style in styles.values():
-                        self.copy_style(gs_src, style)
+                    with self.geo_hnd.log_handler.logger_context("Style"):
+                        for style in styles.values():
+                            self.copy_style(gs_src, style)
+                        self.geo_hnd.log_handler.log_info(
+                            SuccessRecord(
+                                message="Styles copied successfully",
+                                detail={"styles": list(styles.keys())},
+                            )
+                        )
 
                 # styles must be available when cloning layers
                 if self.include_layers:
-                    for layer_name, layer_data in layers.items():
-                        self.copy_layer(gs_src, layer_name, layer_data)
+                    with self.geo_hnd.log_handler.logger_context("Layer"):
+                        for layer_name, layer_data in layers.items():
+                            self.copy_layer(gs_src, layer_name, layer_data)
+                        self.geo_hnd.log_handler.log_info(
+                            SuccessRecord(
+                                message="Layers copied successfully",
+                                detail={"layers": list(layers.keys())},
+                            )
+                        )
 
     def get_styles_from_layer(self, layer_data: dict[str, Any]) -> dict[str, Any]:
         default_style = layer_data["layer"]["defaultStyle"]

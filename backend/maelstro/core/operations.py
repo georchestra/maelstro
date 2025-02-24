@@ -1,10 +1,18 @@
-from typing import Any
+from contextlib import contextmanager
+from typing import Any, Iterator
 import logging
 import threading
 from datetime import datetime
 from logging import Handler
 from requests import Response
-from maelstro.common.models import OperationsRecord, ApiRecord, InfoRecord
+from maelstro.common.models import (
+    OperationsRecord,
+    ApiRecord,
+    GnApiRecord,
+    GsApiRecord,
+    InfoRecord,
+    context_type,
+)
 from maelstro.common.exceptions import MaelstroException
 
 
@@ -23,6 +31,7 @@ class LogCollectionHandler(Handler):
         self._id = hnd_id
         self.responses: dict[str, list[OperationsRecord]] = {}
         self.properties: dict[str, dict[str, Any]] = {}
+        self.context: context_type = "General"
 
     @property
     def valid(self) -> bool:
@@ -32,16 +41,29 @@ class LogCollectionHandler(Handler):
     def id(self) -> str:
         return self._id or str(threading.current_thread().ident) or "0"
 
+    @contextmanager
+    def logger_context(self, new_context: context_type) -> Iterator[Any]:
+        old_context = self.context
+        self.context = new_context
+        yield self
+        self.context = old_context
+
     def emit(self, record: logging.LogRecord) -> None:
         try:
             # The response attribute of the record has been added via the `extra` parameter
             # type checking skipped for simplicity
             response = record.response  # type: ignore
-            api_record = ApiRecord(
-                type="response",
+            record_class = ApiRecord
+            if record.name == "GN Session":
+                record_class = GnApiRecord
+            elif record.name == "GS Session":
+                record_class = GsApiRecord
+
+            api_record = record_class(
                 method=response.request.method,
                 status_code=response.status_code,
                 url=response.url,
+                data_type=self.context,
             )
             self.responses[self.id].append(api_record)
         except AttributeError:
@@ -58,6 +80,7 @@ class LogCollectionHandler(Handler):
         self.properties[self.id] = {"start_time": datetime.now()}
 
     def log_info(self, info: InfoRecord) -> None:
+        info.data_type = self.context
         self.responses[self.id].append(info)
 
     def set_property(self, key: str, value: Any) -> None:

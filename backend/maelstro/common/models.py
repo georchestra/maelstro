@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional, Annotated
+from typing import Any, Optional, Annotated, Literal
 from pydantic import BaseModel, Field, field_serializer
 
 
@@ -99,13 +99,18 @@ class CopyPreview(BaseModel):
     geoserver_resources: list[PreviewGS]
 
 
+context_type = Literal["General", "Meta", "Layer", "Style"]
+
+
 class OperationsRecord(BaseModel):
+    data_type: context_type = "General"
+
     def string_format(self) -> str:
         return "Generic Record"
 
 
 class ApiRecord(OperationsRecord):
-    type: str
+    type: str = "generic"
     method: str
     status_code: int
     url: str
@@ -125,6 +130,10 @@ class GsApiRecord(ApiRecord):
 class InfoRecord(OperationsRecord):
     message: str
     detail: dict[str, Any]
+
+
+class SuccessRecord(InfoRecord):
+    status: str = "OK"
 
 
 class DetailedResponse(BaseModel):
