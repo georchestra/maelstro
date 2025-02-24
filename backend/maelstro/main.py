@@ -270,14 +270,18 @@ def get_copy_preview(
 
 @app.put(
     "/copy",
+    response_model=DetailedResponse,
     responses={
         200: {
             "content": {
-                "text/plain": {"response_model": str, "example": ["string"]},
-                "application/json": {"response_model": DetailedResponse, "example": [{}]},
-            }
+                "text/plain": {"example": "string1\nstring2"},
+                "application/json": {"example": [{}]},
+            },
         },
-        400: {"response_model": DetailedResponse, "description": "400 may also be an uuid which is not found, see details"},
+        400: {
+            "model": DetailedResponse,
+            "description": "400 may also be an uuid which is not found, see details",
+        },
     },
 )
 def put_dataset_copy(
@@ -327,7 +331,10 @@ def put_dataset_copy(
     success = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles)
     operations = request.state.geo_handler.log_handler.pop_json_responses()
     log_request_to_db(
-        200, request, request.state.geo_handler.log_handler.pop_properties(), operations
+        200,
+        request,
+        request.state.geo_handler.log_handler.pop_properties(),
+        [op.dict() for op in operations],
     )
     if accept == "application/json":
         return DetailedResponse(summary=success, operations=operations)

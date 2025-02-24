@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, Optional, Annotated
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 
 class SearchQuery(BaseModel):
@@ -131,6 +131,10 @@ class DetailedResponse(BaseModel):
     summary: str
     info: dict[str, Any] = {}
     operations: list[OperationsRecord]
+
+    @field_serializer("operations")
+    def op_to_dict(self, operations: list[OperationsRecord]) -> list[dict[str, Any]]:
+        return [op.dict() for op in operations]
 
 
 class ExceptionDetail(BaseModel):

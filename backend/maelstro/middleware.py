@@ -6,6 +6,7 @@ from geonetwork.exceptions import GnException
 from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: ignore
 from maelstro.logging.psql_logger import log_request_to_db
 from maelstro.core.georchestra import get_georchestra_handler
+from maelstro.common.models import DetailedResponse
 from maelstro.common.exceptions import MaelstroException
 
 
@@ -53,6 +54,8 @@ def setup_middleware(app: FastAPI) -> None:
                         status_code,
                         request,
                         geo_hnd.log_handler.pop_properties(),
-                        response["operations"],
+                        [op.dict() for op in response["operations"]],
                     )
-                return JSONResponse(response, status_code=status_code)
+                return JSONResponse(
+                    DetailedResponse(**response).dict(), status_code=status_code
+                )

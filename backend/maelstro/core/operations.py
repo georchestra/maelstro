@@ -70,9 +70,9 @@ class LogCollectionHandler(Handler):
         self.responses.pop(self.id, None)
         self.properties.pop(self.id, None)
 
-    def pop_json_responses(self) -> list[dict[str, Any]]:
+    def pop_json_responses(self) -> list[OperationsRecord]:
         responses = self.responses.pop(self.id, [])
-        return [r.dict() for r in responses if r is not None]
+        return [r for r in responses if r is not None]
 
 
 def format_response(record: OperationsRecord) -> str:
