@@ -17,7 +17,6 @@ from fastapi.responses import PlainTextResponse
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CopyManager
-from maelstro.core.operations import format_responses
 from maelstro.middleware import setup_middleware
 from maelstro.logging.psql_logger import (
     setup_db_logging,
@@ -338,7 +337,7 @@ def put_dataset_copy(
     )
     if accept == "application/json":
         return DetailedResponse(summary=success, operations=operations)
-    return PlainTextResponse("\n".join(format_responses(operations)))
+    return PlainTextResponse("\n".join(op.string_format() for op in operations))
 
 
 @app.get(

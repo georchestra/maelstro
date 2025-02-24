@@ -96,22 +96,3 @@ class LogCollectionHandler(Handler):
     def pop_json_responses(self) -> list[OperationsRecord]:
         responses = self.responses.pop(self.id, [])
         return [r for r in responses if r is not None]
-
-
-def format_response(record: OperationsRecord) -> str:
-    if isinstance(record, ApiRecord):
-        return f"[{record.method}] - ({record.status_code}) : {record.url}"
-    elif isinstance(record, InfoRecord):
-        return f"{record.message}: {' - '.join(f'{k}: {v}' for k, v in record.detail.items())}"
-        # return " - ".join(f"{k}: {v}" for k, v in record.items() if k != "detail")
-    return ""
-
-
-def format_responses(responses: list[OperationsRecord]) -> list[str]:
-    return [format_response(r) for r in responses]
-
-
-# must use a global variable so that log_handler is accessible from inside exception
-# log_handler = LogCollectionHandler()
-# gn_logger.addHandler(log_handler)
-# gs_logger.addHandler(log_handler)

@@ -106,7 +106,7 @@ class OperationsRecord(BaseModel):
     data_type: context_type = "General"
 
     def string_format(self) -> str:
-        return "Generic Record"
+        return " - ".join(f"{k}: {v}" for k, v in self.dict().items() if k != "detail")
 
 
 class ApiRecord(OperationsRecord):
@@ -116,7 +116,7 @@ class ApiRecord(OperationsRecord):
     url: str
 
     def string_format(self) -> str:
-        return ""
+        return f"[{self.method}] - ({self.status_code}) : {self.url}"
 
 
 class GnApiRecord(ApiRecord):
