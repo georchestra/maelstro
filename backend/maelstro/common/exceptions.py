@@ -1,5 +1,4 @@
 from typing import Any
-from fastapi import HTTPException
 from dataclasses import dataclass, asdict, field
 
 
@@ -17,9 +16,10 @@ class MaelstroDetail:
         return asdict(self)
 
 
-class MaelstroException(HTTPException):
+class MaelstroException(Exception):
     def __init__(self, err_detail: MaelstroDetail):
-        super().__init__(err_detail.status_code, err_detail.asdict())
+        self.status_code = err_detail.status_code
+        self.detail = err_detail.asdict()
 
 
 class AuthError(MaelstroException):

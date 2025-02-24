@@ -11,7 +11,7 @@ from .operations import (
     LogCollectionHandler,
     gs_logger,
 )
-from .exceptions import ParamError, MaelstroDetail, AuthError
+from maelstro.common.exceptions import ParamError, MaelstroDetail, AuthError
 
 
 class GeorchestraHandler:
