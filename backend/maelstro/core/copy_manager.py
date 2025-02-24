@@ -10,8 +10,8 @@ from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
 from maelstro.common.models import CopyPreview, InfoRecord
-from maelstro.common.exceptions import ParamError, MaelstroDetail
-from .georchestra import GeorchestraHandler, get_georchestra_handler
+from maelstro.common.exceptions import ParamError
+from .georchestra import GeorchestraHandler
 from .operations import raise_for_status
 
 
@@ -133,7 +133,7 @@ class CopyManager:
         include_meta: bool,
         include_layers: bool,
         include_styles: bool,
-    ) -> None:
+    ) -> str:
         self.include_meta = include_meta
         self.include_layers = include_layers
         self.include_styles = include_styles
@@ -177,6 +177,8 @@ class CopyManager:
                     detail={"info": results["detail"]},
                 )
             )
+            return results["msg"]
+        return "copy_successful"
 
     def copy_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
@@ -281,12 +283,10 @@ class CopyManager:
             has_workspace = self.gs_dst.rest_client.get(workspace_route)
             if has_workspace.status_code == 404:
                 raise ParamError(
-                    MaelstroDetail(
                         context="dst",
                         key=workspace_route,
                         err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
                         operations=self.geo_hnd.log_handler.pop_json_responses(),
-                    )
                 )
             raise_for_status(has_workspace)
 
@@ -296,12 +296,10 @@ class CopyManager:
             has_datastore = self.gs_dst.rest_client.get(store_route)
             if has_datastore.status_code == 404:
                 raise ParamError(
-                    MaelstroDetail(
                         context="dst",
                         key=store_route,
                         err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
                         operations=self.geo_hnd.log_handler.pop_json_responses(),
-                    )
                 )
             raise_for_status(has_datastore)
 
@@ -350,11 +348,9 @@ class CopyManager:
             )
             if resp.status_code == 404:
                 raise ParamError(
-                    MaelstroDetail(
                         context="dst",
                         key=resource_post_route,
                         err="Route not found. Check Workspace and datastore",
-                    )
                 )
         raise_for_status(resp)
 

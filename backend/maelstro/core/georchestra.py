@@ -11,7 +11,7 @@ from .operations import (
     LogCollectionHandler,
     gs_logger,
 )
-from maelstro.common.exceptions import ParamError, MaelstroDetail, AuthError
+from maelstro.common.exceptions import ParamError, AuthError
 
 
 class GeorchestraHandler:
@@ -41,11 +41,9 @@ class GeorchestraHandler:
         except HTTPError as err:
             if err.response.status_code == 401:
                 raise AuthError(
-                    MaelstroDetail(
-                        server=gs_info["url"],
-                        user=gs_info["auth"] and gs_info["auth"].login,
-                        err="Invalid credentials",
-                    )
+                    server=gs_info["url"],
+                    user=gs_info["auth"] and gs_info["auth"].login,
+                    err="Invalid credentials",
                 ) from err
         gs_logger.info(
             "Session opened on %s at %s",
@@ -71,11 +69,9 @@ class GeorchestraHandler:
                 json.dumps(config.config, indent=4),
             )
             raise ParamError(
-                MaelstroDetail(
                     context="src" if is_source else "dst",
                     key=url,
                     err=f"{'geonetwork' if is_geonetwork else 'geoserver'} not found in config",
-                )
             ) from err
         return service_info
 

@@ -14,11 +14,9 @@ from fastapi import (
     Body,
 )
 from fastapi.responses import PlainTextResponse
-from maelstro.core.georchestra import get_georchestra_handler
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CopyManager
-# from maelstro.core.operations import log_handler, setup_exception_handlers
 from maelstro.core.operations import format_responses
 from maelstro.middleware import setup_middleware
 from maelstro.logging.psql_logger import (
@@ -37,6 +35,7 @@ from maelstro.common.models import (
     RegisteredTransformation,
     LinkedLayer,
     CopyPreview,
+    DetailedResponse,
     JsonLogRecord,
     sample_json_log_records,
 )
@@ -194,6 +193,7 @@ def get_transformation_pairs() -> dict[str, list[RegisteredTransformation]]:
 
 @app.post("/search/{src_name}")
 def post_search(
+    request: Request,
     src_name: Annotated[
         str, Path(description="Name of the source Geonetwork to be used for the search")
     ],
@@ -202,13 +202,13 @@ def post_search(
     """
     Transmit search query to selected Geonetwork server select among the sources
     """
-    with get_georchestra_handler() as geo_hnd:
-        gn = geo_hnd.get_gn_service(src_name, True)
-        return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
+    gn = request.state.geo_handler.get_gn_service(src_name, True)
+    return gn.search(search_query.model_dump(by_alias=True, exclude_unset=True))
 
 
 @app.get("/sources/{src_name}/data/{uuid}/layers")
 def get_layers(
+    request: Request,
     src_name: Annotated[
         str, Path(description="Name of the source Geonetwork to be used for the search")
     ],
@@ -217,11 +217,10 @@ def get_layers(
     """
     Extract linked layers from a dataset on the source Geonetwork server
     """
-    with get_georchestra_handler() as geo_hnd:
-        gn = geo_hnd.get_gn_service(src_name, True)
-        zipdata = gn.get_record_zip(uuid).read()
-        meta = Meta(zipdata)
-        return meta.get_ogc_geoserver_layers()
+    gn = request.state.geo_handler.get_gn_service(src_name, True)
+    zipdata = gn.get_record_zip(uuid).read()
+    meta = Meta(zipdata)
+    return meta.get_ogc_geoserver_layers()
 
 
 @app.get(
@@ -311,7 +310,7 @@ def put_dataset_copy(
         ),
     ] = True,
     accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
-) -> Any:
+) -> str | DetailedResponse:
     """
     Complex operation: copy source dataset to destination including:
     - metadata (if copy_meta == true)
@@ -325,13 +324,16 @@ def put_dataset_copy(
             'Accepts "text/plain" or "application/json"',
         )
     copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
-    copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles)
+    success = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles)
     operations = request.state.geo_handler.log_handler.pop_json_responses()
     log_request_to_db(
         200, request, request.state.geo_handler.log_handler.pop_properties(), operations
     )
     if accept == "application/json":
-        return operations
+        return {
+            "summary": success,
+            "operations": operations
+        }
     return PlainTextResponse("\n".join(format_responses(operations)))
 
 

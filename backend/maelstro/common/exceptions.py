@@ -1,40 +1,24 @@
-from typing import Any
-from dataclasses import dataclass, asdict, field
-
-
-@dataclass
-class MaelstroDetail:
-    err: str
-    status_code: int = 500
-    context: str = "src"
-    server: str | None = None
-    key: str | None = None
-    user: str | None = None
-    operations: list[dict[str, Any]] = field(default_factory=lambda: [])
-
-    def asdict(self) -> dict[str, str | int | None]:
-        return asdict(self)
+from .models import ExceptionDetail
 
 
 class MaelstroException(Exception):
-    def __init__(self, err_detail: MaelstroDetail):
-        self.status_code = err_detail.status_code
-        self.detail = err_detail.asdict()
+    def __init__(self, **kwargs):
+        self.details = ExceptionDetail(**kwargs)
 
 
 class AuthError(MaelstroException):
-    def __init__(self, err_detail: MaelstroDetail):
-        err_detail.status_code = 401
-        super().__init__(err_detail)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.details.status_code = 401
 
 
 class UrlError(MaelstroException):
-    def __init__(self, err_detail: MaelstroDetail):
-        err_detail.status_code = 404
-        super().__init__(err_detail)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.details.status_code = 404
 
 
 class ParamError(MaelstroException):
-    def __init__(self, err_detail: MaelstroDetail):
-        err_detail.status_code = 400
-        super().__init__(err_detail)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.details.status_code = 400

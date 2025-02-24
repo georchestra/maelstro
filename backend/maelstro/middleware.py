@@ -18,6 +18,11 @@ def setup_middleware(app: FastAPI) -> None:
             except (MaelstroException, GnException, RequestException) as err:
                 response = {}
                 status_code = 400
+                if isinstance(err, MaelstroException):
+                    if err.details.status_code not in [400, 404]:
+                        status_code = 500
+                    response["summary"] = "MaelstroException"
+                    response["info"] = err.details.dict()
                 if isinstance(err, GnException):
                     response["summary"] = "HTTPException"
                     response["info"] = {
@@ -40,7 +45,7 @@ def setup_middleware(app: FastAPI) -> None:
                         "message": f"HTTP error {err.__class__.__name__} at {request.url}",
                         "info": str(err),
                     }
-                    status_code = 504
+                    status_code = 500
                 response["operations"] = geo_hnd.log_handler.pop_json_responses()
                 if "/copy" in str(request.url):
                     log_request_to_db(

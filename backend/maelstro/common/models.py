@@ -122,6 +122,22 @@ class InfoRecord(BaseModel):
 OperationsRecord = Union[InfoRecord, GnApiRecord, GsApiRecord]
 
 
+class DetailedResponse(BaseModel):
+    summary: str
+    info: dict[str, Any] = {}
+    operations: list[OperationsRecord]
+
+
+class ExceptionDetail(BaseModel):
+    err: str
+    status_code: int = 500
+    context: str = "src"
+    server: str | None = None
+    key: str | None = None
+    user: str | None = None
+    operations: list[dict[str, Any]] = Field(default_factory=lambda: [])
+
+
 class JsonLogRecord(BaseModel):
     id: int
     start_time: datetime
@@ -137,7 +153,7 @@ class JsonLogRecord(BaseModel):
     copy_meta: bool
     copy_layers: bool
     copy_styles: bool
-    details: Optional[list[dict[str, Any]]] = []
+    details: Optional[list[dict[str, Any]]] = Field(default_factory=lambda: [])
 
 
 sample_json_log_records = [
