@@ -1,110 +1,98 @@
-from typing import Any
+from contextlib import contextmanager
+from typing import Any, Iterator
 import logging
+import threading
+from datetime import datetime
 from logging import Handler
 from requests import Response
-from requests.exceptions import RequestException
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.exception_handlers import http_exception_handler
-from geonetwork.gn_logger import logger as gn_logger
-from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: ignore
-from geonetwork.exceptions import GnException
-from maelstro.logging.psql_logger import log_request_to_db
-
-
-def setup_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(HTTPException)
-    async def handle_fastapi_exception(request: Request, err: HTTPException) -> Any:
-        if "/copy" in str(request.url):
-            log_request_to_db(
-                err.status_code,
-                request,
-                log_handler.properties,
-                log_handler.get_json_responses(),
-            )
-        return await http_exception_handler(request, err)
-
-    @app.exception_handler(GnException)
-    def handle_gn_exception(request: Request, err: GnException) -> None:
-        raise HTTPException(
-            # 404 not found on lib level will rather be a bad request here
-            # error 400 is not truncated by the gateway, whereas 404 is
-            err.code if err.code != 404 else 400,
-            {
-                "msg": err.detail.message,
-                "url": err.parent_request.url,
-                "operations": log_handler.get_json_responses(),
-                "content": err.detail.info,
-            },
-        ) from err
-
-    @app.exception_handler(RequestException)
-    def handle_gs_exception(request: Request, err: RequestException) -> None:
-        gs_logger.debug(
-            "[%s] %s: %s",
-            request.method,
-            str(request.url),
-            err.__class__.__name__,
-            extra={"response": request},
-        )
-        raise HTTPException(
-            status_code=504,
-            detail={
-                "message": f"HTTP error {err.__class__.__name__} at {request.url}",
-                "operations": log_handler.get_json_responses(),
-                "info": str(err),
-            },
-        ) from err
+from maelstro.common.models import (
+    OperationsRecord,
+    ApiRecord,
+    GnApiRecord,
+    GsApiRecord,
+    InfoRecord,
+    context_type,
+)
+from maelstro.common.exceptions import MaelstroException
 
 
 def raise_for_status(response: Response) -> None:
     if 400 <= response.status_code < 600:
-        raise HTTPException(
-            response.status_code if response.status_code != 404 else 400,
-            {
-                "message": f"HTTP error in [{response.request.method}] {response.url}",
-                "operations": log_handler.get_json_responses(),
-                "info": response.text,
-            },
+        raise MaelstroException(
+            err=f"HTTP error in [{response.request.method}] {response.url}",
+            status_code=response.status_code,
+            context=response.text,
         )
 
 
 class LogCollectionHandler(Handler):
-    def __init__(self) -> None:
+    def __init__(self, hnd_id: None | str = None) -> None:
         super().__init__()
-        self.responses: list[Response | None | dict[str, Any]] = []
-        self.valid = False
-        self.properties: dict[str, Any] = {}
+        self._id = hnd_id
+        self.responses: dict[str, list[OperationsRecord]] = {}
+        self.properties: dict[str, dict[str, Any]] = {}
+        self.context: context_type = "General"
+
+    @property
+    def valid(self) -> bool:
+        return self.id in self.responses
+
+    @property
+    def id(self) -> str:
+        return self._id or str(threading.current_thread().ident) or "0"
+
+    @contextmanager
+    def logger_context(self, new_context: context_type) -> Iterator[Any]:
+        old_context = self.context
+        self.context = new_context
+        yield self
+        self.context = old_context
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
             # The response attribute of the record has been added via the `extra` parameter
             # type checking skipped for simplicity
-            self.responses.append(record.response)  # type: ignore
+            response = record.response  # type: ignore
+            record_class = ApiRecord
+            if record.name == "GN Session":
+                record_class = GnApiRecord
+            elif record.name == "GS Session":
+                record_class = GsApiRecord
+
+            api_record = record_class(
+                method=response.request.method,
+                status_code=response.status_code,
+                url=response.url,
+                data_type=self.context,
+            )
+            self.responses[self.id].append(api_record)
         except AttributeError:
-            self.responses.append(None)
+            self.responses[self.id].append(
+                InfoRecord(
+                    message=record.message,
+                    detail={"src": "generic logger"},
+                )
+            )
 
-    def format_response(self, resp: Response | dict[str, Any]) -> str:
-        if isinstance(resp, Response):
-            return f"[{resp.request.method}] - ({resp.status_code}) : {resp.url}"
-        return " - ".join(f"{k}: {v}" for k, v in resp.items() if k != "detail")
+    def init_thread(self) -> None:
+        self.clear_current_thread()
+        self.responses[self.id] = []
+        self.properties[self.id] = {"start_time": datetime.now()}
 
-    def json_response(self, resp: Response | dict[str, Any]) -> dict[str, Any]:
-        if isinstance(resp, Response):
-            return {
-                "method": resp.request.method,
-                "status_code": resp.status_code,
-                "url": resp.url,
-            }
-        return resp
+    def log_info(self, info: InfoRecord) -> None:
+        info.data_type = self.context
+        self.responses[self.id].append(info)
 
-    def get_formatted_responses(self) -> list[str]:
-        return [self.format_response(r) for r in self.responses if r is not None]
+    def set_property(self, key: str, value: Any) -> None:
+        self.properties[self.id][key] = value
 
-    def get_json_responses(self) -> list[dict[str, Any]]:
-        return [self.json_response(r) for r in self.responses if r is not None]
+    def pop_properties(self) -> dict[str, Any]:
+        return self.properties.get(self.id, {})
 
+    def clear_current_thread(self) -> None:
+        self.responses.pop(self.id, None)
+        self.properties.pop(self.id, None)
 
-# must use a global variable so that log_handler is accessible from inside exception
-log_handler = LogCollectionHandler()
-gn_logger.addHandler(log_handler)
-gs_logger.addHandler(log_handler)
+    def pop_json_responses(self) -> list[OperationsRecord]:
+        responses = self.responses.pop(self.id, [])
+        return [r for r in responses if r is not None]

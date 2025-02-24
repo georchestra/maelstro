@@ -25,7 +25,7 @@ const logMessage = (log: LogDetail) => {
     return log.operation
   }
   if (log.method) {
-    return log.method + ' ' + log.url
+    return `${log.method} [${log.status_code}] ${log.url}`
   }
   return JSON.stringify(log)
 }

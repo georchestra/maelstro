@@ -4,6 +4,8 @@ export type LogDetail = {
   url?: string
   operation?: string
   message?: string
+  status?: string
+  data_type?: string
 }
 
 export type RawLog = {

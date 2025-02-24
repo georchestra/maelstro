@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Any, Optional, Annotated
-from pydantic import BaseModel, Field
+from typing import Any, Optional, Annotated, Literal
+from pydantic import BaseModel, Field, field_serializer
 
 
 class SearchQuery(BaseModel):
@@ -99,6 +99,63 @@ class CopyPreview(BaseModel):
     geoserver_resources: list[PreviewGS]
 
 
+context_type = Literal["General", "Meta", "Layer", "Style"]
+
+
+class OperationsRecord(BaseModel):
+    data_type: context_type = "General"
+
+    def string_format(self) -> str:
+        return " - ".join(f"{k}: {v}" for k, v in self.dict().items() if k != "detail")
+
+
+class ApiRecord(OperationsRecord):
+    type: str = "generic"
+    method: str
+    status_code: int
+    url: str
+
+    def string_format(self) -> str:
+        return f"[{self.method}] - ({self.status_code}) : {self.url}"
+
+
+class GnApiRecord(ApiRecord):
+    type: str = "gn_api"
+
+
+class GsApiRecord(ApiRecord):
+    type: str = "gs_api"
+
+
+class InfoRecord(OperationsRecord):
+    message: str
+    detail: dict[str, Any]
+
+
+class SuccessRecord(InfoRecord):
+    status: str = "OK"
+
+
+class DetailedResponse(BaseModel):
+    summary: str
+    info: dict[str, Any] = {}
+    operations: list[OperationsRecord]
+
+    @field_serializer("operations")
+    def op_to_dict(self, operations: list[OperationsRecord]) -> list[dict[str, Any]]:
+        return [op.dict() for op in operations]
+
+
+class ExceptionDetail(BaseModel):
+    err: str
+    status_code: int = 500
+    context: str = "src"
+    server: str | None = None
+    key: str | None = None
+    user: str | None = None
+    operations: list[dict[str, Any]] = Field(default_factory=lambda: [])
+
+
 class JsonLogRecord(BaseModel):
     id: int
     start_time: datetime
@@ -114,7 +171,7 @@ class JsonLogRecord(BaseModel):
     copy_meta: bool
     copy_layers: bool
     copy_styles: bool
-    details: Optional[list[dict[str, Any]]] = []
+    details: Optional[list[dict[str, Any]]] = Field(default_factory=lambda: [])
 
 
 sample_json_log_records = [
