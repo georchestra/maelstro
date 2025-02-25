@@ -7,7 +7,7 @@ server {
     location /maelstro {
       alias /app;
       index  index.html;
-      try_files $uri $uri/ /index.html;
+      try_files $uri $uri/ /index.html =404;
       autoindex off;
       expires off;
       add_header Cache-Control "public, max-age=0, s-maxage=0, must-revalidate" always;
