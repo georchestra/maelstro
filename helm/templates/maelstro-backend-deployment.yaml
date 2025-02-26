@@ -94,3 +94,7 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.maelstro_backend.image.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.maelstro_backend.image.imagePullSecrets }}
+      {{- end }}
