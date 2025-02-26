@@ -32,7 +32,6 @@ const logMessage = (log: LogDetail) => {
 </script>
 
 <template>
-  <div class="my-5 font-semibold">{{ $t('Details') }}</div>
   <div v-for="(log, index) in logs" :key="index">
     <div :class="logClass(log)">{{ logMessage(log) }}</div>
   </div>
