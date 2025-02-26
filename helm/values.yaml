@@ -4,8 +4,8 @@ maelstro_frontend:
   image:
     repository: georchestra/maelstro-frontend
     tag: latest
-    imagePullSecrets: []
-    pullPolicy: []
+    imagePullSecrets: 
+    pullPolicy: 
   tolerations: []
   affinity: {}
   extra_environment: []
@@ -26,7 +26,7 @@ maelstro_backend:
   image:
     repository: georchestra/maelstro-backend
     tag: latest
-    imagePullSecrets: []
+    imagePullSecrets: 
   tolerations: []
   affinity: {}
   extra_environment: []
