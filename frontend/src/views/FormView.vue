@@ -39,7 +39,7 @@ const selectedDataset = ref<SearchResult | null>(null)
 
 const parameters = ref({
   src_name: source.value.name,
-  dst_name: '',
+  dst_name: configStore.destinations.length == 1 ? configStore.destinations[0].name : '',
   copy_meta: true,
   copy_layers: true,
   copy_styles: true,
