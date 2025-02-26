@@ -115,7 +115,7 @@ const metaSuccessful = computed(() => metaLogs.value.some((l) => l.status == "OK
 const layerSuccessful = computed(() => layerLogs.value.some((l) => l.status == "OK"))
 const styleSuccessful = computed(() => styleLogs.value.some((l) => l.status == "OK"))
 const metaFailed = computed(() => metaLogs.value.some((l) => l.status != "OK"))
-const layerFailes = computed(() => layerLogs.value.some((l) => l.status != "OK"))
+const layerFailed = computed(() => layerLogs.value.some((l) => l.status != "OK"))
 const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK"))
 </script>
 
