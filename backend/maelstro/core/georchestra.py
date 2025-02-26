@@ -1,6 +1,5 @@
 from contextlib import contextmanager
 import json
-import uuid
 from typing import Any, Iterator
 from geonetwork import GnApi
 from geonetwork.gn_logger import logger as gn_logger
@@ -35,6 +34,7 @@ class GeorchestraHandler:
                     user=gs_info["auth"] and gs_info["auth"].login,
                     err="Invalid credentials",
                 ) from err
+            raise err
         gs_logger.info(
             "Session opened on %s at %s",
             (

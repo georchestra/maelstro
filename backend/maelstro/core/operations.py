@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Iterator
 import logging
-from uuid import uuid4
+from uuid import UUID, uuid4
 from datetime import datetime
 from logging import Handler
 from requests import Response
@@ -26,7 +26,7 @@ def raise_for_status(response: Response) -> None:
         )
 
 
-logger_uuid = ContextVar("logger_uuid", default="0")
+logger_uuid: ContextVar[UUID] = ContextVar("logger_uuid")
 
 
 class LogCollectionHandler(Handler):
