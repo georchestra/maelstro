@@ -55,6 +55,6 @@ export const synchronizeService = {
         'Content-Type': 'application/json',
       },
     })
-    return await response.json()
+    return (await response.json()).operations
   },
 }

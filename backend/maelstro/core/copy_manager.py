@@ -9,9 +9,9 @@ from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
 from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
-from maelstro.common.models import CopyPreview
-from .georchestra import GeorchestraHandler, get_georchestra_handler
-from .exceptions import ParamError, MaelstroDetail
+from maelstro.common.models import CopyPreview, InfoRecord, SuccessRecord
+from maelstro.common.exceptions import ParamError
+from .georchestra import GeorchestraHandler
 from .operations import raise_for_status
 
 
@@ -19,7 +19,9 @@ logger = logging.getLogger()
 
 
 class CopyManager:
-    def __init__(self, src_name: str, dst_name: str, uuid: str):
+    def __init__(
+        self, src_name: str, dst_name: str, uuid: str, geo_hnd: GeorchestraHandler
+    ):
         self.src_name = src_name
         self.dst_name = dst_name
         self.uuid = uuid
@@ -27,7 +29,7 @@ class CopyManager:
         self.include_layers = False
         self.include_styles = False
         self.meta: Meta
-        self.geo_hnd: GeorchestraHandler
+        self.geo_hnd: GeorchestraHandler = geo_hnd
         self.checked_workspaces: set[str] = set()
         self.checked_datastores: set[str] = set()
 
@@ -58,75 +60,72 @@ class CopyManager:
         self.include_layers = include_layers
         self.include_styles = include_styles
 
-        with get_georchestra_handler() as geo_hnd:
-            self.geo_hnd = geo_hnd
+        zipdata = self.gn_src.get_record_zip(self.uuid).read()
+        self.meta = Meta(zipdata)
 
-            zipdata = self.gn_src.get_record_zip(self.uuid).read()
-            self.meta = Meta(zipdata)
+        preview: dict[str, list[dict[str, Any]]] = {
+            "geonetwork_resources": [],
+            "geoserver_resources": [],
+        }
 
-            preview: dict[str, list[dict[str, Any]]] = {
-                "geonetwork_resources": [],
-                "geoserver_resources": [],
+        src_gn_info = self.geo_hnd.get_service_info(
+            self.src_name, is_source=True, is_geonetwork=True
+        )
+        src_gn_url = src_gn_info["url"]
+        dst_gn_info = self.geo_hnd.get_service_info(
+            self.dst_name, is_source=False, is_geonetwork=True
+        )
+        dst_gn_url = dst_gn_info["url"]
+
+        preview["geonetwork_resources"].append(
+            {
+                "src": src_gn_url,
+                "dst": dst_gn_url,
+                "metadata": (
+                    [
+                        {
+                            "title": self.meta.get_title(),
+                            "iso_standard": self.meta.schema,
+                        }
+                    ]
+                    if self.include_meta
+                    else []
+                ),
             }
+        )
 
-            src_gn_info = self.geo_hnd.get_service_info(
-                self.src_name, is_source=True, is_geonetwork=True
-            )
-            src_gn_url = src_gn_info["url"]
-            dst_gn_info = self.geo_hnd.get_service_info(
-                self.dst_name, is_source=False, is_geonetwork=True
-            )
-            dst_gn_url = dst_gn_info["url"]
+        dst_gs_info = self.geo_hnd.get_service_info(
+            self.dst_name, is_source=False, is_geonetwork=False
+        )
+        dst_gs_url = dst_gs_info["url"]
 
-            preview["geonetwork_resources"].append(
+        geoservers = self.meta.get_gs_layers(config.get_gs_sources())
+        for server_url, layer_names in geoservers.items():
+            styles: set[str] = set()
+            for layer_name in layer_names:
+
+                gs_src = self.geo_hnd.get_gs_service(server_url, True)
+                layers = {}
+                for layer_name in layer_names:
+                    resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
+                    raise_for_status(resp)
+                    layers[layer_name] = resp.json()
+
+                for layer in layers.values():
+                    styles.update(self.get_styles_from_layer(layer).keys())
+
+            preview["geoserver_resources"].append(
                 {
-                    "src": src_gn_url,
-                    "dst": dst_gn_url,
-                    "metadata": (
-                        [
-                            {
-                                "title": self.meta.get_title(),
-                                "iso_standard": self.meta.schema,
-                            }
-                        ]
-                        if self.include_meta
+                    "src": server_url,
+                    "dst": dst_gs_url,
+                    "layers": (
+                        [str(layer_name) for layer_name in layer_names]
+                        if self.include_layers
                         else []
                     ),
+                    "styles": list(styles) if self.include_styles else [],
                 }
             )
-
-            dst_gs_info = self.geo_hnd.get_service_info(
-                self.dst_name, is_source=False, is_geonetwork=False
-            )
-            dst_gs_url = dst_gs_info["url"]
-
-            geoservers = self.meta.get_gs_layers(config.get_gs_sources())
-            for server_url, layer_names in geoservers.items():
-                styles: set[str] = set()
-                for layer_name in layer_names:
-
-                    gs_src = self.geo_hnd.get_gs_service(server_url, True)
-                    layers = {}
-                    for layer_name in layer_names:
-                        resp = gs_src.rest_client.get(f"/rest/layers/{layer_name}.json")
-                        raise_for_status(resp)
-                        layers[layer_name] = resp.json()
-
-                    for layer in layers.values():
-                        styles.update(self.get_styles_from_layer(layer).keys())
-
-                preview["geoserver_resources"].append(
-                    {
-                        "src": server_url,
-                        "dst": dst_gs_url,
-                        "layers": (
-                            [str(layer_name) for layer_name in layer_names]
-                            if self.include_layers
-                            else []
-                        ),
-                        "styles": list(styles) if self.include_styles else [],
-                    }
-                )
 
         return CopyPreview(**preview)  # type: ignore
 
@@ -135,23 +134,15 @@ class CopyManager:
         include_meta: bool,
         include_layers: bool,
         include_styles: bool,
-        output_format: str = "text/plain",
-    ) -> str | list[Any]:
+    ) -> str:
         self.include_meta = include_meta
         self.include_layers = include_layers
         self.include_styles = include_styles
 
-        with get_georchestra_handler() as geo_hnd:
-            self.geo_hnd = geo_hnd
-            operations = self._copy_dataset(output_format)
-        return operations
-
-    def _copy_dataset(self, output_format: str) -> str | list[Any]:
-
         if self.uuid:
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
             self.meta = Meta(zipdata)
-            self.geo_hnd.log_handler.properties["src_title"] = self.meta.get_title()
+            self.geo_hnd.log_handler.set_property("src_title", self.meta.get_title())
 
         if self.meta is None:
             return []
@@ -169,26 +160,28 @@ class CopyManager:
                 ]
 
                 pre_info, post_info = self.meta.apply_xslt_chain(transformation_paths)
-                self.geo_hnd.log_handler.responses.append(
-                    {
-                        "operation": "Apply XSL transformations in zip archive",
-                        "transformations": xsl_transformations,
-                        "before": pre_info,
-                        "after": post_info,
-                    }
+                self.geo_hnd.log_handler.log_info(
+                    InfoRecord(
+                        message="Apply XSL transformations in zip archive",
+                        detail={
+                            "transformations": xsl_transformations,
+                            "before": pre_info,
+                            "after": post_info,
+                        },
+                    )
                 )
-            self.geo_hnd.log_handler.properties["dst_title"] = self.meta.get_title()
-            results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
-            self.geo_hnd.log_handler.responses.append(
-                {
-                    "message": results["msg"],
-                    "detail": results["detail"],
-                }
-            )
+            self.geo_hnd.log_handler.set_property("dst_title", self.meta.get_title())
 
-        if output_format == "text/plain":
-            return self.geo_hnd.log_handler.get_formatted_responses()
-        return self.geo_hnd.log_handler.get_json_responses()
+            with self.geo_hnd.log_handler.logger_context("Meta"):
+                results = self.gn_dst.put_record_zip(BytesIO(self.meta.get_zip()))
+                self.geo_hnd.log_handler.log_info(
+                    SuccessRecord(
+                        message=results["msg"],
+                        detail={"info": results["detail"]},
+                    )
+                )
+            return str(results["msg"])
+        return "copy_successful"
 
     def copy_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
@@ -229,13 +222,27 @@ class CopyManager:
 
                 # styles must be copieed first
                 if self.include_styles:
-                    for style in styles.values():
-                        self.copy_style(gs_src, style)
+                    with self.geo_hnd.log_handler.logger_context("Style"):
+                        for style in styles.values():
+                            self.copy_style(gs_src, style)
+                        self.geo_hnd.log_handler.log_info(
+                            SuccessRecord(
+                                message="Styles copied successfully",
+                                detail={"styles": list(styles.keys())},
+                            )
+                        )
 
                 # styles must be available when cloning layers
                 if self.include_layers:
-                    for layer_name, layer_data in layers.items():
-                        self.copy_layer(gs_src, layer_name, layer_data)
+                    with self.geo_hnd.log_handler.logger_context("Layer"):
+                        for layer_name, layer_data in layers.items():
+                            self.copy_layer(gs_src, layer_name, layer_data)
+                        self.geo_hnd.log_handler.log_info(
+                            SuccessRecord(
+                                message="Layers copied successfully",
+                                detail={"layers": list(layers.keys())},
+                            )
+                        )
 
     def get_styles_from_layer(self, layer_data: dict[str, Any]) -> dict[str, Any]:
         default_style = layer_data["layer"]["defaultStyle"]
@@ -293,12 +300,10 @@ class CopyManager:
             has_workspace = self.gs_dst.rest_client.get(workspace_route)
             if has_workspace.status_code == 404:
                 raise ParamError(
-                    MaelstroDetail(
-                        context="dst",
-                        key=workspace_route,
-                        err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
-                        operations=self.geo_hnd.log_handler.get_json_responses(),
-                    )
+                    context="dst",
+                    key=workspace_route,
+                    err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
+                    operations=self.geo_hnd.log_handler.get_json_responses(),
                 )
             raise_for_status(has_workspace)
 
@@ -308,12 +313,10 @@ class CopyManager:
             has_datastore = self.gs_dst.rest_client.get(store_route)
             if has_datastore.status_code == 404:
                 raise ParamError(
-                    MaelstroDetail(
-                        context="dst",
-                        key=store_route,
-                        err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
-                        operations=self.geo_hnd.log_handler.get_json_responses(),
-                    )
+                    context="dst",
+                    key=store_route,
+                    err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
+                    operations=self.geo_hnd.log_handler.get_json_responses(),
                 )
             raise_for_status(has_datastore)
 
@@ -362,11 +365,9 @@ class CopyManager:
             )
             if resp.status_code == 404:
                 raise ParamError(
-                    MaelstroDetail(
-                        context="dst",
-                        key=resource_post_route,
-                        err="Route not found. Check Workspace and datastore",
-                    )
+                    context="dst",
+                    key=resource_post_route,
+                    err="Route not found. Check Workspace and datastore",
                 )
         raise_for_status(resp)
 

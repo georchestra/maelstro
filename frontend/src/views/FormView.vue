@@ -104,6 +104,19 @@ const backToForm = () => {
   confirmation.value = false
   logs.value = []
 }
+
+const metaLogs = computed(() => logs.value.filter((l) => l.data_type == 'Meta'))
+
+const layerLogs = computed(() => logs.value.filter((l) => l.data_type == 'Layer'))
+
+const styleLogs = computed(() => logs.value.filter((l) => l.data_type == 'Style'))
+
+const metaSuccessful = computed(() => metaLogs.value.some((l) => l.status == "OK"))
+const layerSuccessful = computed(() => layerLogs.value.some((l) => l.status == "OK"))
+const styleSuccessful = computed(() => styleLogs.value.some((l) => l.status == "OK"))
+const metaFailed = computed(() => metaLogs.value.some((l) => l.status != "OK"))
+const layerFailed = computed(() => layerLogs.value.some((l) => l.status != "OK"))
+const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK"))
 </script>
 
 <template>
@@ -143,7 +156,7 @@ const backToForm = () => {
             <Button icon="pi pi-delete-left" @click="selectedDataset = null" severity="secondary" />
             <Message v-if="errors.metadataUuid" class="min-w-[300px]" severity="error">{{
               errors.metadataUuid
-            }}</Message>
+              }}</Message>
             <p v-if="!errors.metadataUuid" class="min-w-[300px]">{{ selectedDataset?.uuid }}</p>
           </div>
           <div class="ml-[164px]">
@@ -190,10 +203,11 @@ const backToForm = () => {
         >
           <div class="my-1">{{ $t('Source:') }} {{ geonetwork.src }}</div>
           <div class="my-1">{{ $t('Destination:') }} {{ geonetwork.dst }}</div>
-          <div class="my-1">{{ $t('Metadata:') }}</div>
+          <div class="my-1">{{ $t('Metadata:') }}{{ metaSuccessful?' ✅' : (metaFailed ? ' ❌' : '') }}</div>
           <ul v-for="(metadata, index) in geonetwork.metadata" :key="index">
             <li class="list-disc ml-4">{{ metadata.title }}</li>
           </ul>
+          <LogsReport v-if="logs.length" :logs="metaLogs"></LogsReport>
         </div>
 
         <div
@@ -203,14 +217,16 @@ const backToForm = () => {
         >
           <div class="my-1">{{ $t('Source:') }} {{ server.src }}</div>
           <div class="my-1">{{ $t('Destination:') }} {{ server.dst }}</div>
-          <div class="my-1">{{ $t('Layers:') }}</div>
+          <div class="my-1">{{ $t('Layers:') }}{{ layerSuccessful?' ✅' : (layerFailed ? ' ❌' : '') }}</div>
           <ul v-for="layer in server.layers" :key="layer">
             <li class="list-disc ml-4">{{ layer }}</li>
           </ul>
-          <div class="my-1">{{ $t('Styles:') }}</div>
+          <LogsReport v-if="logs.length" :logs="layerLogs"></LogsReport>
+          <div class="my-1">{{ $t('Styles:') }}{{ styleSuccessful?' ✅' : (styleFailed ? ' ❌' : '') }}</div>
           <ul v-for="style in server.styles" :key="style">
             <li class="list-disc ml-4">{{ style }}</li>
           </ul>
+          <LogsReport v-if="logs.length" :logs="styleLogs"></LogsReport>
         </div>
 
         <div class="mt-4 flex justify-between items-center">
