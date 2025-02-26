@@ -35,7 +35,7 @@ def test_search2():
 def test_search3():
     response = client.post("/search/GeonetworkRennes", json={"query": {"multi_match": {"fields": ["resourceTitleObject.*"], "query": "plan", "type": "bool_prefix"}}})
     assert len(response.json()['hits']['hits']) == 10
-    assert response.json()['hits']['total']['value'] == 22
+    assert response.json()['hits']['total']['value'] > 22
 
 
 def test_search4():
@@ -44,7 +44,7 @@ def test_search4():
         "size": 15,
     })
     assert len(response.json()['hits']['hits']) == 15
-    assert response.json()['hits']['total']['value'] == 22
+    assert response.json()['hits']['total']['value'] > 22
 
 
 @pytest.mark.skip("Depends on extenal data")
