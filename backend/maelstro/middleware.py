@@ -48,12 +48,12 @@ def setup_middleware(app: FastAPI) -> None:
                         "info": str(err),
                     }
                     status_code = 500
-                response["operations"] = geo_hnd.log_handler.pop_json_responses()
+                response["operations"] = geo_hnd.log_handler.get_json_responses()
                 if "/copy" in str(request.url):
                     log_request_to_db(
                         status_code,
                         request,
-                        geo_hnd.log_handler.pop_properties(),
+                        geo_hnd.log_handler.get_properties(),
                         [op.dict() for op in response["operations"]],
                     )
                 return JSONResponse(

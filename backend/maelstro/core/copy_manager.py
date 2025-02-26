@@ -303,7 +303,7 @@ class CopyManager:
                     context="dst",
                     key=workspace_route,
                     err=f"Workspace {workspace_name} not found on destination Geoserver {self.dst_name}",
-                    operations=self.geo_hnd.log_handler.pop_json_responses(),
+                    operations=self.geo_hnd.log_handler.get_json_responses(),
                 )
             raise_for_status(has_workspace)
 
@@ -316,7 +316,7 @@ class CopyManager:
                     context="dst",
                     key=store_route,
                     err=f"Datastore {store_name} not found on destination Geoserver {self.dst_name}",
-                    operations=self.geo_hnd.log_handler.pop_json_responses(),
+                    operations=self.geo_hnd.log_handler.get_json_responses(),
                 )
             raise_for_status(has_datastore)
 

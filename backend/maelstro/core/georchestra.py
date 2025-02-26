@@ -17,18 +17,10 @@ class GeorchestraHandler:
         self.log_handler = log_handler
 
     def get_gn_service(self, instance_name: str, is_source: bool) -> GnApi:
-        if not self.log_handler.valid:
-            raise RuntimeError(
-                "GeorchestraHandler context invalid, handler already closed"
-            )
         gn_info = self.get_service_info(instance_name, is_source, True)
         return GnApi(gn_info["url"], gn_info["auth"])
 
     def get_gs_service(self, instance_name: str, is_source: bool) -> RestService:
-        if not self.log_handler.valid:
-            raise RuntimeError(
-                "GeorchestraHandler context invalid, handler already closed"
-            )
         gs_info = self.get_service_info(instance_name, is_source, False)
         gsapi = RestService(gs_info["url"], gs_info["auth"])
         try:
@@ -76,9 +68,7 @@ class GeorchestraHandler:
 
 @contextmanager
 def get_georchestra_handler() -> Iterator[GeorchestraHandler]:
-    hnd_id = str(uuid.uuid4())
-    log_handler = LogCollectionHandler(hnd_id)
-    log_handler.init_thread()
+    log_handler = LogCollectionHandler()
     gn_logger.addHandler(log_handler)
     gs_logger.addHandler(log_handler)
     yield GeorchestraHandler(log_handler)

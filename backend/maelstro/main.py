@@ -328,11 +328,11 @@ def put_dataset_copy(
         )
     copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
     success = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles)
-    operations = request.state.geo_handler.log_handler.pop_json_responses()
+    operations = request.state.geo_handler.log_handler.get_json_responses()
     log_request_to_db(
         200,
         request,
-        request.state.geo_handler.log_handler.pop_properties(),
+        request.state.geo_handler.log_handler.get_properties(),
         [op.dict() for op in operations],
     )
     if accept == "application/json":
