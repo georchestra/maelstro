@@ -27,7 +27,7 @@ const includeHarvested = ref(true)
 const confirmation = ref(false)
 
 const configStore = useConfigStore()
-const source = ref(configStore.sources[0])
+const source = ref(configStore.sources.length ? configStore.sources[0] : undefined)
 
 const errors = ref<Record<string, string>>({})
 
@@ -35,12 +35,15 @@ const { t } = useI18n()
 
 const datasetsStore = useDatasetsStore()
 const optionLabel = (option: SearchResult) => option.resourceTitleObject.default
-const onComplete = (event: AutoCompleteCompleteEvent) =>
-  datasetsStore.search(source.value.name, event.query, includeHarvested.value)
+const onComplete = (event: AutoCompleteCompleteEvent) => {
+  if (source.value) {
+    datasetsStore.search(source.value.name, event.query, includeHarvested.value)
+  }
+}
 const selectedDataset = ref<SearchResult | null>(null)
 
 const parameters = ref({
-  src_name: source.value.name,
+  src_name: source.value ? source.value.name : '',
   dst_name: configStore.destinations.length == 1 ? configStore.destinations[0].name : '',
   copy_meta: true,
   copy_layers: true,

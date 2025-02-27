@@ -5,28 +5,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import './assets/main.css'
 import router from './router'
-import { createI18n } from 'vue-i18n'
-import frMessages from './locales/fr.json'
 import primeEnMessages from 'primelocale/en.json'
 import primeFrMessages from 'primelocale/fr.json'
 import 'primeicons/primeicons.css'
-
-function detectBrowserLanguage() {
-  const availableLocales = ['en', 'fr']
-  const browserLocale = navigator.language
-  const normalizedLocale = browserLocale.split('-')[0]
-  return availableLocales.includes(normalizedLocale) ? normalizedLocale : 'en'
-}
-
-const i18n = createI18n({
-  legacy: false,
-  locale: detectBrowserLanguage(),
-  fallbackLocale: 'en',
-  messages: {
-    en: {},
-    fr: frMessages,
-  },
-})
+import { ToastService } from 'primevue'
+import i18n from '@/plugins/i18n'
 
 const app = createApp(App)
 
@@ -51,5 +34,6 @@ app.use(PrimeVue, {
   },
   locale: primeLocales[i18n.global.locale.value],
 })
+app.use(ToastService)
 
 app.mount('#app')

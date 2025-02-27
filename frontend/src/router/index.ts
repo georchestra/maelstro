@@ -4,6 +4,10 @@ import BaseLayout from '@/layouts/BaseLayout.vue'
 import { useConfigStore } from '@/stores/config.store'
 import LogsView from '@/views/LogsView.vue'
 import { useLogsStore } from '@/stores/logs.store'
+import { useToastStore } from '@/stores/toast.store'
+import i18n from '@/plugins/i18n'
+
+const { t } = i18n.global
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,7 +29,17 @@ const router = createRouter({
           name: 'synchronize',
           component: FormView,
           beforeEnter: async () => {
-            await useConfigStore().fetchConfig()
+            try {
+              await useConfigStore().fetchConfig()
+            } catch {
+              const toastStore = useToastStore()
+              toastStore.addToast({
+                severity: 'error',
+                summary: t('Error'),
+                detail: t('Failed to fetch configuration'),
+                life: undefined,
+              })
+            }
           },
         },
         {
@@ -33,7 +47,17 @@ const router = createRouter({
           name: 'logs',
           component: LogsView,
           beforeEnter: async () => {
-            await useLogsStore().fetchLogs()
+            try {
+              await useLogsStore().fetchLogs()
+            } catch {
+              const toastStore = useToastStore()
+              toastStore.addToast({
+                severity: 'error',
+                summary: t('Error'),
+                detail: t('Failed to fetch logs'),
+                life: undefined,
+              })
+            }
           },
         },
       ],

@@ -19,5 +19,16 @@
   "Styles:": "Styles :",
   "Go back to form": "Retourner au formulaire",
   "Confirm": "Confirmer",
-  "Following data and metadata will be copied:": "Les données et métadonnées suivantes seront copiées :"
+  "Following data and metadata will be copied:": "Les données et métadonnées suivantes seront copiées :",
+  "Error": "Erreur",
+  "Failed to fetch configuration": "Le chargement de la configuration a échoué",
+  "Failed to fetch logs": "Le chargement du journal a échoué",
+  "id": "id",
+  "Start time": "Heure de début",
+  "User": "Utilisateur",
+  "Status code": "Code d'état",
+  "Source": "Source",
+  "Destination": "Destination",
+  "Source title": "Titre de la source",
+  "Destination title": "Titre de la destination"
 }

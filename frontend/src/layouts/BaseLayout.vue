@@ -2,12 +2,14 @@
 import { useI18n } from 'vue-i18n'
 import { RouterView, useRouter } from 'vue-router'
 import Menubar from 'primevue/menubar'
-import { Select } from 'primevue'
+import { Select, Toast, useToast } from 'primevue'
+import { useToastStore } from '@/stores/toast.store'
+import { computed, onMounted, watch } from 'vue'
 
 const { t } = useI18n()
 const router = useRouter()
 
-const menuItems = [
+const menuItems = computed(() => [
   {
     label: t('Synchronize'),
     icon: 'pi pi-sync',
@@ -19,7 +21,23 @@ const menuItems = [
     url: router.resolve({ name: 'logs' }).href,
   },
   { label: t('User guide'), icon: 'pi pi-book', command: () => {} },
-]
+])
+
+const toastStore = useToastStore()
+const toast = useToast()
+
+const loadToastMessages = () => {
+  if (toastStore.messages.length > 0) {
+    toastStore.messages.forEach((msg) => toast.add(msg))
+    toastStore.messages = []
+  }
+}
+onMounted(loadToastMessages)
+
+watch(
+  () => toastStore.messages,
+  () => loadToastMessages,
+)
 </script>
 
 <template>
@@ -31,4 +49,5 @@ const menuItems = [
   <main>
     <RouterView />
   </main>
+  <Toast />
 </template>
