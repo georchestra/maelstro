@@ -7,8 +7,6 @@ import { ref } from 'vue'
 
 const logsStore = useLogsStore()
 
-const selectedLog = ref<Log | null>(null)
-
 const getSeverity = (log: Log) => {
   if (log.status_code >= 200 && log.status_code < 300) {
     return 'success'
@@ -16,18 +14,21 @@ const getSeverity = (log: Log) => {
     return 'danger'
   }
 }
+
+const expandedRows = ref({})
 </script>
 
 <template>
-  <div class="flex flex-col gap-5 items-center">
+  <div class="flex flex-col">
     <DataTable
       :value="logsStore.logs"
       tableStyle="min-width: 50rem"
       size="small"
       selectionMode="single"
-      v-model:selection="selectedLog"
+      v-model:expandedRows="expandedRows"
+      dataKey="id"
     >
-      <Column field="id" :header="$t('id')"></Column>
+      <Column expander field="id" :header="$t('id')"></Column>
       <Column field="start_time" :header="$t('Start time')">
         <template #body="slotProps">
           {{
@@ -54,96 +55,26 @@ const getSeverity = (log: Log) => {
       </Column>
       <Column field="src_name" :header="$t('Source')"></Column>
       <Column field="dst_name" :header="$t('Destination')"></Column>
-      <Column field="src_title" :header="$t('Title')"></Column>
+      <Column field="src_title" :header="$t('Source title')">
+        <template #body="slotProps">
+          <div
+            class="max-w-60 overflow-hidden text-ellipsis whitespace-nowrap"
+            :title="slotProps.data.src_title"
+          >
+            {{ slotProps.data.src_title }}
+          </div>
+        </template>
+      </Column>
+      <!--<Column field="src_title" :header="$t('Destination title')"></Column>-->
       <Column field="copy_meta" :header="$t('Metadata')"></Column>
       <Column field="copy_layers" :header="$t('Layers')"></Column>
       <Column field="copy_styles" :header="$t('Styles')"></Column>
+      <template #expansion="slotProps">
+        <div class="p-4">
+          <LogsReport :logs="slotProps.data.details" />
+        </div>
+      </template>
     </DataTable>
-    <div v-if="selectedLog" class="m-5">
-      <div class="flex flex-col gap-1">
-        <div class="flex flex-row gap-5">
-          <div>id:</div>
-          <div>{{ selectedLog.id }}</div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>start_time:</div>
-          <div>
-            {{
-              selectedLog.start_time.toLocaleString('fr-FR', {
-                dateStyle: 'short',
-                timeStyle: 'short',
-              })
-            }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>end_time:</div>
-          <div>
-            {{
-              selectedLog.end_time.toLocaleString('fr-FR', {
-                dateStyle: 'short',
-                timeStyle: 'short',
-              })
-            }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>last_name:</div>
-          <div>
-            {{ selectedLog.last_name }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>status_code:</div>
-          <div>
-            {{ selectedLog.status_code }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>src_name:</div>
-          <div>
-            {{ selectedLog.src_name }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>dataset_uuid:</div>
-          <div>
-            {{ selectedLog.dataset_uuid }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>src_title:</div>
-          <div>
-            {{ selectedLog.src_title }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>dst_title:</div>
-          <div>
-            {{ selectedLog.dst_title }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>copy_meta:</div>
-          <div>
-            {{ selectedLog.copy_meta }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>copy_layers:</div>
-          <div>
-            {{ selectedLog.copy_layers }}
-          </div>
-        </div>
-        <div class="flex flex-row gap-5">
-          <div>copy_styles:</div>
-          <div>
-            {{ selectedLog.copy_styles }}
-          </div>
-        </div>
-      </div>
-      <LogsReport :logs="selectedLog?.details" />
-    </div>
   </div>
 </template>
 

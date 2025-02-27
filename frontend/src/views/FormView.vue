@@ -120,7 +120,7 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK")
 </script>
 
 <template>
-  <div class="flex flex-col my-12 items-center">
+  <div class="my-12 w-4xl max-w-4xl mx-auto">
     <div class="text-4xl mb-10">
       {{ $t('Synchronization of datasets between platforms') }}
     </div>
@@ -191,7 +191,7 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK")
     </div>
 
     <div v-else>
-      <div class="w-[600px] mx-auto">
+      <div>
         <div class="mt-4 font-semibold">
           {{ $t('Following data and metadata will be copied:') }}
         </div>
@@ -235,10 +235,10 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK")
           <Button :label="$t('Confirm')" @click.stop="confirm" :disabled="isRunning" />
         </div>
       </div>
+    </div>
 
-      <div class="m-5">
-        <LogsReport v-if="logs.length" :logs="logs"></LogsReport>
-      </div>
+    <div class="mt-5">
+      <LogsReport v-if="logs.length" :logs="logs"></LogsReport>
     </div>
   </div>
 </template>
