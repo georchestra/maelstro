@@ -45,8 +45,13 @@ export type Log = {
 }
 
 export const logsService = {
-  async getLogs(): Promise<Log[]> {
-    const response = await fetch('/maelstro-backend/logs?size=20&get_details=true', {
+  async getLogs(limit: number, offset: number): Promise<Log[]> {
+    const params = new URLSearchParams({
+      size: limit.toString(),
+      offset: offset.toString(),
+      get_details: 'true',
+    })
+    const response = await fetch(`/maelstro-backend/logs?${params}`, {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
