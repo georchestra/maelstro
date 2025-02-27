@@ -28,7 +28,8 @@ const expandedRows = ref({})
       v-model:expandedRows="expandedRows"
       dataKey="id"
     >
-      <Column expander field="id" :header="$t('id')"></Column>
+      <Column expander></Column>
+      <Column field="id" :header="$t('id')"></Column>
       <Column field="start_time" :header="$t('Start time')">
         <template #body="slotProps">
           {{
