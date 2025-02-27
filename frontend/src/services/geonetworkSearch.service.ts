@@ -23,7 +23,11 @@ interface GnHit {
 }
 
 export const geonetworkSearchService = {
-  async search(sourceName: string, query: string): Promise<SearchResult[]> {
+  async search(
+    sourceName: string,
+    query: string,
+    includeHarvested: boolean,
+  ): Promise<SearchResult[]> {
     // const url =
     //   'https://demo.georchestra.org/geonetwork/srv/api/search/records/_search?bucket=bucket'
 
@@ -59,7 +63,7 @@ export const geonetworkSearchService = {
                   resourceType: ['service', 'map', 'map/static', 'mapDigital'],
                 },
               },
-              { term: { isHarvested: true } },
+              ...(includeHarvested ? [] : [{ term: { isHarvested: true } }]),
             ],
           },
         },

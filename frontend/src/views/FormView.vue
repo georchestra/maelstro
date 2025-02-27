@@ -13,6 +13,7 @@ import { Form, FormField } from '@primevue/forms'
 import {
   AutoComplete,
   Button,
+  Checkbox,
   Message,
   ProgressSpinner,
   Select,
@@ -22,6 +23,7 @@ import {
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+const includeHarvested = ref(true)
 const confirmation = ref(false)
 
 const configStore = useConfigStore()
@@ -34,7 +36,7 @@ const { t } = useI18n()
 const datasetsStore = useDatasetsStore()
 const optionLabel = (option: SearchResult) => option.resourceTitleObject.default
 const onComplete = (event: AutoCompleteCompleteEvent) =>
-  datasetsStore.search(source.value.name, event.query)
+  datasetsStore.search(source.value.name, event.query, includeHarvested.value)
 const selectedDataset = ref<SearchResult | null>(null)
 
 const parameters = ref({
@@ -111,12 +113,12 @@ const layerLogs = computed(() => logs.value.filter((l) => l.data_type == 'Layer'
 
 const styleLogs = computed(() => logs.value.filter((l) => l.data_type == 'Style'))
 
-const metaSuccessful = computed(() => metaLogs.value.some((l) => l.status == "OK"))
-const layerSuccessful = computed(() => layerLogs.value.some((l) => l.status == "OK"))
-const styleSuccessful = computed(() => styleLogs.value.some((l) => l.status == "OK"))
-const metaFailed = computed(() => metaLogs.value.some((l) => l.status != "OK"))
-const layerFailed = computed(() => layerLogs.value.some((l) => l.status != "OK"))
-const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK"))
+const metaSuccessful = computed(() => metaLogs.value.some((l) => l.status == 'OK'))
+const layerSuccessful = computed(() => layerLogs.value.some((l) => l.status == 'OK'))
+const styleSuccessful = computed(() => styleLogs.value.some((l) => l.status == 'OK'))
+const metaFailed = computed(() => metaLogs.value.some((l) => l.status != 'OK'))
+const layerFailed = computed(() => layerLogs.value.some((l) => l.status != 'OK'))
+const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK'))
 </script>
 
 <template>
@@ -140,6 +142,12 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK")
           <Message v-if="errors.src_name" severity="error">{{ errors.src_name }}</Message>
         </div>
 
+        <div class="flex gap-5 items-center">
+          <label class="w-36 inline-block">&nbsp;</label>
+          <label for="includeHarvested">{{ $t('Include harvested datasets') }}</label>
+          <Checkbox inputId="includeHarvested" v-model="includeHarvested" binary />
+        </div>
+
         <div class="flex flex-col gap-1">
           <div class="flex gap-5 items-center">
             <label for="metadataUuid" class="w-36">{{ $t('Source dataset') }}</label>
@@ -156,7 +164,7 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK")
             <Button icon="pi pi-delete-left" @click="selectedDataset = null" severity="secondary" />
             <Message v-if="errors.metadataUuid" class="min-w-[300px]" severity="error">{{
               errors.metadataUuid
-              }}</Message>
+            }}</Message>
             <p v-if="!errors.metadataUuid" class="min-w-[300px]">{{ selectedDataset?.uuid }}</p>
           </div>
           <div class="ml-[164px]">
@@ -203,7 +211,9 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK")
         >
           <div class="my-1">{{ $t('Source:') }} {{ geonetwork.src }}</div>
           <div class="my-1">{{ $t('Destination:') }} {{ geonetwork.dst }}</div>
-          <div class="my-1">{{ $t('Metadata:') }}{{ metaSuccessful?' ✅' : (metaFailed ? ' ❌' : '') }}</div>
+          <div class="my-1">
+            {{ $t('Metadata:') }}{{ metaSuccessful ? ' ✅' : metaFailed ? ' ❌' : '' }}
+          </div>
           <ul v-for="(metadata, index) in geonetwork.metadata" :key="index">
             <li class="list-disc ml-4">{{ metadata.title }}</li>
           </ul>
@@ -217,12 +227,16 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != "OK")
         >
           <div class="my-1">{{ $t('Source:') }} {{ server.src }}</div>
           <div class="my-1">{{ $t('Destination:') }} {{ server.dst }}</div>
-          <div class="my-1">{{ $t('Layers:') }}{{ layerSuccessful?' ✅' : (layerFailed ? ' ❌' : '') }}</div>
+          <div class="my-1">
+            {{ $t('Layers:') }}{{ layerSuccessful ? ' ✅' : layerFailed ? ' ❌' : '' }}
+          </div>
           <ul v-for="layer in server.layers" :key="layer">
             <li class="list-disc ml-4">{{ layer }}</li>
           </ul>
           <LogsReport v-if="logs.length" :logs="layerLogs"></LogsReport>
-          <div class="my-1">{{ $t('Styles:') }}{{ styleSuccessful?' ✅' : (styleFailed ? ' ❌' : '') }}</div>
+          <div class="my-1">
+            {{ $t('Styles:') }}{{ styleSuccessful ? ' ✅' : styleFailed ? ' ❌' : '' }}
+          </div>
           <ul v-for="style in server.styles" :key="style">
             <li class="list-disc ml-4">{{ style }}</li>
           </ul>
