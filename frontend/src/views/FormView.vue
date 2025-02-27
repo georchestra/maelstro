@@ -15,6 +15,7 @@ import {
   Button,
   Checkbox,
   Message,
+  Panel,
   ProgressSpinner,
   Select,
   ToggleSwitch,
@@ -122,6 +123,16 @@ const styleSuccessful = computed(() => styleLogs.value.some((l) => l.status == '
 const metaFailed = computed(() => metaLogs.value.some((l) => l.status != 'OK'))
 const layerFailed = computed(() => layerLogs.value.some((l) => l.status != 'OK'))
 const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK'))
+
+const hasMeta = computed(() => copyPreview.value.geonetwork_resources.some((gn) => gn.metadata.length > 0))
+const hasLayers = computed(() => copyPreview.value.geoserver_resources.some((gs) => gs.layers.length > 0))
+const hasStyles = computed(() => copyPreview.value.geoserver_resources.some((gs) => gs.styles.length > 0))
+
+const success = computed(() => (
+  (!hasMeta.value || metaSuccessful.value)
+  && (!hasLayers.value || layerSuccessful.value)
+  && (!hasStyles.value || styleSuccessful.value)
+))
 </script>
 
 <template>
@@ -214,13 +225,17 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK')
         >
           <div class="my-1">{{ $t('Source:') }} {{ geonetwork.src }}</div>
           <div class="my-1">{{ $t('Destination:') }} {{ geonetwork.dst }}</div>
-          <div class="my-1">
-            {{ $t('Metadata:') }}{{ metaSuccessful ? ' ✅' : metaFailed ? ' ❌' : '' }}
-          </div>
-          <ul v-for="(metadata, index) in geonetwork.metadata" :key="index">
-            <li class="list-disc ml-4">{{ metadata.title }}</li>
-          </ul>
-          <LogsReport v-if="logs.length" :logs="metaLogs"></LogsReport>
+          <Panel toggleable :collapsed="true">
+            <template #header>
+              <div>
+                <div class="my-1">{{ $t('Metadata:') }}{{ metaSuccessful ? ' ✅' : (metaFailed ? ' ❌' : '') }}</div>
+                <ul v-for="(metadata, index) in geonetwork.metadata" :key="index">
+                  <li class="list-disc ml-4">{{ metadata.title }}</li>
+                </ul>
+              </div>
+            </template>
+            <LogsReport v-if="logs.length" :logs="metaLogs"></LogsReport>
+          </Panel>
         </div>
 
         <div
@@ -230,20 +245,28 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK')
         >
           <div class="my-1">{{ $t('Source:') }} {{ server.src }}</div>
           <div class="my-1">{{ $t('Destination:') }} {{ server.dst }}</div>
-          <div class="my-1">
-            {{ $t('Layers:') }}{{ layerSuccessful ? ' ✅' : layerFailed ? ' ❌' : '' }}
-          </div>
-          <ul v-for="layer in server.layers" :key="layer">
-            <li class="list-disc ml-4">{{ layer }}</li>
-          </ul>
-          <LogsReport v-if="logs.length" :logs="layerLogs"></LogsReport>
-          <div class="my-1">
-            {{ $t('Styles:') }}{{ styleSuccessful ? ' ✅' : styleFailed ? ' ❌' : '' }}
-          </div>
-          <ul v-for="style in server.styles" :key="style">
-            <li class="list-disc ml-4">{{ style }}</li>
-          </ul>
-          <LogsReport v-if="logs.length" :logs="styleLogs"></LogsReport>
+          <Panel toggleable :collapsed="true">
+            <template #header>
+              <div>
+                <div class="my-1">{{ $t('Layers:') }}{{ layerSuccessful ? ' ✅' : (layerFailed ? ' ❌' : '') }}</div>
+                <ul v-for="layer in server.layers" :key="layer">
+                  <li class="list-disc ml-4">{{ layer }}</li>
+                </ul>
+              </div>
+            </template>
+            <LogsReport v-if="logs.length" :logs="layerLogs"></LogsReport>
+          </Panel>
+          <Panel toggleable :collapsed="true">
+            <template #header>
+              <div>
+                <div class="my-1">{{ $t('Styles:') }}{{ styleSuccessful ? ' ✅' : (styleFailed ? ' ❌' : '') }}</div>
+                <ul v-for="style in server.styles" :key="style">
+                  <li class="list-disc ml-4">{{ style }}</li>
+                </ul>
+              </div>
+            </template>
+            <LogsReport v-if="logs.length" :logs="styleLogs"></LogsReport>
+          </Panel>
         </div>
 
         <div class="mt-4 flex justify-between items-center">
@@ -252,10 +275,16 @@ const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK')
           <Button :label="$t('Confirm')" @click.stop="confirm" :disabled="isRunning" />
         </div>
       </div>
+
+      <div class="mt-5" v-if="logs.length">
+        <Panel toggleable :collapsed="true">
+          <template #header>
+            <div class="my-1">{{ success ? $t('Success') + ' ✅' : $t('Failure') + ' ❌' }}</div>
+          </template>
+          <LogsReport :logs="logs"></LogsReport>
+        </Panel>
+      </div>
     </div>
 
-    <div class="mt-5">
-      <LogsReport v-if="logs.length" :logs="logs"></LogsReport>
-    </div>
   </div>
 </template>
