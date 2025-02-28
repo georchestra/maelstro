@@ -62,7 +62,7 @@ export const logsService = {
         'Content-Type': 'application/json',
       },
     })
-    const total = parseInt(response.headers.get("x-total-count") || "0")
+    const total = parseInt(response.headers.get("x-total-count") || "50")
     return ({
       total,
       logs: ((await response.json()) as RawLog[]).map(this.toLog),
