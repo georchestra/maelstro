@@ -21,7 +21,7 @@
   "Confirm": "Confirmer",
   "Following data and metadata will be copied:": "Les données et métadonnées suivantes seront copiées :",
   "Success": "Succès",
-  "Failure": "Echec"
+  "Failure": "Echec",
   "Error": "Erreur",
   "Failed to fetch configuration": "Le chargement de la configuration a échoué",
   "Failed to fetch logs": "Le chargement du journal a échoué",
