@@ -30,12 +30,12 @@ export type CopyPreviewGeoserver = {
 export type CopyPreview = {
   geonetwork_resources?: CopyPreviewGeonetwork[]
   geoserver_resources?: CopyPreviewGeoserver[]
-  info?: string
+  info?: {[k: string]: string}
   operations?: LogDetail[]
 }
 
 export type CopyResponse = {
-  info: string
+  info:  {[k: string]: string}
   operations: LogDetail[]
 }
 

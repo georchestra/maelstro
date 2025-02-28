@@ -57,7 +57,7 @@ const copyPreview = ref<CopyPreview>({
   geoserver_resources: [],
 })
 
-const copyResponse = ref<CopyResponse>({})
+const copyResponse = ref<CopyResponse | null>(null)
 
 const synchronizeParams = computed(
   () =>
@@ -106,11 +106,11 @@ const confirm = async () => {
   }
 }
 
-const logs = computed(() => copyPreview.value.operations || copyResponse.value.operations || [])
+const logs = computed(() => copyPreview.value.operations || copyResponse.value?.operations || [])
 
 const backToForm = () => {
   confirmation.value = false
-  logs.value = []
+  copyResponse.value = null
 }
 
 const metaLogs = computed(() => logs.value.filter((l) => l.data_type == 'Meta'))
@@ -285,13 +285,13 @@ const success = computed(() => (
             <div class="my-1">{{ success ? $t('Success') + ' ✅' : $t('Failure') + ' ❌' }}</div>
           </template>
           <div v-if="!success">
-            <div v-if="copyPreview.info.err">
-              {{ copyPreview.info.err }} [{{ copyPreview.info.status_code }}]<br>
-              {{ copyPreview.info.server }}
+            <div v-if="copyPreview.info?.err">
+              {{ copyPreview.info?.err }} [{{ copyPreview.info?.status_code }}]<br>
+              {{ copyPreview.info?.server }}
             </div>
             <div v-else>
-              {{ copyResponse.info.err }} [{{ copyResponse.info.status_code }}]<br>
-              {{ copyResponse.info.server }}
+              {{ copyResponse?.info.err }} [{{ copyResponse?.info.status_code }}]<br>
+              {{ copyResponse?.info.server }}
             </div>
           </div>
           <LogsReport :logs="logs"></LogsReport>
