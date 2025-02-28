@@ -109,6 +109,11 @@ def log_to_db(record: dict[str, Any]) -> None:
         session.commit()
 
 
+def get_log_count() -> int:
+    with Session(get_engine()) as session:
+        return session.query(Log).count()
+
+
 def get_raw_logs(
     size: int, offset: int, get_details: bool = False
 ) -> list[JsonLogRecord]:
