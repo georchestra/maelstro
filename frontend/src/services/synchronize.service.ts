@@ -28,8 +28,15 @@ export type CopyPreviewGeoserver = {
 }
 
 export type CopyPreview = {
-  geonetwork_resources: CopyPreviewGeonetwork[]
-  geoserver_resources: CopyPreviewGeoserver[]
+  geonetwork_resources?: CopyPreviewGeonetwork[]
+  geoserver_resources?: CopyPreviewGeoserver[]
+  info?: string
+  operations?: LogDetail[]
+}
+
+export type CopyResponse = {
+  info: string
+  operations: LogDetail[]
 }
 
 function toSynchronizeParams(params: SynchronizeParams): URLSearchParams {
@@ -47,7 +54,7 @@ export const synchronizeService = {
     return await response.json()
   },
 
-  async synchronize(params: SynchronizeParams): Promise<LogDetail[]> {
+  async synchronize(params: SynchronizeParams): Promise<CopyResponse> {
     const response = await fetch('/maelstro-backend/copy?' + toSynchronizeParams(params), {
       method: 'PUT',
       headers: {
@@ -55,6 +62,6 @@ export const synchronizeService = {
         'Content-Type': 'application/json',
       },
     })
-    return (await response.json()).operations
+    return await response.json()
   },
 }

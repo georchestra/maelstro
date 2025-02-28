@@ -114,18 +114,20 @@ class CopyManager:
                 for layer in layers.values():
                     styles.update(self.get_styles_from_layer(layer).keys())
 
-            preview["geoserver_resources"].append(
-                {
-                    "src": server_url,
-                    "dst": dst_gs_url,
-                    "layers": (
-                        [str(layer_name) for layer_name in layer_names]
-                        if self.include_layers
-                        else []
-                    ),
-                    "styles": list(styles) if self.include_styles else [],
-                }
-            )
+            if layer_names or styles:
+                # only output servers where some layers or styles have been identified
+                preview["geoserver_resources"].append(
+                    {
+                        "src": server_url,
+                        "dst": dst_gs_url,
+                        "layers": (
+                            [str(layer_name) for layer_name in layer_names]
+                            if self.include_layers
+                            else []
+                        ),
+                        "styles": list(styles) if self.include_styles else [],
+                    }
+                )
 
         return CopyPreview(**preview)  # type: ignore
 

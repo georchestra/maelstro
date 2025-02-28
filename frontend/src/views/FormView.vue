@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import LogsReport from '@/components/LogsReport.vue'
 import type { SearchResult } from '@/services/geonetworkSearch.service'
-import type { LogDetail } from '@/services/logs.service'
 import {
   synchronizeService,
   type CopyPreview,
+  type CopyResponse,
   type SynchronizeParams,
 } from '@/services/synchronize.service'
 import { useConfigStore } from '@/stores/config.store'
@@ -57,7 +57,7 @@ const copyPreview = ref<CopyPreview>({
   geoserver_resources: [],
 })
 
-const logs = ref<LogDetail[]>([])
+const copyResponse = ref<CopyResponse>({})
 
 const synchronizeParams = computed(
   () =>
@@ -98,13 +98,15 @@ const confirm = async () => {
   } as unknown as SynchronizeParams
 
   try {
-    logs.value = await synchronizeService.synchronize(params)
+    copyResponse.value = await synchronizeService.synchronize(params)
   } catch (error) {
     console.error(error)
   } finally {
     isRunning.value = false
   }
 }
+
+const logs = computed(() => copyPreview.value.operations || copyResponse.value.operations || [])
 
 const backToForm = () => {
   confirmation.value = false
@@ -124,12 +126,13 @@ const metaFailed = computed(() => metaLogs.value.some((l) => l.status != 'OK'))
 const layerFailed = computed(() => layerLogs.value.some((l) => l.status != 'OK'))
 const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK'))
 
-const hasMeta = computed(() => copyPreview.value.geonetwork_resources.some((gn) => gn.metadata.length > 0))
-const hasLayers = computed(() => copyPreview.value.geoserver_resources.some((gs) => gs.layers.length > 0))
-const hasStyles = computed(() => copyPreview.value.geoserver_resources.some((gs) => gs.styles.length > 0))
+const hasMeta = computed(() => copyPreview.value.geonetwork_resources?.some((gn) => gn.metadata.length > 0))
+const hasLayers = computed(() => copyPreview.value.geoserver_resources?.some((gs) => gs.layers.length > 0))
+const hasStyles = computed(() => copyPreview.value.geoserver_resources?.some((gs) => gs.styles.length > 0))
 
 const success = computed(() => (
-  (!hasMeta.value || metaSuccessful.value)
+  (metaSuccessful.value || layerSuccessful.value || styleSuccessful.value)
+  && (!hasMeta.value || metaSuccessful.value)
   && (!hasLayers.value || layerSuccessful.value)
   && (!hasStyles.value || styleSuccessful.value)
 ))
@@ -220,7 +223,7 @@ const success = computed(() => (
 
         <div
           class="mt-4 p-4 border rounded shadow"
-          v-for="(geonetwork, index) in copyPreview.geonetwork_resources"
+          v-for="(geonetwork, index) in copyPreview.geonetwork_resources || []"
           :key="index"
         >
           <div class="my-1">{{ $t('Source:') }} {{ geonetwork.src }}</div>
@@ -240,7 +243,7 @@ const success = computed(() => (
 
         <div
           class="mt-4 p-4 border rounded shadow"
-          v-for="(server, index) in copyPreview.geoserver_resources"
+          v-for="(server, index) in copyPreview.geoserver_resources || []"
           :key="index"
         >
           <div class="my-1">{{ $t('Source:') }} {{ server.src }}</div>
@@ -281,6 +284,16 @@ const success = computed(() => (
           <template #header>
             <div class="my-1">{{ success ? $t('Success') + ' ✅' : $t('Failure') + ' ❌' }}</div>
           </template>
+          <div v-if="!success">
+            <div v-if="copyPreview.info.err">
+              {{ copyPreview.info.err }} [{{ copyPreview.info.status_code }}]<br>
+              {{ copyPreview.info.server }}
+            </div>
+            <div v-else>
+              {{ copyResponse.info.err }} [{{ copyResponse.info.status_code }}]<br>
+              {{ copyResponse.info.server }}
+            </div>
+          </div>
           <LogsReport :logs="logs"></LogsReport>
         </Panel>
       </div>
