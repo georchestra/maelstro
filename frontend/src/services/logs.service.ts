@@ -44,8 +44,13 @@ export type Log = {
   details: LogDetail[]
 }
 
+export type LogWithCount = {
+  total: number
+  logs: Log[]
+}
+
 export const logsService = {
-  async getLogs(limit: number, offset: number): Promise<Log[]> {
+  async getLogs(limit: number, offset: number): Promise<LogWithCount> {
     const params = new URLSearchParams({
       size: limit.toString(),
       offset: offset.toString(),
@@ -57,7 +62,11 @@ export const logsService = {
         'Content-Type': 'application/json',
       },
     })
-    return ((await response.json()) as RawLog[]).map(this.toLog)
+    const total = parseInt(response.headers.get("x-total-count") || "0")
+    return ({
+      total,
+      logs: ((await response.json()) as RawLog[]).map(this.toLog),
+    })
   },
 
   toLog(rawLog: RawLog): Log {

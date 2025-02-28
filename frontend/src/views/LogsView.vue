@@ -31,7 +31,7 @@ const expandedRows = ref({})
 <template>
   <Paginator
     :rows="logsStore.limit"
-    :totalRecords="120"
+    :totalRecords="logsStore.total"
     :rowsPerPageOptions="[10, 20, 50, 100]"
     @update:rows="onRowsChange"
     @update:first="onFirstChange"

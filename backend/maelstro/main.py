@@ -11,6 +11,7 @@ from fastapi import (
     Path,
     Query,
     Request,
+    Response,
     Header,
     Body,
 )
@@ -21,6 +22,7 @@ from maelstro.core import CopyManager
 from maelstro.middleware import setup_middleware
 from maelstro.logging.psql_logger import (
     setup_db_logging,
+    get_log_count,
     log_request_to_db,
     get_raw_logs,
     format_logs,
@@ -356,6 +358,7 @@ def put_dataset_copy(
     },
 )
 def get_logs(
+    response: Response,
     size: Annotated[int, Query(description="Number of log record to retrieve")] = 5,
     offset: Annotated[
         int, Query(description="Offset of first log record to retrieve")
@@ -372,6 +375,7 @@ def get_logs(
     Get a defined number of log records in json or plain text format
     """
     try:
+        response.headers["x-total-count"] = str(get_log_count())
         if accept == "application/json":
             return get_raw_logs(size, offset, get_details)
         return PlainTextResponse("\n".join(format_logs(size, offset)))  # type: ignore
