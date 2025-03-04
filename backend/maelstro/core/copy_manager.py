@@ -79,8 +79,8 @@ class CopyManager:
 
         preview["geonetwork_resources"].append(
             {
-                "src": src_gn_url,
-                "dst": dst_gn_url,
+                "src": self.src_name,
+                "dst": self.dst_name,
                 "metadata": (
                     [
                         {
