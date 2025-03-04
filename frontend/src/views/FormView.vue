@@ -126,16 +126,23 @@ const metaFailed = computed(() => metaLogs.value.some((l) => l.status != 'OK'))
 const layerFailed = computed(() => layerLogs.value.some((l) => l.status != 'OK'))
 const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK'))
 
-const hasMeta = computed(() => copyPreview.value.geonetwork_resources?.some((gn) => gn.metadata.length > 0))
-const hasLayers = computed(() => copyPreview.value.geoserver_resources?.some((gs) => gs.layers.length > 0))
-const hasStyles = computed(() => copyPreview.value.geoserver_resources?.some((gs) => gs.styles.length > 0))
+const hasMeta = computed(() =>
+  copyPreview.value.geonetwork_resources?.some((gn) => gn.metadata.length > 0),
+)
+const hasLayers = computed(() =>
+  copyPreview.value.geoserver_resources?.some((gs) => gs.layers.length > 0),
+)
+const hasStyles = computed(() =>
+  copyPreview.value.geoserver_resources?.some((gs) => gs.styles.length > 0),
+)
 
-const success = computed(() => (
-  (metaSuccessful.value || layerSuccessful.value || styleSuccessful.value)
-  && (!hasMeta.value || metaSuccessful.value)
-  && (!hasLayers.value || layerSuccessful.value)
-  && (!hasStyles.value || styleSuccessful.value)
-))
+const success = computed(
+  () =>
+    (metaSuccessful.value || layerSuccessful.value || styleSuccessful.value) &&
+    (!hasMeta.value || metaSuccessful.value) &&
+    (!hasLayers.value || layerSuccessful.value) &&
+    (!hasStyles.value || styleSuccessful.value),
+)
 </script>
 
 <template>
@@ -182,7 +189,13 @@ const success = computed(() => (
             <Message v-if="errors.metadataUuid" class="min-w-[300px]" severity="error">{{
               errors.metadataUuid
             }}</Message>
-            <p v-if="!errors.metadataUuid" class="min-w-[300px]">{{ selectedDataset?.uuid }}</p>
+            <a
+              v-if="selectedDataset?.uuid"
+              :href="configStore.getMetadataUrl(source!, selectedDataset?.uuid)"
+              target="_blank"
+              class="text-blue-600 dark:text-blue-500 hover:underline"
+              >{{ selectedDataset?.uuid }}</a
+            >
           </div>
           <div class="ml-[164px]">
             {{ selectedDataset?.resourceAbstractObject?.default }}
@@ -231,7 +244,9 @@ const success = computed(() => (
           <Panel toggleable :collapsed="true">
             <template #header>
               <div>
-                <div class="my-1">{{ $t('Metadata:') }}{{ metaSuccessful ? ' ✅' : (metaFailed ? ' ❌' : '') }}</div>
+                <div class="my-1">
+                  {{ $t('Metadata:') }}{{ metaSuccessful ? ' ✅' : metaFailed ? ' ❌' : '' }}
+                </div>
                 <ul v-for="(metadata, index) in geonetwork.metadata" :key="index">
                   <li class="list-disc ml-4">{{ metadata.title }}</li>
                 </ul>
@@ -251,7 +266,9 @@ const success = computed(() => (
           <Panel toggleable :collapsed="true">
             <template #header>
               <div>
-                <div class="my-1">{{ $t('Layers:') }}{{ layerSuccessful ? ' ✅' : (layerFailed ? ' ❌' : '') }}</div>
+                <div class="my-1">
+                  {{ $t('Layers:') }}{{ layerSuccessful ? ' ✅' : layerFailed ? ' ❌' : '' }}
+                </div>
                 <ul v-for="layer in server.layers" :key="layer">
                   <li class="list-disc ml-4">{{ layer }}</li>
                 </ul>
@@ -262,7 +279,9 @@ const success = computed(() => (
           <Panel toggleable :collapsed="true">
             <template #header>
               <div>
-                <div class="my-1">{{ $t('Styles:') }}{{ styleSuccessful ? ' ✅' : (styleFailed ? ' ❌' : '') }}</div>
+                <div class="my-1">
+                  {{ $t('Styles:') }}{{ styleSuccessful ? ' ✅' : styleFailed ? ' ❌' : '' }}
+                </div>
                 <ul v-for="style in server.styles" :key="style">
                   <li class="list-disc ml-4">{{ style }}</li>
                 </ul>
@@ -286,11 +305,11 @@ const success = computed(() => (
           </template>
           <div v-if="!success">
             <div v-if="copyPreview.info?.err">
-              {{ copyPreview.info?.err }} [{{ copyPreview.info?.status_code }}]<br>
+              {{ copyPreview.info?.err }} [{{ copyPreview.info?.status_code }}]<br />
               {{ copyPreview.info?.server }}
             </div>
             <div v-else>
-              {{ copyResponse?.info.err }} [{{ copyResponse?.info.status_code }}]<br>
+              {{ copyResponse?.info.err }} [{{ copyResponse?.info.status_code }}]<br />
               {{ copyResponse?.info.server }}
             </div>
           </div>
@@ -298,6 +317,5 @@ const success = computed(() => (
         </Panel>
       </div>
     </div>
-
   </div>
 </template>
