@@ -32,5 +32,6 @@
   "Source": "Source",
   "Destination": "Destination",
   "Source title": "Titre de la source",
-  "Destination title": "Titre de la destination"
+  "Destination title": "Titre de la destination",
+  "Include harvested datasets": "Inclure les jeux de données moissonés"
 }
