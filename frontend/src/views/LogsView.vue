@@ -99,9 +99,21 @@ const getRowMetadataUrl = (data: Log): string => {
       </template>
     </Column>
     <!--<Column field="src_title" :header="$t('Destination title')"></Column>-->
-    <Column field="copy_meta" :header="$t('Metadata')"></Column>
-    <Column field="copy_layers" :header="$t('Layers')"></Column>
-    <Column field="copy_styles" :header="$t('Styles')"></Column>
+    <Column field="copy_meta" :header="$t('Metadata')">
+      <template #body="slotProps">
+        <i v-if="slotProps.data.copy_meta" class="ml-10 pi pi-check" style="font-size: 1rem"></i>
+      </template>
+    </Column>
+    <Column field="copy_layers" :header="$t('Layers')">
+      <template #body="slotProps">
+        <i v-if="slotProps.data.copy_layers" class="ml-5 pi pi-check" style="font-size: 1rem"></i>
+      </template>
+    </Column>
+    <Column field="copy_styles" :header="$t('Styles')">
+      <template #body="slotProps">
+        <i v-if="slotProps.data.copy_styles" class="ml-3 pi pi-check" style="font-size: 1rem"></i>
+      </template>
+    </Column>
     <template #expansion="slotProps">
       <div class="p-4">
         <LogsReport :logs="slotProps.data.details" />
