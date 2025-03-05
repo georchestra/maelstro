@@ -3,7 +3,7 @@ name: Helm publish new version
 on:
   push:
     branches:
-      - 'test_publish_helm'
+      - 'main'
 
 jobs:
   chart-publish:
