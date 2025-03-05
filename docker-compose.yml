@@ -22,13 +22,12 @@ services:
       file: docker-compose-solo.yml
       service: maelstro-back
     volumes:
-      - ./backend:/app
       - georchestra_datadir:/etc/georchestra
     depends_on:
       envsubst:
         condition: service_completed_successfully
     environment:
-      MAELSTRO_CONFIG: /app/dev_config.yaml
+      MAELSTRO_CONFIG: /etc/georchestra/maelstro/config.yaml
       DEMO_LOGIN: testadmin
       DEMO_PASSWORD: testadmin
       LOCAL_LOGIN: testadmin
@@ -38,8 +37,3 @@ services:
       PGDATABASE: "georchestra"
       PGUSER: "georchestra"
       PGPASSWORD: "georchestra"
-
-  check:
-    extends:
-      file: docker-compose-solo.yml
-      service: check

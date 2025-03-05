@@ -12,13 +12,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: build
-        run: docker compose build check
+        run: docker compose -f docker-compose-dev.yml.override.sample build check
 
       - name: check
-        run: docker compose run --rm check
+        run: docker compose -f docker-compose-dev.yml.override.sample run --rm check
 
       - name: test
-        run: docker compose run --rm check pytest --cov=maelstro tests/
+        run: docker compose -f docker-compose-dev.yml.override.sample run --rm check pytest --cov=maelstro tests/
 
   frontend-check:
     runs-on: ubuntu-22.04
