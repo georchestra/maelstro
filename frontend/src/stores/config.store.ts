@@ -27,7 +27,7 @@ export const useConfigStore = defineStore('config', () => {
 
   const getMetadataUrl = (source: Source, uuid: string): string => {
     const sourceBaseUrl = source.url.replace('/srv/api', '')
-    return `${sourceBaseUrl}/srv/fre/catalog.search#/metadata/${uuid}`
+    return `${sourceBaseUrl}/?uuid=${uuid}`
   }
 
   return {
