@@ -13,7 +13,7 @@ dependencies = [
     "lxml (>=5.3.0,<6.0.0)",
     "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
     "lxml-stubs (>=0.5.1,<0.6.0)",
-    "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@419acd7d8084488bab9cfb242fb264628ccdd3ca",
+    "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@f7c57fe9a21af79123947b8003633d7cac8c12e5",
     "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@6defa49bf959d91883ecd43ed1e2e976566e9495",
     "sqlalchemy (>=2.0.37,<3.0.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
