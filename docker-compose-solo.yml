@@ -14,8 +14,7 @@ services:
     restart: no
 
   maelstro-front:
-    build:
-      context: ./frontend
+    image: georchestra/maelstro-frontend:latest
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/maelstro/"]
       interval: 10s
@@ -30,9 +29,7 @@ services:
       - "8080:8080"
 
   maelstro-back:
-    build:
-      context: ./backend
-      target: server
+    image: georchestra/maelstro-backend:latest
     healthcheck:
       test: "health_check"
       interval: 10s
@@ -40,7 +37,6 @@ services:
       start_period: 10s
       timeout: 10s
     volumes:
-      - ./backend:/app
       - ./config/:/etc/maelstro/:ro
     env_file:
       - .envs-database
@@ -51,16 +47,3 @@ services:
       DEMO_CRD: "test12"
     command:
       - serve_docker_dev
-
-  check:
-    profiles:
-      - check
-    build:
-      context: ./backend
-      target: check
-    environment:
-      MAELSTRO_CONFIG: /app/tests/test_config.yaml
-      LOCAL_LOGIN: testadmin
-      LOCAL_PASSWORD: testadmin
-    volumes:
-      - ./backend:/app
