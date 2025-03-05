@@ -1,5 +1,6 @@
 releases:
   - name: maelstro
-    chart: ./
+    chart: oci://ghcr.io/georchestra/maelstro
+    version: 0.1.0
     values:
       - values.yaml
