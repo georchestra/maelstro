@@ -68,19 +68,10 @@ class CopyManager:
             "geoserver_resources": [],
         }
 
-        src_gn_info = self.geo_hnd.get_service_info(
-            self.src_name, is_source=True, is_geonetwork=True
-        )
-        src_gn_url = src_gn_info["url"]
-        dst_gn_info = self.geo_hnd.get_service_info(
-            self.dst_name, is_source=False, is_geonetwork=True
-        )
-        dst_gn_url = dst_gn_info["url"]
-
         preview["geonetwork_resources"].append(
             {
-                "src": src_gn_url,
-                "dst": dst_gn_url,
+                "src": self.src_name,
+                "dst": self.dst_name,
                 "metadata": (
                     [
                         {

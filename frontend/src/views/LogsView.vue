@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import LogsReport from '@/components/LogsReport.vue'
 import type { Log } from '@/services/logs.service'
+import { useConfigStore } from '@/stores/config.store'
 import { useLogsStore } from '@/stores/logs.store'
 import { Column, DataTable, Paginator, Tag } from 'primevue'
 import { ref } from 'vue'
 
+const configStore = useConfigStore()
 const logsStore = useLogsStore()
 
 const getSeverity = (log: Log) => {
@@ -26,6 +28,16 @@ const onRowsChange = (value: number) => {
 }
 
 const expandedRows = ref({})
+
+const getRowMetadataUrl = (data: Log): string => {
+  try {
+    const source = configStore.getSourceByName(data.src_name)
+    return configStore.getMetadataUrl(source!, data.dataset_uuid)
+  } catch (error) {
+    console.error('Error while getting metadata URL', error)
+    return ''
+  }
+}
 </script>
 
 <template>
@@ -77,14 +89,31 @@ const expandedRows = ref({})
           class="max-w-60 overflow-hidden text-ellipsis whitespace-nowrap"
           :title="slotProps.data.src_title"
         >
-          {{ slotProps.data.src_title }}
+          <a
+            :href="getRowMetadataUrl(slotProps.data)"
+            target="_blank"
+            class="text-blue-600 dark:text-blue-500 hover:underline"
+            >{{ slotProps.data.src_title }}</a
+          >
         </div>
       </template>
     </Column>
     <!--<Column field="src_title" :header="$t('Destination title')"></Column>-->
-    <Column field="copy_meta" :header="$t('Metadata')"></Column>
-    <Column field="copy_layers" :header="$t('Layers')"></Column>
-    <Column field="copy_styles" :header="$t('Styles')"></Column>
+    <Column field="copy_meta" :header="$t('Metadata')">
+      <template #body="slotProps">
+        <i v-if="slotProps.data.copy_meta" class="ml-10 pi pi-check" style="font-size: 1rem"></i>
+      </template>
+    </Column>
+    <Column field="copy_layers" :header="$t('Layers')">
+      <template #body="slotProps">
+        <i v-if="slotProps.data.copy_layers" class="ml-5 pi pi-check" style="font-size: 1rem"></i>
+      </template>
+    </Column>
+    <Column field="copy_styles" :header="$t('Styles')">
+      <template #body="slotProps">
+        <i v-if="slotProps.data.copy_styles" class="ml-3 pi pi-check" style="font-size: 1rem"></i>
+      </template>
+    </Column>
     <template #expansion="slotProps">
       <div class="p-4">
         <LogsReport :logs="slotProps.data.details" />

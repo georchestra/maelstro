@@ -48,7 +48,10 @@ const router = createRouter({
           component: LogsView,
           beforeEnter: async () => {
             try {
-              await useLogsStore().fetchLogs()
+              const configPromise = useConfigStore().fetchConfig()
+              const logsPromise = useLogsStore().fetchLogs()
+              await configPromise
+              await logsPromise
             } catch {
               const toastStore = useToastStore()
               toastStore.addToast({

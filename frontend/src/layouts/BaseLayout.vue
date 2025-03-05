@@ -20,7 +20,7 @@ const menuItems = computed(() => [
     icon: 'pi pi-list',
     url: router.resolve({ name: 'logs' }).href,
   },
-  { label: t('User guide'), icon: 'pi pi-book', command: () => {} },
+  // { label: t('User guide'), icon: 'pi pi-book' },
 ])
 
 const toastStore = useToastStore()

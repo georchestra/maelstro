@@ -9,6 +9,10 @@ export const useConfigStore = defineStore('config', () => {
 
   // Actions
   const fetchConfig = async (): Promise<void> => {
+    if (sources.value.length > 0 && destinations.value.length > 0) {
+      return
+    }
+
     const sourcesPromise = configService.getSources()
     const destinationsPromise = configService.getDestinations()
 
@@ -21,6 +25,11 @@ export const useConfigStore = defineStore('config', () => {
     return sources.value.find((source) => source.name === name)
   }
 
+  const getMetadataUrl = (source: Source, uuid: string): string => {
+    const sourceBaseUrl = source.url.replace('/srv/api', '')
+    return `${sourceBaseUrl}/?uuid=${uuid}`
+  }
+
   return {
     // State
     sources,
@@ -29,5 +38,6 @@ export const useConfigStore = defineStore('config', () => {
     // Actions
     fetchConfig,
     getSourceByName,
+    getMetadataUrl,
   }
 })
