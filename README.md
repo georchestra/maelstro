@@ -2,16 +2,17 @@
 
 geOrchestra Maelstro is an application which helps synchronise geonetwork and geoserver instances
 
-## Quick start with geOrchestra
+## Docker deploy
+### Quick start with geOrchestra
 
-Before starting developement you need to setup some geOrchestra configurations.
+Before starting development you need to setup some geOrchestra configurations.
 
 See commands documented here: [georchestra/README.md](georchestra/README.md)
 
 Now you can run the Docker composition:
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose-geOrchestra.yml up -d
 ```
 
 Then application should be available at:
@@ -24,16 +25,24 @@ With credentials:
 - testadmin:testadmin
 - tmaelstro:tmaelstro
 
-## Solo quick start
+### Solo quick start
 Maelstro can be used outside geOrchestra.
 
 ```
-docker compose -f docker-compose-solo.yml up 
+docker compose up 
 ```
 Open : http://127.0.0.1:8080/maelstro/ 
 There is no authentication to access the page but if needed it can be done with basic auth in the [nginx config](./config/nginx-solo.conf) (or another way)
 
-## Frontend developement
+### Development
+
+If you want to develop, rename the file [docker-compose-dev.yml.override.sample](docker-compose-dev.yml.override.sample) to `docker-compose-dev.yml.override` to apply its configuration and mounts the sources of both apps.
+
+## Kubernetes deploy
+
+in the [helm](helm/) folder contains a helm chart to deploy the app
+
+## Frontend development
 
 The folder [frontend](frontend) contains the SPA written with VueJS.
 
@@ -153,23 +162,23 @@ Automatic code quality checks are implemented in the CI.
 The code test can be launched manually via the docker command below.
 
 ```bash
-docker compose run --rm  check
+docker compose -f docker-compose-ci.yml run --rm  check
 ```
 
 In case formatting issues are found, the code can be auto-fixed with:
 
 ```bash
-docker compose run --rm  check /app/maelstro/scripts/code_fix.sh
+docker compose -f docker-compose-ci.yml run --rm  check /app/maelstro/scripts/code_fix.sh
 ```
 
 To launch the tests locally, use the command as in github CI:
 
 ```bash
-docker compose run --rm  check pytest --cov=maelstro tests/
+docker compose -f docker-compose-ci.yml run --rm  check pytest --cov=maelstro tests/
 ```
 
 or
 
 ```bash
-docker compose run --rm  check pytest --cov=maelstro --cov-report=html tests/
+docker compose -f docker-compose-ci.yml run --rm  check pytest --cov=maelstro --cov-report=html tests/
 ```

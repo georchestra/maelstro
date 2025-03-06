@@ -1,0 +1,39 @@
+include:
+  - georchestra/geor-compose.yml
+  - georchestra/geor-compose.override.yml
+
+services:
+  maelstro-front:
+    extends:
+      file: docker-compose.yml
+      service: maelstro-front
+    volumes:
+      - georchestra_datadir:/etc/georchestra
+    ports: []
+    environment:
+      CUSTOM_SCRIPTS_DIRECTORY: /etc/georchestra/maelstro/scripts
+      MAELSTRO_BACK_HOST: maelstro-back
+    depends_on:
+      envsubst:
+        condition: service_completed_successfully
+
+  maelstro-back:
+    extends:
+      file: docker-compose.yml
+      service: maelstro-back
+    volumes:
+      - georchestra_datadir:/etc/georchestra
+    depends_on:
+      envsubst:
+        condition: service_completed_successfully
+    environment:
+      MAELSTRO_CONFIG: /etc/georchestra/maelstro/config.yaml
+      DEMO_LOGIN: testadmin
+      DEMO_PASSWORD: testadmin
+      LOCAL_LOGIN: testadmin
+      LOCAL_PASSWORD: testadmin
+      PGHOST: "database"
+      PGPORT: "5432"
+      PGDATABASE: "georchestra"
+      PGUSER: "georchestra"
+      PGPASSWORD: "georchestra"

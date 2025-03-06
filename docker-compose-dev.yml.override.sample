@@ -13,18 +13,3 @@ services:
       - ./config/:/etc/maelstro/:ro
     environment:
       MAELSTRO_CONFIG: /app/dev_config.yaml
-
-  check:
-    profiles:
-      - check
-    build:
-      context: ./backend
-      target: check
-    environment:
-      MAELSTRO_CONFIG: /app/tests/test_config.yaml
-      LOCAL_LOGIN: testadmin
-      LOCAL_PASSWORD: testadmin
-    volumes:
-      - ./backend:/app
-
-    

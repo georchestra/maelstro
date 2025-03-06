@@ -1,39 +1,49 @@
-include:
-  - georchestra/geor-compose.yml
-  - georchestra/geor-compose.override.yml
+
+volumes:
+    postgresql_data:
 
 services:
-  maelstro-front:
-    extends:
-      file: docker-compose-solo.yml
-      service: maelstro-front
+  database:
+    image: postgres:16
+    env_file:
+      - .envs-database
+    ports:
+      - "5432:5432"
     volumes:
-      - georchestra_datadir:/etc/georchestra
-    ports: []
+      - postgresql_data:/var/lib/postgresql/data
+    restart: no
+
+  maelstro-front:
+    image: georchestra/maelstro-frontend:latest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/maelstro/"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    volumes:
+      - ./config/:/etc/maelstro/:ro
     environment:
-      CUSTOM_SCRIPTS_DIRECTORY: /etc/georchestra/maelstro/scripts
       MAELSTRO_BACK_HOST: maelstro-back
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
 
   maelstro-back:
-    extends:
-      file: docker-compose-solo.yml
-      service: maelstro-back
+    image: georchestra/maelstro-backend:latest
+    healthcheck:
+      test: "health_check"
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
     volumes:
-      - georchestra_datadir:/etc/georchestra
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
+      - ./config/:/etc/maelstro/:ro
+    env_file:
+      - .envs-database
     environment:
-      MAELSTRO_CONFIG: /etc/georchestra/maelstro/config.yaml
-      DEMO_LOGIN: testadmin
-      DEMO_PASSWORD: testadmin
-      LOCAL_LOGIN: testadmin
-      LOCAL_PASSWORD: testadmin
-      PGHOST: "database"
-      PGPORT: "5432"
-      PGDATABASE: "georchestra"
-      PGUSER: "georchestra"
-      PGPASSWORD: "georchestra"
+      MAELSTRO_CONFIG: /etc/maelstro/config.yaml
+      LOCAL_LOGIN: "testadmin"
+      LOCAL_PASSWORD: "testadmin"
+      DEMO_CRD: "test12"
+    command:
+      - serve_docker_dev
