@@ -40,7 +40,7 @@ If you want to develop, rename the file [docker-compose-dev.yml.override.sample]
 
 ## Kubernetes deploy
 
-in the [helm](helm/) folder contains a helm chart to deploy the app
+The [helm](helm/) folder contains a helm chart which can be used to deploy the app.
 
 ## Frontend development
 
