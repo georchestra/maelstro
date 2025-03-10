@@ -38,7 +38,7 @@ There is no authentication to access the page but if needed it can be done with 
 
 If you want to develop, rename the file [docker-compose-dev.yml.override.sample](docker-compose-dev.yml.override.sample) to `docker-compose-dev.yml.override` to apply its configuration and mounts the sources of both apps.
 
-## Kubernetes deploy
+## Kubernetes deployment
 
 The [helm](helm/) folder contains a helm chart which can be used to deploy the app.
 
