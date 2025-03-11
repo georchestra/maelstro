@@ -25,12 +25,14 @@ With credentials:
 - tmaelstro:tmaelstro
 
 ## Solo quick start
+
 Maelstro can be used outside geOrchestra.
 
 ```
-docker compose -f docker-compose-solo.yml up 
+docker compose -f docker-compose-solo.yml up
 ```
-Open : http://127.0.0.1:8080/maelstro/ 
+
+Open: http://127.0.0.1:8080/maelstro/
 There is no authentication to access the page but if needed it can be done with basic auth in the [nginx config](./config/nginx-solo.conf) (or another way)
 
 ## Frontend developement
@@ -50,6 +52,7 @@ The configuration is based on a YAML file containing connection information abou
 For dev use of the platform, there is a sample config in the backend folder: [dev_config.yaml](backend/dev_config.yaml). This config is used by default in the docker compo.
 
 The file has 4 distict parts:
+
 - sources
 - destinations
 - db_logging
@@ -66,6 +69,7 @@ The file has 4 distict parts:
 #### DB logging
 
 The section db_logging contains all connection information to reach a writable postgres DB to use for writing and reading operation logs:
+
 - host (default: database)
 - port (default: 5432)
 - login (default: georchestra)
@@ -81,13 +85,16 @@ Substitution of credentials (login and password) can be done for the DB configur
 The `transformations` section conatains a list of xsl transformations which can be applied to the xml metadata of source or destination servers.
 
 Each named `transformation` item must conatain
+
 - `xslt_path`: local path on the server to an xsl file in which the trasformation is defind (typically in the datadir)
 - `description`: Details of the transformation content to easily identify which transformation is applied
 
 For each geonetwork item of the source and destination servers, a specific key is added to the configuration file:
+
 - transformations: list of xslt keys to be applied to the metadata of the corresponding geonetwork server
 
 If a list of transformations is defined for both the source and destination server, the copy operation is executed in the way described below:
+
 - read metadata from source
 - apply all source transformations
 - apply all destination transformations
@@ -106,7 +113,6 @@ The logics for credentials is by decreasing order of importance:
 3. if still no login/password is found, the configuration file is parsed at the parent hierarchy level. First env vars are used like in 1.
 4. Then constant login/password keys are read
 5. If still either "login" or "password" is not defined, the credentials are considered invalid and anonymous acces is used for the instance without authentication
-
 
 #### Example
 
