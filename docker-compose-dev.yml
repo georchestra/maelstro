@@ -1,0 +1,42 @@
+# This composition add minimal development overrides over geOrchestra composition
+
+include:
+  - georchestra/geor-compose.yml
+  - georchestra/geor-compose.override.yml
+
+services:
+  maelstro-front:
+    extends:
+      file: docker-compose-geOrchestra.yml
+      service: maelstro-front
+    build:
+      context: ./frontend
+
+  maelstro-back:
+    extends:
+      file: docker-compose-geOrchestra.yml
+      service: maelstro-back
+    build:
+      context: ./backend
+      target: server
+    volumes:
+      - ./backend:/app
+      - ./config/:/etc/maelstro/:ro
+    environment:
+      MAELSTRO_CONFIG: /app/dev_config.yaml
+      DEBUG: true
+    ports:
+      - 8000:8000 # Used for frontend development
+
+  check:
+    profiles:
+      - check
+    build:
+      context: ./backend
+      target: check
+    environment:
+      MAELSTRO_CONFIG: /app/tests/test_config.yaml
+      LOCAL_LOGIN: testadmin
+      LOCAL_PASSWORD: testadmin
+    volumes:
+      - ./backend:/app
