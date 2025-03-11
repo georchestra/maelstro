@@ -1,6 +1,7 @@
+# This is an example of production ready standalone composition (without included geOrchestra)
 
 volumes:
-    postgresql_data:
+  postgresql_data:
 
 services:
   database:

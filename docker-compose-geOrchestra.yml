@@ -1,3 +1,5 @@
+# This is an example of production ready composition for geOrchestra
+
 include:
   - georchestra/geor-compose.yml
   - georchestra/geor-compose.override.yml
@@ -5,7 +7,7 @@ include:
 services:
   maelstro-front:
     extends:
-      file: docker-compose.yml
+      file: docker-compose-solo.yml
       service: maelstro-front
     volumes:
       - georchestra_datadir:/etc/georchestra
@@ -19,7 +21,7 @@ services:
 
   maelstro-back:
     extends:
-      file: docker-compose.yml
+      file: docker-compose-solo.yml
       service: maelstro-back
     volumes:
       - georchestra_datadir:/etc/georchestra
