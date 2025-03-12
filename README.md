@@ -194,7 +194,7 @@ Automatic code quality checks are implemented in the CI.
 The code test can be launched manually via the docker command below.
 
 ```bash
-docker compose -f docker-compose-ci.yml run --rm  check
+docker compose -f docker-compose-dev.yml run --rm  check
 ```
 
 In case formatting issues are found, the code can be auto-fixed with:
