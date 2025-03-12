@@ -200,7 +200,7 @@ docker compose -f docker-compose-dev.yml run --rm  check
 In case formatting issues are found, the code can be auto-fixed with:
 
 ```bash
-docker compose -f docker-compose-ci.yml run --rm  check /app/maelstro/scripts/code_fix.sh
+docker compose -f docker-compose-dev.yml run --rm  check /app/maelstro/scripts/code_fix.sh
 ```
 
 To launch the tests locally, use the command as in github CI:
