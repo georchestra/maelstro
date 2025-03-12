@@ -206,7 +206,7 @@ docker compose -f docker-compose-dev.yml run --rm  check /app/maelstro/scripts/c
 To launch the tests locally, use the command as in github CI:
 
 ```bash
-docker compose -f docker-compose-ci.yml run --rm  check pytest --cov=maelstro tests/
+docker compose -f docker-compose-dev.yml run --rm  check pytest --cov=maelstro tests/
 ```
 
 or
