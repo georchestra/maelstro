@@ -30,6 +30,8 @@ pyflakes=">=3.2.0,<4.0.0"
 black=">=24.10.0,<25.0.0"
 pytest = "^8.3.4"
 pytest-cov = "^6.0.0"
+requests-mock = "^1.12.1"
+pytest-unordered = "^0.6.1"
 
 [tool.poetry.scripts]
 health_check = "maelstro.scripts.health_check:check"

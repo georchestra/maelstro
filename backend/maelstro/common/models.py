@@ -153,7 +153,7 @@ class ExceptionDetail(BaseModel):
     server: str | None = None
     key: str | None = None
     user: str | None = None
-    operations: list[dict[str, Any]] = Field(default_factory=lambda: [])
+    operations: list[OperationsRecord] = Field(default_factory=lambda: [])
 
 
 class JsonLogRecord(BaseModel):
