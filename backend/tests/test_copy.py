@@ -5,6 +5,7 @@ import pytest
 from pytest_unordered import unordered
 from unittest.mock import patch
 import requests_mock
+from requests.exceptions import HTTPError
 
 from maelstro.core.copy_manager import CopyManager
 from maelstro.core.georchestra import get_georchestra_handler
@@ -42,7 +43,7 @@ def GN_record(GN_record_zip):
 def GS_velo_layer():
     return lambda request, context: {
         "layer": {
-            "name": "antenne",
+            "name": "trp_doux:reparation_velo",
             "type": "VECTOR",
             "defaultStyle": {
                 "name": "point",
@@ -107,6 +108,19 @@ def GS_velo_feature():
                 "name": "ws:ds",
                 "href": f"https://{request.hostname}/geoserver/rest/workspaces/ws/datastores/ds.json"
             },
+        }
+    }
+
+
+@pytest.fixture()
+def GS_style_info():
+    return {
+        "style": {
+            "name": "dummy_style",
+            "format": "sld",
+            "workspace": {"name": "ws"},
+            "languageVersion": "fr",
+            "filename": "file",
         }
     }
 
@@ -177,26 +191,30 @@ def GS_no_dst_style(api_mock):
 
 @pytest.fixture()
 def GS_no_dst_ds(api_mock):
+    api_mock.put(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles/.*.(json|sld)"), status_code=404)
+    api_mock.put(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes"), status_code=404)
     api_mock.get("https://georchestra-127-0-0-1.nip.io/geoserver/rest/workspaces/ws/datastores/ds.json", status_code=404)
     return api_mock
 
 
 @pytest.fixture()
 def GS_no_dst_ws(api_mock):
+    api_mock.put(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles/.*.(json|sld)"), status_code=404)
+    api_mock.put(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes"), status_code=404)
     api_mock.get("https://georchestra-127-0-0-1.nip.io/geoserver/rest/workspaces/ws.json", status_code=404)
     return api_mock
 
 
 @pytest.fixture()
-def GS_WS(api_mock, GS_velo_feature, GS_datastore, GS_workspace):
-    api_mock.get(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes/velo.(json|xml)"), json=GS_velo_feature)
-    api_mock.put(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes/velo.(json|xml)"), json={"OK": True})
-    api_mock.post(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes"), json={"OK": True})
-    api_mock.get(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds.json"), json=GS_datastore)
+def GS_WS(api_mock, GS_velo_feature, GS_style_info, GS_datastore, GS_workspace):
+    api_mock.get(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes/velo.(json|xml)$"), json=GS_velo_feature)
+    api_mock.put(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes/velo.(json|xml)$"), json={"OK": True})
+    api_mock.post(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds/featuretypes$"), json={"OK": True})
+    api_mock.get(re.compile(r"https://.*/geoserver/rest/workspaces/ws/datastores/ds.json$"), json=GS_datastore)
     api_mock.get(re.compile(r"https://.*/geoserver/rest/workspaces/ws.json"), json=GS_workspace)
-    api_mock.get(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles/.*.(json|sld)"), headers={"content-type": "application/json"}, json={"style": {"format": "sld"}})
-    api_mock.put(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles/.*.(json|sld)"), json={"OK": True})
-    api_mock.post(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles"), json={"OK": True})
+    api_mock.get(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles/.*.(json|sld)$"), headers={"content-type": "application/json"}, json=GS_style_info)
+    api_mock.put(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles/.*.(json|sld)$"), json={"OK": True})
+    api_mock.post(re.compile(r"https://.*/geoserver/rest/(workspaces/[^/]*/)?styles$"), json={"OK": True})
     return api_mock
 
 
@@ -267,16 +285,22 @@ def test_copy_dataset_no_style(copy_manager, api_mock, GS_no_dst_style):
 
 
 @pytest.mark.parametrize("copy_styles", [False, True])
-def test_copy_dataset_no_ds(copy_styles, copy_manager, GS_no_dst_resource, GS_no_dst_ds):
+def test_copy_dataset_no_ds(copy_styles, copy_manager, GS_no_dst_ds):
     cm = copy_manager
-    with pytest.raises(MaelstroException) as exc:
-        cm.copy_dataset(True, True, False)
-    assert exc.value.details.err == "Datastore ws:ds not found on destination Geoserver CompoLocale"
+    with pytest.raises((MaelstroException, HTTPError)) as exc:
+        cm.copy_dataset(True, True, copy_styles)
+    if copy_styles:
+        # styles do not depend on datastore
+        assert isinstance(exc.value, HTTPError)
+        assert exc.value.response.status_code == 404
+    else:
+        assert isinstance(exc.value, MaelstroException)
+        assert exc.value.details.err == "Datastore ws:ds not found on destination Geoserver CompoLocale"
 
 
 @pytest.mark.parametrize("copy_styles", [False, True])
-def test_copy_dataset_no_ws(copy_styles, copy_manager, GS_no_dst_resource, GS_no_dst_ds, GS_no_dst_ws):
+def test_copy_dataset_no_ws(copy_styles, copy_manager, GS_no_dst_ws):
     cm = copy_manager
     with pytest.raises(MaelstroException) as exc:
-        cm.copy_dataset(True, True, False)
+        cm.copy_dataset(True, True, copy_styles)
     assert exc.value.details.err == "Workspace ws not found on destination Geoserver CompoLocale"
