@@ -184,11 +184,15 @@ const success = computed(
               size="large"
               scrollHeight="30rem"
               fluid
+              class="grow"
+              @update:model-value="delete errors.metadataUuid"
             />
             <Button icon="pi pi-delete-left" @click="selectedDataset = null" severity="secondary" />
             <Message v-if="errors.metadataUuid" class="min-w-[300px]" severity="error">{{
               errors.metadataUuid
             }}</Message>
+          </div>
+          <div class="ml-[164px]">
             <a
               v-if="selectedDataset?.uuid"
               :href="configStore.getMetadataUrl(source!, selectedDataset?.uuid)"
