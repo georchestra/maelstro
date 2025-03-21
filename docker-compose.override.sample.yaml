@@ -1,0 +1,12 @@
+# Here are example of some overrides for debugging
+
+services:
+  maelstro-back:
+    {}
+    # For debugging with VS Code
+    # command: >
+    #   python -m debugpy --listen 0.0.0.0:5678
+    #   /usr/local/bin/fastapi dev --host 0.0.0.0 --port 8000 --reload
+    #   maelstro/main.py
+    # ports:
+    #   - 5678:5678
