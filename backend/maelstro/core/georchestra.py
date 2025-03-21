@@ -17,7 +17,7 @@ class GeorchestraHandler:
 
     def get_gn_service(self, instance_name: str, is_source: bool) -> GnApi:
         gn_info = self.get_service_info(instance_name, is_source, True)
-        return GnApi(gn_info["url"], gn_info["auth"])
+        return GnApi(gn_info["url"], gn_info["auth"], gn_info["verifytls"])
 
     def get_gs_service(self, instance_name: str, is_source: bool) -> RestService:
         gs_info = self.get_service_info(instance_name, is_source, False)

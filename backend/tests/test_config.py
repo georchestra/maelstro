@@ -112,18 +112,22 @@ def test_get_info():
     assert conf.get_access_info(True, True, "GeonetworkMaster") == {
         "auth": Credentials("demo", "demo"),
         "url": "https://demo.georchestra.org/geonetwork/srv/api",
+        "verifytls": True,
     }
     assert conf.get_access_info(True, False, "https://mastergs.rennesmetropole.fr/geoserver-geofence/") == {
         "auth": Credentials("toto6", "Str0ng_passW0rd"),
         "url": "https://mastergs.rennesmetropole.fr/geoserver-geofence/",
+        "verifytls": True,
     }
     assert conf.get_access_info(False, True, "PlateformeProfessionnelle") == {
         "auth": Credentials("toto", "passW0rd"),
         "url": "https://portail.sig.rennesmetropole.fr/geonetwork/srv/api",
+        "verifytls": True,
     }
     assert conf.get_access_info(False, False, "CompoLocale") == {
         "auth": None,
         "url": "https://georchestra-127-0-0-1.nip.io/geoserver",
+        "verifytls": True,
     }
     with pytest.raises(ConfigError) as err:
         conf.get_access_info(False, False, "MissingKey")
