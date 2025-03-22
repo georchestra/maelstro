@@ -198,7 +198,7 @@ const success = computed(
               :href="configStore.getMetadataUrl(source!, selectedDataset?.uuid)"
               target="_blank"
               class="text-blue-600 dark:text-blue-500 hover:underline"
-              >{{ selectedDataset?.uuid }}</a
+              >{{ configStore.getMetadataUrl(source!, selectedDataset?.uuid) }}</a
             >
           </div>
           <div class="ml-[164px]">
