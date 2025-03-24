@@ -116,6 +116,7 @@ class Config:
                     {
                         "auth": Credentials(gn.get("login"), gn.get("password")),
                         "url": gn["api_url"],
+                        "verifytls": gn.get("verify", True),
                     }
                     for gn in self.config["sources"]["geonetwork_instances"]
                     if gn["name"] == instance_id
@@ -125,6 +126,7 @@ class Config:
                     {
                         "auth": Credentials(gs.get("login"), gs.get("password")),
                         "url": gs["url"],
+                        "verifytls": gs.get("verify", True),
                     }
                     for gs in self.config["sources"]["geoserver_instances"]
                     if gs["url"] == instance_id
@@ -155,6 +157,7 @@ class Config:
             info = {
                 "auth": Credentials(instance.get("login"), instance.get("password")),
                 "url": instance[url_key],
+                "verifytls": instance.get("verify", True),
             }
 
         if (info["auth"].login is None) or (info["auth"].password is None):

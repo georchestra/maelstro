@@ -107,6 +107,10 @@ The logics for credentials is by decreasing order of importance:
 4. Then constant login/password keys are read
 5. If still either "login" or "password" is not defined, the credentials are considered invalid and anonymous acces is used for the instance without authentication
 
+__Nota__:
+
+At each level where login/password are specified, one can add the option `verify: false` to deactivate verification of HTTPS certificates. By default the HTTPS certificate must be valid, which is equivalent to `verify: true`
+
 
 #### Example
 
@@ -122,6 +126,7 @@ sources:
     - name: "b"
       login: "B"
       password: "${PASSWORD_B}"
+      verify: false
     - name: "c"
       login: "C"
 ```
