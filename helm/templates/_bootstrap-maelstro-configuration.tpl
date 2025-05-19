@@ -1,6 +1,6 @@
 {{- define "maelstro.bootstrap_maelstro_configuration" -}}
 - name: bootstrap-maelstro-configuration
-  image: bitnami/git
+  image: "{{ .Values.datadir.image.repository }}:{{ .Values.datadir.image.tag }}"
   command:
   - /bin/sh
   - -c
