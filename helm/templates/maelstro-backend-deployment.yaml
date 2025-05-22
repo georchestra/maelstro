@@ -51,7 +51,7 @@ spec:
             {{- toYaml .Values.maelstro_backend.resources | nindent 12 }}
           env:
             - name: DEBUG
-              value: False
+              value: "False"
             - name: MAELSTRO_CONFIG
               value: "/etc/georchestra/maelstro/config.yaml"
             {{- include "maelstro.bootstrap_maelstro_database_envs" . | nindent 12 }}
