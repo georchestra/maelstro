@@ -3,6 +3,16 @@ entries:
   maelstro:
   - apiVersion: v2
     appVersion: 0.0.0
+    created: "2025-05-22T12:21:37.549600128Z"
+    description: A Helm chart for deploying maelstro-backend and maelstro-frontend
+    digest: d2d25fbf57f761a795ee45fd20834ce8366a4755d4e185afcf0c9db9af9c0c1e
+    name: maelstro
+    type: application
+    urls:
+    - https://github.com/georchestra/maelstro/releases/download/maelstro-0.1.2/maelstro-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: 0.0.0
     created: "2025-05-19T13:02:23.079942392Z"
     description: A Helm chart for deploying maelstro-backend and maelstro-frontend
     digest: ca6bd888bd9d96f3c6b73acb7902da1fdb0f89e4d862e288c01271dbb470212f
@@ -21,4 +31,4 @@ entries:
     urls:
     - https://github.com/georchestra/maelstro/releases/download/maelstro-0.1.0/maelstro-0.1.0.tgz
     version: 0.1.0
-generated: "2025-05-19T13:02:23.07995159Z"
+generated: "2025-05-22T12:21:37.549612942Z"
