@@ -24,7 +24,7 @@ import {
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const includeHarvested = ref(true)
+const includeHarvested = ref(false)
 const confirmation = ref(false)
 
 const configStore = useConfigStore()

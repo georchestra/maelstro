@@ -2,9 +2,36 @@
 
 geOrchestra Maelstro is an application which helps synchronise geonetwork and geoserver instances
 
-## Quick start with geOrchestra
+## Docker deploy
 
-Before starting developement you need to setup some geOrchestra configurations.
+### Solo quick start (without included geOrchestra composition)
+
+Maelstro can be used outside geOrchestra.
+
+First select the `docker-compose-solo.yml` file as current composition:
+
+```bash
+ln -s docker-compose-solo.yml docker-compose.yml
+```
+
+Then start the compositon:
+
+```bash
+docker compose up
+```
+
+Open : http://127.0.0.1:8080/maelstro/
+There is no authentication to access the page but if needed it can be done with basic auth in the [nginx config](./config/nginx-solo.conf) (or another way)
+
+### Quick start with geOrchestra
+
+First select the `docker-compose-geOrchestra.yml` file as current composition:
+
+```bash
+ln -s docker-compose-geOrchestra.yml docker-compose.yml
+```
+
+Before starting development you need to setup some geOrchestra configurations.
 
 See commands documented here: [georchestra/README.md](georchestra/README.md)
 
@@ -24,16 +51,26 @@ With credentials:
 - testadmin:testadmin
 - tmaelstro:tmaelstro
 
-## Solo quick start
-Maelstro can be used outside geOrchestra.
+### Development
 
-```
-docker compose -f docker-compose-solo.yml up 
-```
-Open : http://127.0.0.1:8080/maelstro/ 
-There is no authentication to access the page but if needed it can be done with basic auth in the [nginx config](./config/nginx-solo.conf) (or another way)
+For development purpose, you may need to use `docker-compose-dev.yml` instead:
 
-## Frontend developement
+```bash
+rm -f docker-compose.yml
+ln -s docker-compose-dev.yml docker-compose.yml
+```
+
+And maybe add overrides for debugging:
+
+```bash
+cp docker-compose.override.sampl.yml docker-compose.override.yml
+```
+
+## Kubernetes deployment
+
+The [helm](helm/) folder contains a helm chart which can be used to deploy the app.
+
+## Frontend development
 
 The folder [frontend](frontend) contains the SPA written with VueJS.
 
@@ -50,6 +87,7 @@ The configuration is based on a YAML file containing connection information abou
 For dev use of the platform, there is a sample config in the backend folder: [dev_config.yaml](backend/dev_config.yaml). This config is used by default in the docker compo.
 
 The file has 4 distict parts:
+
 - sources
 - destinations
 - db_logging
@@ -66,6 +104,7 @@ The file has 4 distict parts:
 #### DB logging
 
 The section db_logging contains all connection information to reach a writable postgres DB to use for writing and reading operation logs:
+
 - host (default: database)
 - port (default: 5432)
 - login (default: georchestra)
@@ -81,13 +120,16 @@ Substitution of credentials (login and password) can be done for the DB configur
 The `transformations` section conatains a list of xsl transformations which can be applied to the xml metadata of source or destination servers.
 
 Each named `transformation` item must conatain
+
 - `xslt_path`: local path on the server to an xsl file in which the trasformation is defind (typically in the datadir)
 - `description`: Details of the transformation content to easily identify which transformation is applied
 
 For each geonetwork item of the source and destination servers, a specific key is added to the configuration file:
+
 - transformations: list of xslt keys to be applied to the metadata of the corresponding geonetwork server
 
 If a list of transformations is defined for both the source and destination server, the copy operation is executed in the way described below:
+
 - read metadata from source
 - apply all source transformations
 - apply all destination transformations
@@ -110,7 +152,6 @@ The logics for credentials is by decreasing order of importance:
 __Nota__:
 
 At each level where login/password are specified, one can add the option `verify: false` to deactivate verification of HTTPS certificates. By default the HTTPS certificate must be valid, which is equivalent to `verify: true`
-
 
 #### Example
 
@@ -158,23 +199,23 @@ Automatic code quality checks are implemented in the CI.
 The code test can be launched manually via the docker command below.
 
 ```bash
-docker compose run --rm  check
+docker compose -f docker-compose-dev.yml run --rm  check
 ```
 
 In case formatting issues are found, the code can be auto-fixed with:
 
 ```bash
-docker compose run --rm  check /app/maelstro/scripts/code_fix.sh
+docker compose -f docker-compose-dev.yml run --rm  check /app/maelstro/scripts/code_fix.sh
 ```
 
 To launch the tests locally, use the command as in github CI:
 
 ```bash
-docker compose run --rm  check pytest --cov=maelstro tests/
+docker compose -f docker-compose-dev.yml run --rm  check pytest --cov=maelstro tests/
 ```
 
 or
 
 ```bash
-docker compose run --rm  check pytest --cov=maelstro --cov-report=html tests/
+docker compose -f docker-compose-ci.yml run --rm  check pytest --cov=maelstro --cov-report=html tests/
 ```

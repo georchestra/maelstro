@@ -172,3 +172,5 @@ cython_debug/
 
 # Custom for this repo
 .envs-database
+docker-compose.override.yml
+docker-compose.yml
