@@ -49,9 +49,10 @@ export const geonetworkSearchService = {
                   query: query,
                   type: 'bool_prefix',
                   fields: [
-                    'resourceTitleObject.*',
-                    'resourceAbstractObject.*',
+                    'resourceTitleObject.*^6',
+                    'resourceAbstractObject.*^.5',
                     'tag',
+                    'uuid',
                     'resourceIdentifier',
                   ],
                 },
