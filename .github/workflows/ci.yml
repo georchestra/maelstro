@@ -64,7 +64,7 @@ jobs:
       - name: Getting image tag
         if: github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]'
         id: version
-        run: echo "{VERSION}={$(echo $GITHUB_REF | cut -d / -f 3)}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=$(echo $GITHUB_REF | cut -d / -f 3)" >> $GITHUB_OUTPUT
 
       - name: Build
         run: docker compose -f docker-compose-dev.yml build maelstro-back maelstro-front
