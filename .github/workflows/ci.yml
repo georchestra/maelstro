@@ -5,7 +5,7 @@ on:
 
 jobs:
   backend-check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
@@ -21,7 +21,7 @@ jobs:
         run: docker compose -f docker-compose-dev.yml run --rm check pytest --cov=maelstro tests/
 
   frontend-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     name: Front Build and Tests
     steps:
       - uses: actions/checkout@v3
@@ -56,10 +56,15 @@ jobs:
         run: npm run build
 
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     name: Build Docker images
     steps:
       - uses: actions/checkout@v4
+
+      - name: Getting image tag
+        if: github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]'
+        id: version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
 
       - name: Build
         run: docker compose -f docker-compose-dev.yml build maelstro-back maelstro-front
@@ -73,8 +78,6 @@ jobs:
       - name: "Pushing latest to docker.io"
         if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
         run: |
-          docker tag maelstro-maelstro-back:latest georchestra/maelstro-backend:latest
-          docker tag maelstro-maelstro-front:latest georchestra/maelstro-frontend:latest
           docker push georchestra/maelstro-backend:latest
           docker push georchestra/maelstro-frontend:latest
 
@@ -97,3 +100,11 @@ jobs:
           repository: georchestra/maelstro-frontend
           readme-filepath: ./DOCKER_HUB.md
           short-description: 'Maelstro frontend module for the geOrchestra SDI'
+
+      - name: "Pushing branch/tag to docker.io"
+        if: (contains(github.ref, 'refs/heads/0.') || contains(github.ref, 'refs/tags/0.')) && github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
+        run: |
+          docker tag georchestra/maelstro-backend:latest georchestra/maelstro-backend:${{ steps.version.outputs.VERSION }}
+          docker tag georchestra/maelstro-frontend:latest georchestra/maelstro-frontend:${{ steps.version.outputs.VERSION }}
+          docker push georchestra/maelstro-backend:${{ steps.version.outputs.VERSION }}
+          docker push georchestra/maelstro-frontend:${{ steps.version.outputs.VERSION }}
