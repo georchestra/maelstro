@@ -14,7 +14,7 @@ dependencies = [
     "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
     "lxml-stubs (>=0.5.1,<0.6.0)",
     "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@f7c57fe9a21af79123947b8003633d7cac8c12e5",
-    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@6defa49bf959d91883ecd43ed1e2e976566e9495",
+    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@68e51c92a70ee53d1fe7f961111c2c4a0c39982a",
     "sqlalchemy (>=2.0.37,<3.0.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
 ]
@@ -30,6 +30,8 @@ pyflakes=">=3.2.0,<4.0.0"
 black=">=24.10.0,<25.0.0"
 pytest = "^8.3.4"
 pytest-cov = "^6.0.0"
+requests-mock = "^1.12.1"
+pytest-unordered = "^0.6.1"
 
 [tool.poetry.scripts]
 health_check = "maelstro.scripts.health_check:check"

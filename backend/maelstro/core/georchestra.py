@@ -4,6 +4,7 @@ from typing import Any, Iterator
 from geonetwork import GnApi
 from geonetwork.gn_logger import logger as gn_logger
 from geoservercloud.services import RestService  # type: ignore
+from geoservercloud import GeoServerCloudSync  # type: ignore
 from requests.exceptions import HTTPError
 from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: ignore
 from maelstro.config import ConfigError, app_config as config
@@ -18,6 +19,28 @@ class GeorchestraHandler:
     def get_gn_service(self, instance_name: str, is_source: bool) -> GnApi:
         gn_info = self.get_service_info(instance_name, is_source, True)
         return GnApi(gn_info["url"], gn_info["auth"], gn_info["verifytls"])
+
+    def get_gs_sync_service(
+        self, src_instance_name: str, dst_instance_name: str
+    ) -> GeoServerCloudSync:
+        src_info = self.get_service_info(src_instance_name, True, False)
+        dst_info = self.get_service_info(dst_instance_name, False, False)
+        src_login, src_password, dst_login, dst_password = [None] * 4
+        if src_info["auth"] is not None:
+            src_login = src_info["auth"].login
+            src_password = src_info["auth"].password
+        if dst_info["auth"] is not None:
+            dst_login = dst_info["auth"].login
+            dst_password = dst_info["auth"].password
+        sync_service = GeoServerCloudSync(
+            src_info["url"],
+            src_login,
+            src_password,
+            dst_info["url"],
+            dst_login,
+            dst_password,
+        )
+        return sync_service
 
     def get_gs_service(self, instance_name: str, is_source: bool) -> RestService:
         gs_info = self.get_service_info(instance_name, is_source, False)
