@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, Optional, Annotated, Literal
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field
 
 
 class SearchQuery(BaseModel):

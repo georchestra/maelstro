@@ -86,10 +86,8 @@ class LogCollectionHandler(Handler):
     def get_properties(self) -> dict[str, Any]:
         return self.properties
 
-    def get_json_responses(self) -> list[OperationsRecord]:
+    def get_json_responses(self) -> list[dict[str, Any]]:
         return [
-            r.model_dump()
-            if isinstance(r, OperationsRecord)
-            else r
+            r.model_dump() if isinstance(r, OperationsRecord) else r
             for r in self.responses
         ]
