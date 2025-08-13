@@ -87,4 +87,9 @@ class LogCollectionHandler(Handler):
         return self.properties
 
     def get_json_responses(self) -> list[OperationsRecord]:
-        return [r for r in self.responses if r is not None]
+        return [
+            r.model_dump()
+            if isinstance(r, OperationsRecord)
+            else r
+            for r in self.responses
+        ]
