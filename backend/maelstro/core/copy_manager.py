@@ -171,26 +171,22 @@ class CopyManager:
                 uuid = "N/A"
                 if serial_id:
                     uuid = serial_id
-                    metadata_json = self.gn_dst.get_metadatajson(results.get("serial_id"))
+                    metadata_json = self.gn_dst.get_metadatajson(
+                        results.get("serial_id")
+                    )
                     if self.meta.schema == "iso19139":
-                        uuid = metadata_json.get(
-                            "gmd:fileIdentifier", {}
-                        ).get(
-                            "gco:CharacterString", {}
-                        ).get(
-                            "#text", serial_id
+                        uuid = (
+                            metadata_json.get("gmd:fileIdentifier", {})
+                            .get("gco:CharacterString", {})
+                            .get("#text", serial_id)
                         )
                     elif self.meta.schema == "iso19115-3.2018":
-                        uuid = metadata_json.get(
-                            "mdb:metadataIdentifier", {}
-                        ).get(
-                            "mcc:MD_Identifier", {}
-                        ).get(
-                            "mcc:code", {}
-                        ).get(
-                            "gco:CharacterString", {}
-                        ).get(
-                            "#text", serial_id
+                        uuid = (
+                            metadata_json.get("mdb:metadataIdentifier", {})
+                            .get("mcc:MD_Identifier", {})
+                            .get("mcc:code", {})
+                            .get("gco:CharacterString", {})
+                            .get("#text", serial_id)
                         )
                 self.geo_hnd.log_handler.log_info(
                     SuccessRecord(
