@@ -194,7 +194,7 @@ class CopyManager:
                         detail={"info": results["detail"]},
                     )
                 )
-            return str(results["msg"])
+            return f"{results['msg']} ({uuid})"
         return "copy_successful"
 
     def copy_layers(self) -> None:
