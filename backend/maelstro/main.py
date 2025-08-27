@@ -338,7 +338,7 @@ def put_dataset_copy(
         200,
         request,
         request.state.geo_handler.log_handler.get_properties(),
-        [op.dict() for op in operations],
+        operations,
     )
     if accept == "application/json":
         return DetailedResponse(summary=success, operations=operations)

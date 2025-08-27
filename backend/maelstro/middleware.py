@@ -54,7 +54,7 @@ def setup_middleware(app: FastAPI) -> None:
                         status_code,
                         request,
                         geo_hnd.log_handler.get_properties(),
-                        [op.dict() for op in response["operations"]],
+                        response["operations"],
                     )
                 return JSONResponse(
                     DetailedResponse(**response).dict(), status_code=status_code
