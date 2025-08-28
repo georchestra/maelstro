@@ -11,9 +11,10 @@ from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
 from maelstro.common.models import CopyPreview, InfoRecord, SuccessRecord
 from maelstro.common.exceptions import ParamError
+from requests import HTTPError
 from .georchestra import GeorchestraHandler
 from .operations import raise_for_status
-import xml.etree.ElementTree as ET
+from lxml import etree
 
 logger = logging.getLogger()
 
@@ -375,17 +376,37 @@ class CopyManager:
                     headers={"content-type": "application/xml"},
                 )
         else:
-            resp = self.gs_dst.rest_client.post(
-                resource_post_route,
-                data=cleaned_content,
-                headers={"content-type": "application/xml"},
-            )
-            if resp.status_code == 404:
-                raise ParamError(
-                    context="dst",
-                    key=resource_post_route,
-                    err="Route not found. Check Workspace and datastore",
+            # if featureType doesn't exist as XMl but exist in DB
+            # this methode will work and won't check the "Custom attributes" checkbox
+            try:
+                resp = self.gs_dst.rest_client.post(
+                    resource_post_route,
+                    data=cleaned_content,
+                    headers={"content-type": "application/xml"},
                 )
+                if resp.status_code == 404:
+                    raise ParamError(
+                        context="dst",
+                        key=resource_post_route,
+                        err="Route not found. Check Workspace and datastore",
+                    )
+            except HTTPError as err:
+                if err.response.status_code == 400:
+                    # Insert with all attributes
+                    # if featureType doesn't exist as XMl AND in DB we need to use resource.content with attributes
+                    # "Custom attributes" checkbox won't be checked
+                    resp = self.gs_dst.rest_client.post(
+                        resource_post_route,
+                        data=resource.content,
+                        headers={"content-type": "application/xml"},
+                    )
+
+                else:
+                    raise ParamError(
+                        context="dst",
+                        key=resource_post_route,
+                        err=err,
+                    ) from err
         raise_for_status(resp)
 
         resp = self.gs_dst.rest_client.put(
@@ -429,12 +450,9 @@ class CopyManager:
             )
             raise_for_status(dst_style_def)
 
-    def remove_attributes_element(self, xml_bytes: bytes) -> Any:
-        root = ET.fromstring(xml_bytes)
-        if root is not None:
-            attributes = root.find("attributes")
-            if attributes is not None:
-                root.remove(attributes)
-            return ET.tostring(root, encoding="utf-8")
-        # If root is None, return the original bytes or handle as needed
-        return ET.tostring(root, encoding="utf-8")
+    def remove_attributes_element(self, xml_bytes: bytes) -> bytes:
+        root = etree.fromstring(xml_bytes)
+        attributes = root.find("attributes")
+        if attributes is not None:
+            root.remove(attributes)
+        return etree.tostring(root, encoding="utf-8")
