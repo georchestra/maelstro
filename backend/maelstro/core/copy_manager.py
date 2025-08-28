@@ -11,9 +11,10 @@ from maelstro.config import app_config as config
 from maelstro.common.types import GsLayer
 from maelstro.common.models import CopyPreview, InfoRecord, SuccessRecord
 from maelstro.common.exceptions import ParamError
+from requests import HTTPError
 from .georchestra import GeorchestraHandler
 from .operations import raise_for_status
-
+from lxml import etree
 
 logger = logging.getLogger()
 
@@ -356,33 +357,56 @@ class CopyManager:
         )
         resource = gs_src.rest_client.get(xml_resource_route)
 
+        # Clean <attributes> element to avoid "Custom attributes" checkbox being set
+        # See issue #94
+        cleaned_content = self.remove_attributes_element(resource.content)
         if has_resource.status_code == 200:
             if has_layer.status_code != 200:
                 resp = self.gs_dst.rest_client.delete(resource_route)
                 raise_for_status(resp)
                 resp = self.gs_dst.rest_client.post(
                     resource_post_route,
-                    data=resource.content,
+                    data=cleaned_content,
                     headers={"content-type": "application/xml"},
                 )
             else:
                 resp = self.gs_dst.rest_client.put(
                     xml_resource_route,
-                    data=resource.content,
+                    data=cleaned_content,
                     headers={"content-type": "application/xml"},
                 )
         else:
-            resp = self.gs_dst.rest_client.post(
-                resource_post_route,
-                data=resource.content,
-                headers={"content-type": "application/xml"},
-            )
-            if resp.status_code == 404:
-                raise ParamError(
-                    context="dst",
-                    key=resource_post_route,
-                    err="Route not found. Check Workspace and datastore",
+            # if featureType doesn't exist as XMl but exist in DB
+            # this methode will work and won't check the "Custom attributes" checkbox
+            try:
+                resp = self.gs_dst.rest_client.post(
+                    resource_post_route,
+                    data=cleaned_content,
+                    headers={"content-type": "application/xml"},
                 )
+                if resp.status_code == 404:
+                    raise ParamError(
+                        context="dst",
+                        key=resource_post_route,
+                        err="Route not found. Check Workspace and datastore",
+                    )
+            except HTTPError as err:
+                if err.response.status_code == 400:
+                    # Insert with all attributes
+                    # if featureType doesn't exist as XMl AND in DB we need to use resource.content with attributes
+                    # "Custom attributes" checkbox won't be checked
+                    resp = self.gs_dst.rest_client.post(
+                        resource_post_route,
+                        data=resource.content,
+                        headers={"content-type": "application/xml"},
+                    )
+
+                else:
+                    raise ParamError(
+                        context="dst",
+                        key=resource_post_route,
+                        err=err,
+                    ) from err
         raise_for_status(resp)
 
         resp = self.gs_dst.rest_client.put(
@@ -425,3 +449,10 @@ class CopyManager:
                 headers={"content-type": style_def.headers["content-type"]},
             )
             raise_for_status(dst_style_def)
+
+    def remove_attributes_element(self, xml_bytes: bytes) -> bytes:
+        root = etree.fromstring(xml_bytes)
+        attributes = root.find("attributes")
+        if attributes is not None:
+            root.remove(attributes)
+        return etree.tostring(root, encoding="utf-8")
