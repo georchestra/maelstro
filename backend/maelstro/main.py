@@ -223,7 +223,7 @@ def get_layers(
     """
     gn = request.state.geo_handler.get_gn_service(src_name, True)
     zipdata = gn.get_record_zip(uuid).read()
-    meta = Meta(zipdata)
+    meta = Meta(zipdata, uuid)
     return meta.get_ogc_geoserver_layers()
 
 

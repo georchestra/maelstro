@@ -165,12 +165,15 @@ class MetaXml:
 
 
 class MetaZip(MetaXml):
-    def __init__(self, zipfile: bytes):
+    def __init__(self, zipfile: bytes, uuid=None):
         self.zipfile = zipfile
         with ZipFile(BytesIO(zipfile)) as zf:
             zip_properties = zf.read("index.csv").decode()
             dr = DictReader(StringIO(zip_properties), delimiter=";")
-            self.properties = next(dr)
+            if(uuid):
+                self.properties = next(csv_line for csv_line in dr if csv_line["uuid"] == uuid)
+            else:
+                self.properties = next(dr)
 
             xml_bytes = zf.read(f"{self.properties['uuid']}/metadata/metadata.xml")
 

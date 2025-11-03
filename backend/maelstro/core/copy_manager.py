@@ -62,7 +62,7 @@ class CopyManager:
         self.include_styles = include_styles
 
         zipdata = self.gn_src.get_record_zip(self.uuid).read()
-        self.meta = Meta(zipdata)
+        self.meta = Meta(zipdata, self.uuid)
 
         preview: dict[str, list[dict[str, Any]]] = {
             "geonetwork_resources": [],
@@ -135,7 +135,7 @@ class CopyManager:
 
         if self.uuid:
             zipdata = self.gn_src.get_record_zip(self.uuid).read()
-            self.meta = Meta(zipdata)
+            self.meta = Meta(zipdata, self.uuid)
             self.geo_hnd.log_handler.set_property("src_title", self.meta.get_title())
 
         if self.meta is None:
