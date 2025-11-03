@@ -23,7 +23,7 @@ def test_copy_123_iso19139():
             json={'system/platform/version': '4.2.2'}
         )
         m.get(
-            "https://demo.georchestra.org/geonetwork/srv/api/records/123",
+            "https://demo.georchestra.org/geonetwork/srv/api/records/422a6ed5-619a-4156-8785-174d786ec95c",
             content=zbytes,
         )
         m.post(
@@ -34,7 +34,7 @@ def test_copy_123_iso19139():
             "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api/records/101",
             json={"gmd:fileIdentifier": {"gco:CharacterString": {"#text": "dummy_uuid"}}}
         )
-        copy_mgr = CopyManager('GeonetworkMaster', 'CompoLocale', '123', geo_hnd)
+        copy_mgr = CopyManager('GeonetworkMaster', 'CompoLocale', '422a6ed5-619a-4156-8785-174d786ec95c', geo_hnd)
         success = copy_mgr.copy_dataset(True, False, False)
         assert success == "Metadata creation successful (dummy_uuid)"
 
@@ -56,7 +56,7 @@ def test_copy_123_iso19115():
             json={'system/platform/version': '4.2.2'}
         )
         m.get(
-            "https://demo.georchestra.org/geonetwork/srv/api/records/123",
+            "https://demo.georchestra.org/geonetwork/srv/api/records/voies-vertes-chemins",
             content=zbytes,
         )
         m.post(
@@ -67,6 +67,6 @@ def test_copy_123_iso19115():
             "https://georchestra-127-0-0-1.nip.io/geonetwork/srv/api/records/101",
             json={"mdb:metadataIdentifier": {"mcc:MD_Identifier": {"mcc:code": {"gco:CharacterString":{"#text": "dummy_uuid"}}}}}
         )
-        copy_mgr = CopyManager('GeonetworkMaster', 'CompoLocale', '123', geo_hnd)
+        copy_mgr = CopyManager('GeonetworkMaster', 'CompoLocale', 'voies-vertes-chemins', geo_hnd)
         success = copy_mgr.copy_dataset(True, False, False)
         assert success == "Metadata creation successful (dummy_uuid)"
