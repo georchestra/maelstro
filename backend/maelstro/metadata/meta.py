@@ -165,7 +165,7 @@ class MetaXml:
 
 
 class MetaZip(MetaXml):
-    def __init__(self, zipfile: bytes, uuid: str = None):
+    def __init__(self, zipfile: bytes, uuid: str = ""):
         self.zipfile = zipfile
         with ZipFile(BytesIO(zipfile)) as zf:
             zip_properties = zf.read("index.csv").decode()
