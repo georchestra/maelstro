@@ -346,14 +346,18 @@ class CopyManager:
 
         layer_string = json.dumps(layer_data)
         layer_data = json.loads(layer_string.replace(gs_src.url, self.gs_dst.url))
+
+        regex_gnapiurl = r"(https?:\/\/.*)\/geonetwork\/srv\/api"
         # extract url from gn source url api
-        gn_src_url = re.match(
-            r"(https?:\/\/.*)\/geonetwork\/srv\/api", self.gn_src.api_url
-        ).group(1)
+        gn_src_url = ""
+        gn_src_url_match = re.match(regex_gnapiurl, self.gn_src.api_url)
+        if gn_src_url_match:
+            gn_src_url = gn_src_url_match.group(1)
         # extract url from gn dest url api
-        gn_dst_url = re.match(
-            r"(https?:\/\/.*)\/geonetwork\/srv\/api", self.gn_dst.api_url
-        ).group(1)
+        gn_dst_url = ""
+        gn_dst_url_match = re.match(regex_gnapiurl, self.gn_dst.api_url)
+        if gn_dst_url_match:
+            gn_dst_url = gn_dst_url_match.group(1)
 
         has_resource = self.gs_dst.rest_client.get(resource_route)
         has_layer = self.gs_dst.rest_client.get(f"/rest/layers/{layer_name}")
