@@ -346,6 +346,18 @@ class CopyManager:
         layer_string = json.dumps(layer_data)
         layer_data = json.loads(layer_string.replace(gs_src.url, self.gs_dst.url))
 
+        regex_gnapiurl = r"(https?:\/\/.*)\/geonetwork\/srv\/api"
+        # extract url from gn source url api
+        gn_src_url = ""
+        gn_src_url_match = re.match(regex_gnapiurl, self.gn_src.api_url)
+        if gn_src_url_match:
+            gn_src_url = gn_src_url_match.group(1)
+        # extract url from gn dest url api
+        gn_dst_url = ""
+        gn_dst_url_match = re.match(regex_gnapiurl, self.gn_dst.api_url)
+        if gn_dst_url_match:
+            gn_dst_url = gn_dst_url_match.group(1)
+
         has_resource = self.gs_dst.rest_client.get(resource_route)
         has_layer = self.gs_dst.rest_client.get(f"/rest/layers/{layer_name}")
 
@@ -359,7 +371,9 @@ class CopyManager:
 
         # Clean <attributes> element to avoid "Custom attributes" checkbox being set
         # See issue #94
-        cleaned_content = self.remove_attributes_element(resource.content)
+        cleaned_content = self.remove_attributes_element(
+            resource.content.decode("utf-8").replace(gn_src_url, gn_dst_url)
+        )
         if has_resource.status_code == 200:
             if has_layer.status_code != 200:
                 resp = self.gs_dst.rest_client.delete(resource_route)
