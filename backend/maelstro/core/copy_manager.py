@@ -15,7 +15,6 @@ from requests import HTTPError
 from .georchestra import GeorchestraHandler
 from .operations import raise_for_status
 from lxml import etree
-import re
 
 logger = logging.getLogger()
 
