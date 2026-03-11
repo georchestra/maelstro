@@ -91,9 +91,13 @@ def log_request_to_db(
         sec_user = request.headers.get("sec-user")
         if sec_user is not None:
             # Means it is Gateway (not SP) should use sec-user header which is json encoded in base64
-            decoded_sec_user = loads(b64decode(sec_user.replace("{base64}", "")))
-            firstname = decoded_sec_user["firstName"]
-            lastname = decoded_sec_user["lastName"]
+            try:
+                decoded_sec_user = loads(b64decode(sec_user.replace("{base64}", "")))
+                firstname = decoded_sec_user["firstName"]
+                lastname = decoded_sec_user["lastName"]
+            except:
+                # ignore if errors
+                pass
 
     record = {
         "start_time": properties.get("start_time"),
