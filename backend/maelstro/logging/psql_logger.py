@@ -20,6 +20,8 @@ from pydantic import TypeAdapter
 from maelstro.config import app_config as config
 from maelstro.common.types import DbConfig
 from maelstro.common.models import JsonLogRecord
+from base64 import b64decode
+from json import loads
 
 
 class DbNotSetup(Exception):
@@ -82,11 +84,26 @@ def log_request_to_db(
     properties: dict[str, Any],
     operations: list[dict[str, Any]],
 ) -> None:
+    # Security proxy headers
+    firstname = request.headers.get("sec-firstname")
+    lastname = request.headers.get("sec-lastname")
+    if firstname is None or lastname is None:
+        sec_user = request.headers.get("sec-user")
+        if sec_user is not None:
+            # Means it is Gateway (not SP) should use sec-user header which is json encoded in base64
+            try:
+                decoded_sec_user = loads(b64decode(sec_user.replace("{base64}", "")))
+                firstname = decoded_sec_user["firstName"]
+                lastname = decoded_sec_user["lastName"]
+            except:
+                # ignore if errors
+                pass
+
     record = {
         "start_time": properties.get("start_time"),
         "end_time": datetime.now(),
-        "first_name": request.headers.get("sec-firstname"),
-        "last_name": request.headers.get("sec-lastname"),
+        "first_name": firstname,
+        "last_name": lastname,
         "status_code": status_code,
         "dataset_uuid": request.query_params.get("metadataUuid"),
         "src_name": request.query_params.get("src_name"),
