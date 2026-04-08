@@ -92,7 +92,7 @@ class MetaXml:
         executable_xsl = xsltproc.compile_stylesheet(stylesheet_file=xslt_path)
         output = executable_xsl.transform_to_string(xdm_node=metadata_xml_str)
 
-        return bytes(output,"utf-8")
+        return bytes(output, "utf-8")
 
     def apply_xslt(self, xslt_path: str) -> tuple[str, str]:
         pre = len(self.xml_bytes)
