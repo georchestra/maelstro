@@ -4,6 +4,8 @@ from csv import DictReader
 from lxml import etree
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
+
+# pylint: disable=no-name-in-module
 from saxonche import PySaxonProcessor  # type: ignore
 
 NS_PREFIXES = {
