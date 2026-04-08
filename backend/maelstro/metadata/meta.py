@@ -4,7 +4,7 @@ from csv import DictReader
 from lxml import etree
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
-
+from saxonche import *
 
 NS_PREFIXES = {
     "iso19139": "gmd",
@@ -81,11 +81,18 @@ class MetaXml:
         )
 
     def _apply_xslt(self, xslt_path: str) -> bytes:
-        with open(xslt_path, encoding="utf8") as xslt_file:
-            xslt = etree.parse(xslt_file)
-        transform = etree.XSLT(xslt)
-        xml_root = etree.parse(BytesIO(self.xml_bytes))
-        return self.dump_tree_to_bytes(transform(xml_root))
+        # with open(xslt_path, encoding="utf8") as xslt_file:
+        #     xslt = etree.parse(xslt_file)
+        # transform = etree.XSLT(xslt)
+        # xml_root = etree.parse(BytesIO(self.xml_bytes))
+
+        proc = PySaxonProcessor(license=False)
+        xsltproc = proc.new_xslt30_processor()
+        metadata_xml_str = proc.parse_xml(xml_text=self.xml_bytes.decode("utf-8"))
+        executable_xsl = xsltproc.compile_stylesheet(stylesheet_file=xslt_path)
+        output = executable_xsl.transform_to_string(xdm_node=metadata_xml_str)
+
+        return output.encode("utf-8")
 
     def apply_xslt(self, xslt_path: str) -> tuple[str, str]:
         pre = len(self.xml_bytes)
