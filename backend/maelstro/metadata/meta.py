@@ -4,7 +4,7 @@ from csv import DictReader
 from lxml import etree
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
-from saxonche import *
+from saxonche import PySaxonProcessor
 
 NS_PREFIXES = {
     "iso19139": "gmd",
@@ -92,7 +92,7 @@ class MetaXml:
         executable_xsl = xsltproc.compile_stylesheet(stylesheet_file=xslt_path)
         output = executable_xsl.transform_to_string(xdm_node=metadata_xml_str)
 
-        return output.encode("utf-8")
+        return bytes(output,"utf-8")
 
     def apply_xslt(self, xslt_path: str) -> tuple[str, str]:
         pre = len(self.xml_bytes)

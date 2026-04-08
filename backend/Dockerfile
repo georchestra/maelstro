@@ -15,7 +15,7 @@ WORKDIR /app
 
 COPY pyproject.toml /app
 
-FROM poetry as server
+FROM poetry AS server
 RUN --mount=type=cache,target=/root/.cache \
     poetry install --no-root
 
@@ -31,7 +31,7 @@ USER appuser
 
 CMD ["serve_prod"]
 
-FROM server as check
+FROM server AS check
 USER root
 RUN --mount=type=cache,target=/root/.cache \
     poetry install --no-root --with check
