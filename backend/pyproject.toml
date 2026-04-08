@@ -1,6 +1,6 @@
 [project]
 name = "maelstro"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = [
     {name = "Your Name",email = "you@example.com"}
@@ -17,7 +17,7 @@ dependencies = [
     "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@6defa49bf959d91883ecd43ed1e2e976566e9495",
     "sqlalchemy (>=2.0.37,<3.0.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
-    "saxonche>=12.9.0",
+    "saxonche (>=12.9.0,<13.0.0)"
 ]
 
 [tool.poetry.group.check]
