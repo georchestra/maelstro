@@ -4,7 +4,7 @@ from csv import DictReader
 from lxml import etree
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
-from saxonche import PySaxonProcessor # type: ignore
+from saxonche import PySaxonProcessor  # type: ignore
 
 NS_PREFIXES = {
     "iso19139": "gmd",
