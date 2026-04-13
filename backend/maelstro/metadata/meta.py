@@ -4,6 +4,7 @@ from csv import DictReader
 from typing import cast
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
+from html import escape as url_escape_encode
 
 from saxonche import PySaxonProcessor, PyXdmNode  # type: ignore
 
@@ -26,6 +27,7 @@ NS_REGISTRIES = {
         "mri": "http://standards.iso.org/iso/19115/-3/mri/1.0",
         "cit": "http://standards.iso.org/iso/19115/-3/cit/2.0",
         "gco": "http://standards.iso.org/iso/19115/-3/gco/1.0",
+        "gmd": "http://standards.iso.org/iso/19115/-3/gmd/1.0",
     },
 }
 
@@ -120,7 +122,9 @@ class MetaXml:
 
         root = self._get_root()
         self.xpath_processor.set_context(xdm_item=root)
-        query = f"//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage//(gco:CharacterString|gmd:URL)"
+        query = (
+            f"//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage/{self.prefix}:URL"
+        )
         url_nodes = self.xpath_processor.evaluate(query)
 
         xml_as_string = root.to_string()
@@ -138,8 +142,11 @@ class MetaXml:
 
             if updated_url != original_url:
                 xml_as_string = xml_as_string.replace(original_url, updated_url)
+                # handle when url are encoded
+                xml_as_string = xml_as_string.replace(
+                    url_escape_encode(src), url_escape_encode(dst)
+                )
 
-        # 4. Update the internal state
         self.xml_bytes = xml_as_string.encode("utf-8")
         post = len(self.xml_bytes)
         return f"Before: {pre} bytes", f"After: {post} bytes"
