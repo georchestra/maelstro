@@ -1,12 +1,12 @@
 from io import BytesIO, StringIO
 from zipfile import ZipFile
 from csv import DictReader
-from lxml import etree
+from typing import cast
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
 
 # pylint: disable=no-name-in-module
-from saxonche import PySaxonProcessor  # type: ignore
+from saxonche import PySaxonProcessor, PyXdmNode  # type: ignore
 
 NS_PREFIXES = {
     "iso19139": "gmd",
@@ -21,10 +21,12 @@ NS_TITLE_PREFIXES = {
 NS_REGISTRIES = {
     "iso19139": {
         "gmd": "http://www.isotc211.org/2005/gmd",
+        "gco": "http://www.isotc211.org/2005/gco",
     },
     "iso19115-3.2018": {
         "mri": "http://standards.iso.org/iso/19115/-3/mri/1.0",
         "cit": "http://standards.iso.org/iso/19115/-3/cit/2.0",
+        "gco": "http://standards.iso.org/iso/19115/-3/gco/1.0",
     },
 }
 
@@ -33,28 +35,37 @@ class MetaXml:
     def __init__(self, xml_bytes: bytes, schema: str = "iso19139"):
         self.xml_bytes = xml_bytes
         self.schema = schema
-        self.namespaces = NS_REGISTRIES.get(schema)
+        self.namespaces = NS_REGISTRIES.get(schema, {})
         self.prefix = NS_PREFIXES.get(schema)
         self.title_prefix = NS_TITLE_PREFIXES.get(schema)
 
+        # Initialize Saxon Processor
+        self.proc = PySaxonProcessor(license=False)
+        self.xpath_processor = self.proc.new_xpath_processor()
+        for prefix, uri in self.namespaces.items():
+            self.xpath_processor.declare_namespace(prefix, uri)
+
+    def _get_root(self) -> PyXdmNode:
+        """Parses current xml_bytes into a Saxon XdmNode."""
+        return self.proc.parse_xml(xml_text=self.xml_bytes.decode("utf-8"))
+
     def get_title(self) -> str:
-        xml_root = etree.parse(BytesIO(self.xml_bytes))
-        title_node = xml_root.find(
-            f".//{self.title_prefix}:MD_DataIdentification" f"//{self.prefix}:title/",
-            self.namespaces,
-        )
-        if title_node is not None:
-            return title_node.text or ""
-        return ""
+        root = self._get_root()
+        self.xpath_processor.set_context(xdm_item=root)
+        query = f"//{self.title_prefix}:MD_DataIdentification//{self.prefix}:title//gco:CharacterString"
+        title_node = self.xpath_processor.evaluate_single(query)
+        return title_node.string_value if title_node else ""
 
     def get_ogc_geoserver_layers(self) -> list[LinkedLayer]:
-        xml_root = etree.parse(BytesIO(self.xml_bytes))
+        root = self._get_root()
+        self.xpath_processor.set_context(xdm_item=root)
+        query = f"//{self.prefix}:CI_OnlineResource"
+        nodes = self.xpath_processor.evaluate(query)
+
         return [
-            self.layerproperties_from_link(link_node)
-            for link_node in xml_root.findall(
-                f".//{self.prefix}:CI_OnlineResource", self.namespaces
-            )
-            if self.is_ogc_layer(link_node)
+            self.layerproperties_from_link(cast(PyXdmNode, node))
+            for node in nodes
+            if self.is_ogc_layer(cast(PyXdmNode, node))
         ]
 
     def get_gs_layers(
@@ -62,10 +73,11 @@ class MetaXml:
     ) -> dict[str, set[GsLayer]]:
         if gs_servers is None:
             gs_servers = []
+        layers = self.get_ogc_geoserver_layers()
         return {
             url: set(
                 self.get_gslayer_from_gn_link(l.name, l.server_url, gs_servers)
-                for l in self.get_ogc_geoserver_layers()
+                for l in layers
                 if url in l.server_url
             )
             for url in gs_servers
@@ -83,18 +95,11 @@ class MetaXml:
         )
 
     def _apply_xslt(self, xslt_path: str) -> bytes:
-        # with open(xslt_path, encoding="utf8") as xslt_file:
-        #     xslt = etree.parse(xslt_file)
-        # transform = etree.XSLT(xslt)
-        # xml_root = etree.parse(BytesIO(self.xml_bytes))
-
-        proc = PySaxonProcessor(license=False)
-        xsltproc = proc.new_xslt30_processor()
-        metadata_xml_str = proc.parse_xml(xml_text=self.xml_bytes.decode("utf-8"))
+        xsltproc = self.proc.new_xslt30_processor()
+        root = self._get_root()
         executable_xsl = xsltproc.compile_stylesheet(stylesheet_file=xslt_path)
-        output = executable_xsl.transform_to_string(xdm_node=metadata_xml_str)
-
-        return bytes(output, "utf-8")
+        output = executable_xsl.transform_to_string(xdm_node=root)
+        return cast(bytes, output.encode("utf-8"))
 
     def apply_xslt(self, xslt_path: str) -> tuple[str, str]:
         pre = len(self.xml_bytes)
@@ -109,40 +114,44 @@ class MetaXml:
         post = len(self.xml_bytes)
         return f"Before: {pre} bytes", f"After: {post} bytes"
 
-    def dump_tree_to_bytes(self, xml_root: etree._ElementTree) -> bytes:
-        b_io = BytesIO()
-        xml_root.write(b_io)
-        b_io.seek(0)
-        return b_io.read()
-
     def replace_geoserver_src_by_dst_urls(
         self, mapping: dict[str, list[str]]
     ) -> tuple[str, str]:
-        xml_root = etree.parse(BytesIO(self.xml_bytes))
-        for url_node in xml_root.findall(
-            f".//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage/",
-            self.namespaces,
-        ):
-            if (url_node is None) or (url_node.text is None):
+        pre = len(self.xml_bytes)
+
+        root = self._get_root()
+        self.xpath_processor.set_context(xdm_item=root)
+        query = f"//{self.prefix}:CI_OnlineResource/{self.prefix}:linkage//(gco:CharacterString|gmd:URL)"
+        url_nodes = self.xpath_processor.evaluate(query)
+
+        xml_as_string = root.to_string()
+
+        for url_node in url_nodes:
+            original_url = url_node.string_value
+            if not original_url:
                 continue
+
+            updated_url = original_url
+            # Your exact nested loop algorithm
             for src in mapping["sources"]:
                 for dst in mapping["destinations"]:
-                    url_node.text = url_node.text.replace(src, dst)
-        b_io = BytesIO()
-        xml_root.write(b_io)
-        b_io.seek(0)
-        pre = len(self.xml_bytes)
-        self.xml_bytes = b_io.read()
+                    updated_url = updated_url.replace(src, dst)
+
+            if updated_url != original_url:
+                xml_as_string = xml_as_string.replace(original_url, updated_url)
+
+        # 4. Update the internal state
+        self.xml_bytes = xml_as_string.encode("utf-8")
         post = len(self.xml_bytes)
         return f"Before: {pre} bytes", f"After: {post} bytes"
 
-    def is_ogc_layer(self, link_node: etree._Element) -> bool:
-        link_protocol = self.protocol_from_link(link_node)
-        if link_protocol is None:
+    def is_ogc_layer(self, link_node: PyXdmNode) -> bool:
+        protocol = self.protocol_from_link(link_node)
+        if not protocol:
             return False
-        return link_protocol[:7].lower() in ["ogc:wms", "ogc:wfs", "ogc:wcs"]
+        return protocol[:7].lower() in ["ogc:wms", "ogc:wfs", "ogc:wcs"]
 
-    def layerproperties_from_link(self, link_node: etree._Element) -> LinkedLayer:
+    def layerproperties_from_link(self, link_node: PyXdmNode) -> LinkedLayer:
         return LinkedLayer(
             **{
                 "server_url": self.url_from_link(link_node) or "",
@@ -152,25 +161,30 @@ class MetaXml:
             }
         )
 
-    def url_from_link(self, link_node: etree._Element) -> str | None:
+    def url_from_link(self, link_node: PyXdmNode) -> str | None:
         return self.property_from_link(link_node, f"{self.prefix}:linkage")
 
-    def name_from_link(self, link_node: etree._Element) -> str | None:
+    def name_from_link(self, link_node: PyXdmNode) -> str | None:
         return self.property_from_link(link_node, f"{self.prefix}:name")
 
-    def desc_from_link(self, link_node: etree._Element) -> str | None:
+    def desc_from_link(self, link_node: PyXdmNode) -> str | None:
         return self.property_from_link(link_node, f"{self.prefix}:description")
 
-    def protocol_from_link(self, link_node: etree._Element) -> str | None:
+    def protocol_from_link(self, link_node: PyXdmNode) -> str | None:
         return self.property_from_link(link_node, f"{self.prefix}:protocol")
 
-    def property_from_link(self, link_node: etree._Element, tag: str) -> str | None:
-        property_node = link_node.find(tag, self.namespaces)
-        if property_node is not None:
-            text_node = property_node.find("./")
-            if text_node is not None:
-                return str(text_node.text)
-        return None
+    def property_from_link(self, link_node: PyXdmNode, tag: str) -> str | None:
+        self.xpath_processor.set_context(xdm_item=link_node)
+        # In Saxon, we query relative to the link_node
+        prop_node = self.xpath_processor.evaluate_single(
+            f"./{tag}//gco:CharacterString | ./{tag}//gmd:URL"
+        )
+        return prop_node.string_value if prop_node else None
+
+    def __del__(self):
+        # Clean up Saxon C++ resources
+        if hasattr(self, "proc"):
+            self.proc.close()
 
 
 class MetaZip(MetaXml):
