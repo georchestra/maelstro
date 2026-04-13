@@ -5,7 +5,6 @@ from typing import cast
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
 
-# pylint: disable=no-name-in-module
 from saxonche import PySaxonProcessor, PyXdmNode  # type: ignore
 
 NS_PREFIXES = {
