@@ -181,7 +181,7 @@ class MetaXml:
         )
         return prop_node.string_value if prop_node else None
 
-    def __del__(self):
+    def __del__(self) -> None:
         # Clean up Saxon C++ resources
         if hasattr(self, "proc"):
             self.proc.close()
