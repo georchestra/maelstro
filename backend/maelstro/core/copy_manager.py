@@ -3,7 +3,7 @@ import logging
 import json
 from functools import cache
 from io import BytesIO
-from typing import Any
+from typing import Any, cast
 from geonetwork import GnApi
 from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
@@ -464,7 +464,7 @@ class CopyManager:
             )
             raise_for_status(dst_style_def)
 
-    def remove_attributes_element(self, xml_content: str) -> str:
+    def remove_attributes_element(self, xml_content: str) -> bytes:
         proc = PySaxonProcessor(license=False)
         root = proc.parse_xml(xml_text=xml_content)
         xpath = proc.new_xpath_processor()
@@ -474,6 +474,6 @@ class CopyManager:
 
         if attributes is not None:
             output = xpath.evaluate_single("serialize(/* /node() except /*/attributes)")
-            return output.string_value
+            return cast(bytes, output.string_value.encode("utf-8"))
 
-        return root.to_string()
+        return cast(bytes, root.to_string().encode("utf-8"))
