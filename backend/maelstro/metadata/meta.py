@@ -144,7 +144,7 @@ class MetaXml:
                 xml_as_string = xml_as_string.replace(original_url, updated_url)
                 # handle when url are encoded
                 xml_as_string = xml_as_string.replace(
-                    url_escape_encode(src), url_escape_encode(dst)
+                    url_escape_encode(original_url), url_escape_encode(updated_url)
                 )
 
         self.xml_bytes = xml_as_string.encode("utf-8")
