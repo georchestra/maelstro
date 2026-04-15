@@ -1,7 +1,6 @@
 from io import BytesIO, StringIO
 from zipfile import ZipFile
 from csv import DictReader
-from typing import cast
 from maelstro.common.types import GsLayer
 from maelstro.common.models import LinkedLayer
 from html import escape as url_escape_encode
@@ -64,9 +63,9 @@ class MetaXml:
         nodes = self.xpath_processor.evaluate(query)
 
         return [
-            self.layerproperties_from_link(cast(PyXdmNode, node))
+            self.layerproperties_from_link(node)
             for node in nodes
-            if self.is_ogc_layer(cast(PyXdmNode, node))
+            if self.is_ogc_layer(node)
         ]
 
     def get_gs_layers(
@@ -99,8 +98,9 @@ class MetaXml:
         xsltproc = self.proc.new_xslt30_processor()
         root = self._get_root()
         executable_xsl = xsltproc.compile_stylesheet(stylesheet_file=xslt_path)
+        output: str
         output = executable_xsl.transform_to_string(xdm_node=root)
-        return cast(bytes, output.encode("utf-8"))
+        return output.encode("utf-8")
 
     def apply_xslt(self, xslt_path: str) -> tuple[str, str]:
         pre = len(self.xml_bytes)

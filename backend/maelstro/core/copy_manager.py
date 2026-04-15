@@ -3,7 +3,7 @@ import logging
 import json
 from functools import cache
 from io import BytesIO
-from typing import Any, cast
+from typing import Any
 from geonetwork import GnApi
 from geoservercloud.services import RestService  # type: ignore
 from maelstro.metadata import Meta
@@ -472,8 +472,12 @@ class CopyManager:
 
         attributes = xpath.evaluate_single("/*/attributes")
 
+        output: str
         if attributes is not None:
-            output = xpath.evaluate_single("serialize(/* /node() except /*/attributes)")
-            return cast(bytes, output.string_value.encode("utf-8"))
+            output = xpath.evaluate_single(
+                "serialize(/* /node() except /*/attributes)"
+            ).string_value
+            return output.encode("utf-8")
 
-        return cast(bytes, root.to_string().encode("utf-8"))
+        output = root.to_string()
+        return output.encode("utf-8")
