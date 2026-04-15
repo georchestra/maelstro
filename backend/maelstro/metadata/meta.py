@@ -141,8 +141,9 @@ class MetaXml:
                     updated_url = updated_url.replace(src, dst)
 
             if updated_url != original_url:
+                # here we replace the exact url (with path and params) in order to not overwrite another one
                 xml_as_string = xml_as_string.replace(original_url, updated_url)
-                # handle when url are encoded
+                # handle when url are encoded in the xml
                 xml_as_string = xml_as_string.replace(
                     url_escape_encode(original_url), url_escape_encode(updated_url)
                 )
