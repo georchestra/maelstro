@@ -14,7 +14,7 @@ from maelstro.common.exceptions import ParamError
 from requests import HTTPError
 from .georchestra import GeorchestraHandler
 from .operations import raise_for_status
-from lxml import etree
+from saxonche import PySaxonProcessor  # type: ignore
 
 logger = logging.getLogger()
 
@@ -464,9 +464,20 @@ class CopyManager:
             )
             raise_for_status(dst_style_def)
 
-    def remove_attributes_element(self, xml_bytes: bytes) -> bytes:
-        root = etree.fromstring(xml_bytes)
-        attributes = root.find("attributes")
+    def remove_attributes_element(self, xml_content: str) -> bytes:
+        proc = PySaxonProcessor(license=False)
+        root = proc.parse_xml(xml_text=xml_content)
+        xpath = proc.new_xpath_processor()
+        xpath.set_context(xdm_item=root)
+
+        attributes = xpath.evaluate_single("/*/attributes")
+
+        output: str
         if attributes is not None:
-            root.remove(attributes)
-        return etree.tostring(root, encoding="utf-8")
+            output = xpath.evaluate_single(
+                "serialize(/* /node() except /*/attributes)"
+            ).string_value
+            return output.encode("utf-8")
+
+        output = root.to_string()
+        return output.encode("utf-8")
