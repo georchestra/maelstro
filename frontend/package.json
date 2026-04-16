@@ -22,7 +22,7 @@
     "primelocale": "^1.6.0",
     "primevue": "^4.2.5",
     "vue": "^3.5.13",
-    "vue-i18n": "^10.0.5",
+    "vue-i18n": "^11.2.8",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
