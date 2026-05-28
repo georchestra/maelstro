@@ -9,7 +9,6 @@ volumes:
   geoserver_native_libs:
   geonetwork_datadir:
   esdata:
-  georchestra_datadir:
   datafeeder_postgis_data:
 
 secrets:
@@ -19,43 +18,16 @@ secrets:
     file: ./secrets/geoserver_privileged_user_passwd.txt
 
 services:
-  copy-datadir:
-    image: alpine
-    command: sh -c "rm -r /etc/georchestra/* ; cp -r -f -v /mnt/datadir/* /etc/georchestra/ ; chmod 777 -R -v /etc/georchestra/" # "sleep 6000"
-    volumes:
-      - ./config:/mnt/datadir
-      - georchestra_datadir:/etc/georchestra
-
-  envsubst:
-    image: georchestra/k8s-initcontainer-envsubst
-    depends_on:
-      copy-datadir:
-        condition: service_completed_successfully
-    environment:
-      - DEBUG=yes
-      - SUBST_FILES=/etc/georchestra/security-proxy/targets-mapping.properties /etc/georchestra/datafeeder/frontend-config.json /etc/georchestra/datafeeder/metadata_* /etc/georchestra/geonetwork/microservices/ogc-api-records/config.yml
-    env_file:
-      - .envs-common
-      - .envs-hosts
-    volumes:
-      - georchestra_datadir:/etc/georchestra
-
   database:
     image: georchestra/database:24.0.x
     env_file:
       - .envs-database-georchestra
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
     volumes:
       - postgresql_data:/var/lib/postgresql/data
     restart: no
 
   ldap:
     image: georchestra/ldap:24.0.x
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
     secrets:
       - slapd_password
       - geoserver_privileged_user_passwd
@@ -76,64 +48,22 @@ services:
       - ldap_config:/etc/ldap
     restart: no
 
-#  gateway:
-#    image: georchestra/gateway:1.1.x
-#    depends_on:
-#      - database
-#    volumes:
-#      - georchestra_datadir:/etc/georchestra
-#    environment:
-#      - JAVA_TOOL_OPTIONS=-Dgeorchestra.datadir=/etc/georchestra
-#    env_file:
-#      - .envs-common
-#      - .envs-ldap
-#      - .envs-hosts
-#      - .envs-database-georchestra
-  proxy:
-    image: georchestra/security-proxy:24.0.x
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s -f http://localhost:8080/_static/bootstrap_3.0.0/css/bootstrap-theme.min.css >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
+  gateway:
+    image: georchestra/gateway:latest-debug
     depends_on:
-      ldap:
-        condition: service_healthy
-      database:
-        condition: service_healthy
+      - database
     volumes:
-      - georchestra_datadir:/etc/georchestra
+      - ./config:/etc/georchestra
     environment:
-      - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
-      - XMS=256M
-      - XMX=1G
+      - JAVA_TOOL_OPTIONS=-Dgeorchestra.datadir=/etc/georchestra
     env_file:
       - .envs-common
       - .envs-ldap
       - .envs-hosts
       - .envs-database-georchestra
     restart: no
-  cas:
-    image: georchestra/cas:latest
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -s -f http://localhost:8080/cas/login >/dev/null || exit 1" ]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-    depends_on:
-      ldap:
-        condition: service_healthy
-    volumes:
-      - georchestra_datadir:/etc/georchestra
-    environment:
-      - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
-      - XMS=256M
-      - XMX=1G
-    env_file:
-      - .envs-common
-      - .envs-ldap
-      - .envs-database-georchestra
-    restart: no
+    ports:
+      - "8088:8080"
 
   geoserver:
     image: georchestra/geoserver:24.0.x
@@ -148,13 +78,13 @@ services:
       database:
         condition: service_healthy
     volumes:
-      - georchestra_datadir:/etc/georchestra
+      - ./config:/etc/georchestra
       - geoserver_datadir:/mnt/geoserver_datadir
       - geoserver_geodata:/mnt/geoserver_geodata
       - geoserver_tiles:/mnt/geoserver_tiles
       - geoserver_native_libs:/mnt/geoserver_native_libs
     environment:
-      - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
+      - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF -DGEOSERVER_CSRF_WHITELIST=georchestra-127-0-0-1.nip.io
       - XMS=256M
       - XMX=8G
 
@@ -176,7 +106,7 @@ services:
       database:
         condition: service_healthy
     volumes:
-      - georchestra_datadir:/etc/georchestra
+      - ./config:/etc/georchestra
     environment:
       - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
       - XMS=256M
@@ -203,7 +133,7 @@ services:
       elasticsearch:
         condition: service_healthy
     volumes:
-      - georchestra_datadir:/etc/georchestra
+      - ./config:/etc/georchestra
       - geonetwork_datadir:/mnt/geonetwork_datadir
     environment:
       - JAVA_OPTIONS=-Duser.home=/tmp/jetty -Dgeorchestra.datadir=/etc/georchestra -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005 -Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
@@ -222,13 +152,12 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
     env_file:
       - .envs-database-datafeeder
     volumes:
       - datafeeder_postgis_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
     restart: no
 
   elasticsearch:
@@ -244,9 +173,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
     environment:
       discovery.type: single-node
       ES_JAVA_OPTS: -Xms512m -Xmx512m

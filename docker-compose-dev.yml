@@ -23,7 +23,7 @@ services:
       - ./backend:/app
       - ./config/:/etc/maelstro/:ro
     environment:
-      MAELSTRO_CONFIG: /app/dev_config.yaml
+      MAELSTRO_CONFIG: /etc/maelstro/config.yaml
       DEBUG: true
     ports:
       - 8000:8000 # Used for frontend development

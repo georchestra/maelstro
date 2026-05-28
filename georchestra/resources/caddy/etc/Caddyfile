@@ -30,26 +30,12 @@
         import static_fileserver
     }
 
-    handle /cas/* {
-        reverse_proxy cas:8080
-    }
-
-    handle /webmail/* {
-        reverse_proxy webmail:80
-    }
-
     # To be removed once import container support automatic redirection.
     handle /import {
         redir /import /import/
     }
 
     handle {
-        reverse_proxy proxy:8080
-        header {
-            Access-Control-Allow-Origin *
-            Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            Access-Control-Max-Age 1800
-            Access-Control-Allow-Credentials: true
-        }
+        reverse_proxy gateway:8080
     }
 }
