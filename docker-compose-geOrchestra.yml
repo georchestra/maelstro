@@ -10,24 +10,18 @@ services:
       file: docker-compose-solo.yml
       service: maelstro-front
     volumes:
-      - georchestra_datadir:/etc/georchestra
+      - ./georchestra/config:/etc/georchestra
     ports: []
     environment:
       CUSTOM_SCRIPTS_DIRECTORY: /etc/georchestra/maelstro/scripts
       MAELSTRO_BACK_HOST: maelstro-back
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
 
   maelstro-back:
     extends:
       file: docker-compose-solo.yml
       service: maelstro-back
     volumes:
-      - georchestra_datadir:/etc/georchestra
-    depends_on:
-      envsubst:
-        condition: service_completed_successfully
+      - ./georchestra/config:/etc/georchestra
     environment:
       MAELSTRO_CONFIG: /etc/georchestra/maelstro/config.yaml
       DEMO_LOGIN: testadmin
