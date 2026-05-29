@@ -471,19 +471,23 @@ class CopyManager:
             raise_for_status(dst_style_def)
 
     def remove_attributes_element(self, xml_content: str) -> bytes:
-        proc = PySaxonProcessor(license=False)
-        root = proc.parse_xml(xml_text=xml_content)
-        xpath = proc.new_xpath_processor()
-        xpath.set_context(xdm_item=root)
+        with PySaxonProcessor(license=False) as proc:
+            root = proc.parse_xml(xml_text=xml_content)
 
-        attributes = xpath.evaluate_single("/*/attributes")
+            xpath = proc.new_xpath_processor()
+            xpath.set_context(xdm_item=root)
+            attributes = xpath.evaluate_single("/*/attributes")
+            output = str(root.to_string())
 
-        output: str
-        if attributes is not None:
-            output = xpath.evaluate_single(
-                "serialize(/* /node() except /*/attributes)"
-            ).string_value
+            if attributes is not None:
+                xslt = """<xsl:stylesheet version="3.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                    <xsl:mode on-no-match="shallow-copy"/>
+                    <xsl:template match="/*/attributes"/>
+                </xsl:stylesheet>"""
+
+                xslt_proc = proc.new_xslt30_processor()
+                executable = xslt_proc.compile_stylesheet(stylesheet_text=xslt)
+
+                output = executable.transform_to_string(xdm_node=root)
+
             return output.encode("utf-8")
-
-        output = root.to_string()
-        return output.encode("utf-8")
