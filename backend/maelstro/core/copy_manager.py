@@ -438,10 +438,16 @@ class CopyManager:
             resp = gs_src.rest_client.get(style_route)
             raise_for_status(resp)
             style_info = resp.json()
-            style_format = style_info["style"]["format"]
+            # differentiation of the style version :
+            # https://docs-archive.geoserver.org/stable/en/user/rest/api/styles.html#styles-post-and-put
+            if style_info["style"].get("languageVersion", {}).get("version") == "1.1.0":
+                style_format = "htlm"
+                headers = {"Accept": "application/vnd.ogc.se+xml"}
+            else:
+                style_format = style_info["style"]["format"]
+                headers = {"Accept": "application/vnd.ogc.sld+xml"}
             style_def_route = style_route.replace(".json", f".{style_format}")
-            style_def = gs_src.rest_client.get(style_def_route)
-
+            style_def = gs_src.rest_client.get(style_def_route, headers=headers)
             dst_style = self.gs_dst.rest_client.get(style_route)
             if dst_style.status_code == 200:
                 dst_style = self.gs_dst.rest_client.put(style_route, json=style_info)
@@ -465,19 +471,23 @@ class CopyManager:
             raise_for_status(dst_style_def)
 
     def remove_attributes_element(self, xml_content: str) -> bytes:
-        proc = PySaxonProcessor(license=False)
-        root = proc.parse_xml(xml_text=xml_content)
-        xpath = proc.new_xpath_processor()
-        xpath.set_context(xdm_item=root)
+        with PySaxonProcessor(license=False) as proc:
+            root = proc.parse_xml(xml_text=xml_content)
 
-        attributes = xpath.evaluate_single("/*/attributes")
+            xpath = proc.new_xpath_processor()
+            xpath.set_context(xdm_item=root)
+            attributes = xpath.evaluate_single("/*/attributes")
+            output = str(root.to_string())
 
-        output: str
-        if attributes is not None:
-            output = xpath.evaluate_single(
-                "serialize(/* /node() except /*/attributes)"
-            ).string_value
+            if attributes is not None:
+                xslt = """<xsl:stylesheet version="3.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                    <xsl:mode on-no-match="shallow-copy"/>
+                    <xsl:template match="/*/attributes"/>
+                </xsl:stylesheet>"""
+
+                xslt_proc = proc.new_xslt30_processor()
+                executable = xslt_proc.compile_stylesheet(stylesheet_text=xslt)
+
+                output = executable.transform_to_string(xdm_node=root)
+
             return output.encode("utf-8")
-
-        output = root.to_string()
-        return output.encode("utf-8")
