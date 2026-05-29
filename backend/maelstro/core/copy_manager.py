@@ -440,14 +440,14 @@ class CopyManager:
             style_info = resp.json()
             # differentiation of the style version :
             # https://docs-archive.geoserver.org/stable/en/user/rest/api/styles.html#styles-post-and-put
-            if style_info["style"]["languageVersion"]["version"] == "1.1.0":
+            if style_info["style"].get("languageVersion", {}).get("version") == "1.1.0":
                 style_format = "htlm"
-                header = {"Accept": "application/vnd.ogc.se+xml"}
+                headers = {"Accept": "application/vnd.ogc.se+xml"}
             else:
                 style_format = style_info["style"]["format"]
-                header = {"Accept": "application/vnd.ogc.sld+xml"}
+                headers = {"Accept": "application/vnd.ogc.sld+xml"}
             style_def_route = style_route.replace(".json", f".{style_format}")
-            style_def = gs_src.rest_client.get(style_def_route, headers=header)
+            style_def = gs_src.rest_client.get(style_def_route, headers=headers)
             dst_style = self.gs_dst.rest_client.get(style_route)
             if dst_style.status_code == 200:
                 dst_style = self.gs_dst.rest_client.put(style_route, json=style_info)
