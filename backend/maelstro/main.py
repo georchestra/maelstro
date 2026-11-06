@@ -142,7 +142,7 @@ def check_config(
                 "a test connection to each server"
             )
         ),
-    ] = True
+    ] = True,
 ) -> dict[str, bool]:
     """
     This entrypoint is meant to validate the configuration.
