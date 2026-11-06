@@ -4,32 +4,15 @@ hide:
   - toc
 ---
 
-# Home
+# Maelstro
 
-## What is Maelstro?
+Maelstro synchronizes datasets from a source GeoNetwork catalog to a configured
+destination. A synchronization can include metadata, linked GeoServer layers, and
+styles. Optional XSL transformations can be applied to metadata.
 
-Maelstro is a software tool that synchronizes:
+The application has a Vue.js web interface and a FastAPI backend. It can run
+standalone or alongside geOrchestra.
 
-* Metadata (managed by GeoNetwork)
-* Layers and styles (managed by GeoServer)
-* From a source platform to a destination platform:
-  dev → preprod, preprod → prod
-
-
-## Features
-
-* Integrates alongside a geOrchestra setup or as a standalone tool
-* Single source: Search within the GeoNetwork catalog
-* Search for harvested or non-harvested metadata
-* Select destination(s) (multiple options possible)
-* Independent synchronization of metadata, GeoServer layers, and GeoServer styles
-* Apply XSL transformations (v1 only) based on source and/or destination
-* View log files and synchronization history
-* Highly scriptable via its API
-
-
-## Technologies
-
-* A "front-end" built with VueJS, providing a simple interface for selecting datasets to synchronize
-* A "back-end" in Python/FastAPI, offering an API
-
+- [Get started](user_guide/getting_started.md)
+- [Install and configure](technical_guides/installation/index.md)
+- [API reference](technical_guides/contribute/api.md)

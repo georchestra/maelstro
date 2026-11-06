@@ -1,14 +1,9 @@
-# Table of Contents
+# Administration
 
-Table of Contents for the Administration Section
+Maelstro has no separate data-management console. Administrators maintain the
+server-side YAML configuration, ensure destination GeoServer workspaces and
+datastores exist, and manage access through their deployment's authentication
+system.
 
-This section of the documentation is dedicated to content administration:
-
-- Data Management
-- Data Updates
-- User Management
-- ...
-
-Place images in the `images` directory.
-
-![Data Management](images/gestion_donnees.jpg)
+For geOrchestra roles, proxy routes, and header setup, see
+[`config/HOWTO.md`](../../../config/HOWTO.md).

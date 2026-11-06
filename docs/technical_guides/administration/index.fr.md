@@ -1,24 +1,9 @@
-# Sommaire
+# Administration
 
+Maelstro ne possède pas de console distincte d'administration des données. Les
+administrateurs maintiennent la configuration YAML côté serveur, vérifient que
+les espaces de travail et entrepôts GeoServer requis existent et gèrent les
+accès avec le système d'authentification du déploiement.
 
-Sommaire de la partie Administrer
-
-Cette partie de la documentation est dédiée à l'administration du contenu:
-
-
--  gestion des données
--  mise à jour des données
--  gestion des utilisateurs
--  ...
-
-
-Mettre les images dans le répertoire `images`.
-
-
-![](images/gestion_donnees.jpg)
-
-
-
-
-
-
+Pour les rôles geOrchestra, les routes du proxy et l'en-tête, consultez
+[`config/HOWTO.md`](../../../config/HOWTO.md).

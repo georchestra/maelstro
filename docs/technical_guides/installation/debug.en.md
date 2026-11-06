@@ -1,13 +1,11 @@
-# Debugging
+# Troubleshooting and logs
 
-## Debugging
+- Check that the backend is responding at `/maelstro-backend/health`.
+- Open `/maelstro-backend/docs` for the interactive FastAPI API reference.
+- Inspect the backend container logs with `docker compose logs maelstro-back`.
+- Check the configured source/destination URLs and credentials in the YAML
+  configuration.
 
-How to obtain debugging information (additional information in the console)?
-
-## Logging
-
-How are logs constructed?
-
-Where are they stored by default (or sent remotely)?
-
-How to modify the location/remote target?
+Synchronization history is stored in PostgreSQL when `db_logging` is
+configured. The `/logs` API returns an error when database logging is not set
+up.
