@@ -1,16 +1,11 @@
-# Table of Contents
+# Development
 
-Table of Contents for the "Develop" Section
+The frontend is in `frontend/` (Vue.js, Vite, TypeScript); the backend is in
+`backend/` (Python, FastAPI). The backend API is documented by FastAPI's
+interactive interface at `/maelstro-backend/docs`.
 
-![Develop](images/developper.jpg)
+- [API overview](api.md)
+- [Feature summary](feature_matrix.md)
 
-Here's what is expected for documentation in this section:
-
-- Describe the separation between the client and server parts.
-- Provide URLs to the APIs.
-- Describe the methods of the APIs (unless Swagger is integrated).
-- Feature matrix.
-
-If possible and relevant: document the creation or use of a development template using the component.
-
-Images are stored in the `images` directory.
+The root [README](../../../README.md) includes local development and test
+commands.

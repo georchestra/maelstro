@@ -1,7 +1,8 @@
-# Global Overview
+# Main screens
 
-An overview of the page that appears when the product is opened, with boxes or numbers indicating and naming the different tools described in the various sections.
+Maelstro provides two main views:
 
-Example of Mapstore2 global overview:
-
-![](images/00_vue_globale.png)
+- **Synchronization**: search the configured source catalog, choose a
+  destination and copy options, then preview and run a copy.
+- **Logs**: browse previous synchronization runs, page through results, and
+  expand a run to inspect its operations.

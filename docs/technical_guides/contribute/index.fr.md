@@ -1,17 +1,11 @@
-# Sommaire
+# Développement
 
-Sommaire de la partie "Développer"
+Le frontend se trouve dans `frontend/` (Vue.js, Vite et TypeScript) et le
+backend dans `backend/` (Python et FastAPI). L'interface interactive de l'API
+est disponible à `/maelstro-backend/docs`.
 
-![](images/developper.jpg)
+- [Présentation de l'API](api.md)
+- [Résumé des fonctionnalités](feature_matrix.md)
 
-Voici ce qui est attendu comme documentation pour cette partie :
-
-- décrire la séparation entre la partie client et la partie serveur
-- donner les URL vers les API
-- décrire les méthodes des API (sauf si swagger intégré)
-- matrice des fonctionnalités
-
-Si cela est possible et pertinent : documenter la création ou l'utilisation d'un modèle (template) de développement utilisant le composant.
-
-
-Les images sont stokées dans le répertoire `images`.
+Le [README](../../../README.md) décrit les commandes de développement local et
+de test.

@@ -1,21 +1,13 @@
-# Table of Contents
+# Installation and configuration
 
-Table of Contents for the "Install" Section
+Maelstro can run as a standalone Docker Compose application or as part of a
+geOrchestra deployment.
 
-
-
-## [Presentation](presentation.md#presentation)
-### [Component Architecture](presentation.md#component-architecture)
-### [Recommendation](presentation.md#recommendation)
-## [Prerequisites](prerequisites.md#prerequis)
-### [Hardware](prerequisites.md#materiel)
-### [Software](prerequisites.md#logiciel)
-## [Preparation](preparation.md#preparation)
-## [Installation](installation.md#installation)
-## [Configuration](configuration.md#configuration)
-## [Debugging](debug.md#debug)
-### [Debugging](debug.md#debug_1)
-### [Logging](debug.md#log)
-## [Testing](tests.md#tests)
-
+- [Architecture](presentation.md)
+- [Prerequisites](prerequisites.md)
+- [Prepare a deployment](preparation.md)
+- [Run Maelstro](installation.md)
+- [Configure servers and logging](configuration.md)
+- [Troubleshooting](debug.md)
+- [Health checks and tests](tests.md)
 

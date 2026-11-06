@@ -1,6 +1,12 @@
-# Toolbar or Menu
+# Synchronization options
 
-Introduction to a first set of tools, often accompanied by screenshots to guide the user effectively.
-Images are stored in the `images` directory.
+The synchronization form lets you:
 
-Depending on the product, there may be a page for each group of tools, with sub-levels if necessary.
+- Search the configured GeoNetwork source, optionally including harvested
+  datasets.
+- Select a configured destination.
+- Independently include or exclude metadata, linked GeoServer layers, and their
+  styles.
+
+Submit the form to preview the resources and operations before confirming the
+copy. The available options depend on the dataset and configured servers.

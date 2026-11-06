@@ -1,21 +1,11 @@
-# Sommaire
+# Installation et configuration
 
+Maelstro peut être déployé seul avec Docker Compose ou intégré à geOrchestra.
 
-Sommaire de la partie Installer
-
-
-
-## [Présentation](presentation.md#presentation)
-### [Architecture composant](presentation.md#architecture-composant)
-### [Recommandation](presentation.md#recommandation)
-## [Prérequis](prerequisites.md#prerequis)
-### [Matériel](prerequisites.md#materiel)
-### [Logiciel](prerequisites.md#logiciel)
-## [Préparation](preparation.md#preparation)
-## [Installation](installation.md#installation)
-## [Configuration](configuration.md#configuration)
-## [Debug](debug.md#debug)
-### [Debug](debug.md#debug_1)
-### [Log](debug.md#log)
-## [Tests](tests.md#tests)
-
+- [Architecture](presentation.md)
+- [Prérequis](prerequisites.md)
+- [Préparer le déploiement](preparation.md)
+- [Lancer Maelstro](installation.md)
+- [Configurer les serveurs et les journaux](configuration.md)
+- [Dépannage](debug.md)
+- [Vérifications et tests](tests.md)

@@ -1,9 +1,8 @@
 # Prerequisites
 
-## Hardware
+For a Docker Compose deployment, install Docker Engine with the Compose plugin.
+The deployment must be able to reach the configured GeoNetwork and GeoServer
+instances.
 
-5 GB RAM, 2 CPUs, 10 GB disk space, etc.
-
-## Software
-
-List the dependencies on libraries or software.
+For local development, use Python 3.12 or newer for the backend and Node.js
+matching the version in `frontend/.nvmrc` for the frontend.
