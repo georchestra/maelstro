@@ -29,6 +29,16 @@ RUN chown -R appuser:appgroup /app
 
 USER appuser
 
+# OCI image labels (https://github.com/opencontainers/image-spec/blob/main/annotations.md)
+LABEL org.opencontainers.image.title="Maelstro backend"
+LABEL org.opencontainers.image.description="Maelstro backend module for the geOrchestra SDI"
+LABEL org.opencontainers.image.authors="geOrchestra"
+LABEL org.opencontainers.image.vendor="geOrchestra"
+LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
+LABEL org.opencontainers.image.url="https://github.com/georchestra/maelstro"
+LABEL org.opencontainers.image.documentation="https://docs.georchestra.org/"
+LABEL org.opencontainers.image.source="https://github.com/georchestra/maelstro"
+
 CMD ["serve_prod"]
 
 FROM server AS check
