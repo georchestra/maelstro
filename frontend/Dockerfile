@@ -1,6 +1,6 @@
 # Inspired from https://cli.vuejs.org/guide/deployment.html#docker-nginx
 
-FROM node:22 AS builder
+FROM node:24 AS builder
 
 WORKDIR /app
 
