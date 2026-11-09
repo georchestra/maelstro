@@ -8,7 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12, <4.0"
 dependencies = [
-    "fastapi[standard] (>=0.115.6,<0.116.0)",
+    "fastapi[standard] (>=0.162.2,<0.163.0)",
     "requests (>=2.32.3,<3.0.0)",
     "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
     "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@b3a1efbe2c036fce8e44042b62b3844b805dc939",
