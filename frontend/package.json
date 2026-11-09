@@ -15,6 +15,7 @@
     "vue-i18n-extract": "vue-i18n-extract report --add --remove --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/locales/*.?(json|yml|yaml|js)'"
   },
   "dependencies": {
+    "@primeuix/styles": "^1.2.5",
     "@primevue/forms": "^4.2.5",
     "@primevue/themes": "^4.2.5",
     "pinia": "^2.3.1",
