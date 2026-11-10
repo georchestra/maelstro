@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: build
         run: docker compose -f docker-compose-dev.yml build check
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Front Build and Tests
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Use Node.js 24
         uses: actions/setup-node@v3
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Docker images
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Getting image tag
         if: github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]'
