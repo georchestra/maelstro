@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@primeuix/styles": "^1.2.5",
-    "@primevue/forms": "^4.2.5",
+    "@primevue/forms": "^5.0.0",
     "@primevue/themes": "^4.2.5",
     "pinia": "^2.3.1",
     "primeicons": "^7.0.0",
