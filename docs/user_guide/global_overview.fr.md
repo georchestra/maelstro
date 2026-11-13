@@ -1,8 +1,8 @@
-# Vue globale
+# Écrans principaux
 
-Vue globale de la page qui apparaît lorsque l'on ouvre le produit, avec encards ou numéros localisant et nommant les différents outils décrits dans les différentes parties.
+Maelstro propose deux vues principales :
 
-Exemple de vue globale Mapstore2 :
-
-![](images/00_vue_globale.png)
-
+- **Synchronisation** : rechercher dans le catalogue source, choisir une
+  destination et les éléments à copier, puis prévisualiser et lancer la copie.
+- **Journaux** : parcourir les synchronisations précédentes, paginer les
+  résultats et développer une exécution pour consulter ses opérations.
