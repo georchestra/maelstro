@@ -1,5 +1,10 @@
 site_name: maelstro
 
+# Required for the language switcher to work on ReadTheDocs (schema /<language>/<version>/<filename>).
+# Keep the trailing slash. When reusing the template, replace it with the URL of your project
+# (e.g. https://docs.georchestra.org/<project>/en/latest/).
+site_url: https://georchestra-documentation.readthedocs.io/en/latest/
+
 repo_url: https://github.com/georchestra/maelstro
 repo_name: maelstro
 
@@ -38,7 +43,7 @@ extra:
       link: https://matrix.to/#/#georchestra:osgeo.org
 
 
-copyright: '© 2025 - geOrchestra'
+copyright: '© 2026 - geOrchestra'
 
 extra_css:
     - css/extra.css
