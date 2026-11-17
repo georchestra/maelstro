@@ -63,7 +63,7 @@ nav:
             - technical_guides/installation/preparation.md
             - technical_guides/installation/configuration.md
         - API:
-            - technical_guides/api.md
+            - technical_guides/api/index.md
 
 markdown_extensions:
   - admonition
