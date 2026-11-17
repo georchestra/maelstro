@@ -15,6 +15,7 @@ EMPTY_CONFIG: dict[str, Any] = {
     "sources": {
         "geonetwork_instances": [],
         "geoserver_instances": [],
+        "datafeeder_instances": [],
     },
     "destinations": {},
 }
@@ -46,6 +47,9 @@ class Config:
         for gs_instance in self.config["sources"]["geoserver_instances"]:
             substitute_single_credentials_from_env(gs_instance, common_credentials)
 
+        for df_instance in self.config["sources"].get("datafeeder_instances", []):
+            substitute_single_credentials_from_env(df_instance, common_credentials)
+
         for geor_instance in self.config["destinations"].values():
             common_credentials = substitute_single_credentials_from_env(geor_instance)
 
@@ -55,6 +59,34 @@ class Config:
             substitute_single_credentials_from_env(
                 geor_instance["geoserver"], common_credentials
             )
+            if geor_instance.get("datafeeder"):
+                substitute_single_credentials_from_env(
+                    geor_instance["datafeeder"], common_credentials
+                )
+
+    def get_datafeeder_access_info(
+        self, is_src: bool, instance_id: str
+    ) -> dict[str, Any] | None:
+        if is_src:
+            instance = next(
+                (
+                    item
+                    for item in self.config["sources"].get("datafeeder_instances", [])
+                    if item["name"] == instance_id
+                ),
+                None,
+            )
+        else:
+            destination = self.config["destinations"].get(instance_id)
+            instance = destination and destination.get("datafeeder")
+        if instance is None:
+            return None
+        login, password = instance.get("login"), instance.get("password")
+        return {
+            "url": instance["url"].rstrip("/"),
+            "auth": Credentials(login, password) if login and password else None,
+            "verifytls": instance.get("verify", True),
+        }
 
     def get_gn_sources(self) -> list[SourcesResponseElement]:
         return [
@@ -178,7 +210,12 @@ def substitute_single_credentials_from_env(
     if current_password is not None:
         server_instance["password"] = check_for_env(current_password)
 
-    # en support for db
+    for url_key in ("url", "api_url"):
+        current_url = check_for_env(server_instance.get(url_key))
+        if current_url is not None:
+            server_instance[url_key] = current_url
+
+    # Environment support for database settings.
     current_host = check_for_env(server_instance.get("host"))
     if current_host is not None:
         server_instance["host"] = current_host

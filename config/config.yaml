@@ -9,6 +9,11 @@ sources:
     - url: "https://demo.georchestra.org/geoserver"
       login: "testadmin"
       password: "testadmin"
+  datafeeder_instances:
+    - name: "demogeOrchestra"
+      url: "https://demo.georchestra.org/datafeeder-backend"
+      login: "testadmin"
+      password: "testadmin"
 
 
 destinations:
@@ -23,6 +28,10 @@ destinations:
       password: "${LOCAL_PASSWORD}"
     geoserver:
       url: "http://gateway:8080/geoserver"
+      login: "${LOCAL_LOGIN}"
+      password: "${LOCAL_PASSWORD}"
+    datafeeder:
+      url: "http://gateway:8080/datafeeder-backend"
       login: "${LOCAL_LOGIN}"
       password: "${LOCAL_PASSWORD}"
 

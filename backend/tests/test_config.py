@@ -1,6 +1,7 @@
 import os
 import pytest
 from maelstro.config import Config, ConfigError
+from maelstro.config.config import substitute_single_credentials_from_env
 from maelstro.common.types import Credentials, DbConfig
 
 
@@ -91,6 +92,15 @@ def test_subst_env():
     conf.config["sources"]["geonetwork_instances"][0]["password"] == "demo"
     conf.config["destinations"]["CompoLocale"]["geonetwork"]["login"] == "test"
     conf.config["destinations"]["CompoLocale"]["geonetwork"]["password"] == "test"
+
+
+def test_subst_url_from_env():
+    os.environ["SERVICE_URL"] = "https://destination.example/api"
+    instance = {"url": "${SERVICE_URL}"}
+
+    substitute_single_credentials_from_env(instance)
+
+    assert instance["url"] == "https://destination.example/api"
 
 
 def test_subst_env_db():
