@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: build
         run: docker compose -f docker-compose-dev.yml build check
@@ -24,12 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     name: Front Build and Tests
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Use Node.js 24
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Docker images
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Getting image tag
         if: github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]'
@@ -83,7 +83,7 @@ jobs:
 
       - name: "Update Docker Hub Back Description"
         if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
-        uses: peter-evans/dockerhub-description@v3
+        uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
@@ -93,7 +93,7 @@ jobs:
 
       - name: "Update Docker Hub Front Description"
         if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/maelstro' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
-        uses: peter-evans/dockerhub-description@v3
+        uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
