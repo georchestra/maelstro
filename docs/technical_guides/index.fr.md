@@ -1,7 +1,5 @@
-# Index des guides techniques
+# Guides techniques
 
-## Sommaire
-
-sommaire
-
-
+- [Installation et configuration](installation/index.md)
+- [Administration](administration/index.md)
+- [Développement et API](contribute/index.md)

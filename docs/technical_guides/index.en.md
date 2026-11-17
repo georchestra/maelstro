@@ -1,5 +1,5 @@
-# Technical Guides Index
+# Technical guides
 
-## Table of Contents
-
-Table of contents.
+- [Installation and configuration](installation/index.md)
+- [Administration](administration/index.md)
+- [Development and API](contribute/index.md)

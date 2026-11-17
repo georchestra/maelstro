@@ -1,5 +1,10 @@
 site_name: maelstro
 
+# Required for the language switcher to work on ReadTheDocs (schema /<language>/<version>/<filename>).
+# Keep the trailing slash. When reusing the template, replace it with the URL of your project
+# (e.g. https://docs.georchestra.org/<project>/en/latest/).
+site_url: https://georchestra-documentation.readthedocs.io/en/latest/
+
 repo_url: https://github.com/georchestra/maelstro
 repo_name: maelstro
 
@@ -8,7 +13,7 @@ edit_uri: edit/main/docs/
 
 
 theme:
-  language: en 
+  language: en
   features:
     # - toc.integrate
     - navigation.indexes
@@ -51,31 +56,19 @@ extra_javascript:
 # Here do not put .fr or .en in the name of the markdown: the i18n plugin manage this for you
 
 nav:
-    - Home: index.md 
+    - Home: index.md
     - User guide:
         - Index: user_guide/index.md
         - Getting started: user_guide/getting_started.md
-        - Global overview: user_guide/global_overview.md
-        - Menus and toolbars: user_guide/tools.md
-        - Syntax help: user_guide/syntax_help.md
     - Technical guides:
         - Index: technical_guides/index.md
-        - Administration:
-            - technical_guides/administration/index.md
-            - technical_guides/administration/one_page.md
         - Installation:
             - technical_guides/installation/index.md
-            - technical_guides/installation/presentation.md
             - technical_guides/installation/prerequisites.md
             - technical_guides/installation/preparation.md
-            - technical_guides/installation/installation.md
             - technical_guides/installation/configuration.md
-            - technical_guides/installation/debug.md
-            - technical_guides/installation/tests.md
-        - Contribute:
-            - technical_guides/contribute/index.md
-            - technical_guides/contribute/feature_matrix.md
-            - technical_guides/contribute/api.md
+        - API:
+            - technical_guides/api/index.md
 
 markdown_extensions:
   - admonition
@@ -130,4 +123,3 @@ plugins:
 
   - git-revision-date-localized:
       enable_creation_date: true
-
