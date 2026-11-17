@@ -267,9 +267,14 @@ def get_copy_preview(
             description="Enable copying styles of linked layers to destination Geoserver"
         ),
     ] = True,
+    copy_data: Annotated[
+        bool, Query(description="Copy the dataset managed by Datafeeder")
+    ] = False,
 ) -> CopyPreview:
+    if copy_data:
+        copy_meta = True
     copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
-    return copy_mgr.copy_preview(copy_meta, copy_layers, copy_styles)
+    return copy_mgr.copy_preview(copy_meta, copy_layers, copy_styles, copy_data)
 
 
 @app.put(
@@ -317,6 +322,9 @@ def put_dataset_copy(
             description="Enable copying styles of linked layers to destination Geoserver"
         ),
     ] = True,
+    copy_data: Annotated[
+        bool, Query(description="Copy the dataset managed by Datafeeder")
+    ] = False,
     accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
 ) -> DetailedResponse | PlainTextResponse:
     """
@@ -331,8 +339,10 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
+    if copy_data:
+        copy_meta = True
     copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
-    success = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles)
+    success = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles, copy_data)
     operations = request.state.geo_handler.log_handler.get_json_responses()
     log_request_to_db(
         200,
