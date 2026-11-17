@@ -5,5 +5,3 @@ source, de prévisualiser les ressources à copier, puis de les synchroniser ver
 une destination configurée.
 
 - [Prise en main](getting_started.md)
-- [Écrans principaux](global_overview.md)
-- [Options de synchronisation](tools.md)
