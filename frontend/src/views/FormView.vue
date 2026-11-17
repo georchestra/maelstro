@@ -296,7 +296,7 @@ const success = computed(
 
         <div class="mt-4 flex justify-between items-center">
           <Button :label="$t('Go back to form')" severity="secondary" @click.stop="backToForm" />
-          <ProgressSpinner v-if="isRunning" class="w-8 h-8" strokeWidth="8" fill="transparent" />
+          <ProgressSpinner v-if="isRunning" class="w-8 h-8" :strokeWidth="8" fill="transparent" />
           <Button :label="$t('Confirm')" @click.stop="confirm" :disabled="isRunning" />
         </div>
       </div>

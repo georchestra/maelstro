@@ -1,7 +1,6 @@
 from collections import namedtuple
 from dataclasses import dataclass
 
-
 Credentials = namedtuple("Credentials", ["login", "password"])
 
 GsLayer = namedtuple("GsLayer", ["workspace_name", "layer_name"])
