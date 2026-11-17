@@ -1,6 +1,6 @@
 ## Prerequisites
 
-- Configure User/password for all plateforme (read and write)
+- Configure User/password for all plateforme (read and write), this user need to have the role **ADMINISTRATOR** and **GN_EDITOR**
 - Configure source and destination URLs and credentials.
 - Ensure required workspaces and datastores exist on destination GeoServer
   instances.

@@ -1,6 +1,6 @@
 ## Prérequis
 
-- Configurer tous les utilisateurs/mots de passes sur toutes les plateformes (lecture/écriture)
+- Configurer tous les utilisateurs/mots de passes sur toutes les plateformes (lecture/écriture) avec les rôles :  **ADMINISTRATOR** et **GN_EDITOR**
 - Configurer les URL et identifiants des sources et destinations.
 - Vérifier l'existence des espaces de travail et entrepôts nécessaires sur les
   GeoServer de destination.
