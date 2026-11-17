@@ -57,22 +57,13 @@ nav:
         - Getting started: user_guide/getting_started.md
     - Technical guides:
         - Index: technical_guides/index.md
-        - Administration:
-            - technical_guides/administration/index.md
-            - technical_guides/administration/one_page.md
         - Installation:
             - technical_guides/installation/index.md
-            - technical_guides/installation/presentation.md
             - technical_guides/installation/prerequisites.md
             - technical_guides/installation/preparation.md
-            - technical_guides/installation/installation.md
             - technical_guides/installation/configuration.md
-            - technical_guides/installation/debug.md
-            - technical_guides/installation/tests.md
-        - Contribute:
-            - technical_guides/contribute/index.md
-            - technical_guides/contribute/feature_matrix.md
-            - technical_guides/contribute/api.md
+        - API:
+            - technical_guides/api.md
 
 markdown_extensions:
   - admonition

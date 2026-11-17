@@ -13,3 +13,16 @@ L'interface interactive de l'API est disponible à
 | `PUT /copy` | Copier les métadonnées, couches et styles sélectionnés |
 | `GET /logs` | Consulter l'historique des synchronisations |
 | `GET /health` | Vérifier la disponibilité du backend |
+
+
+# Développement
+
+Le frontend se trouve dans `frontend/` (Vue.js, Vite et TypeScript) et le
+backend dans `backend/` (Python et FastAPI). L'interface interactive de l'API
+est disponible à `/maelstro-backend/docs`.
+
+- [Présentation de l'API](api.md)
+- [Résumé des fonctionnalités](feature_matrix.md)
+
+Le [README](../../../README.md) décrit les commandes de développement local et
+de test.
