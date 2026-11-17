@@ -8,7 +8,7 @@ edit_uri: edit/main/docs/
 
 
 theme:
-  language: en 
+  language: en
   features:
     # - toc.integrate
     - navigation.indexes
@@ -51,13 +51,10 @@ extra_javascript:
 # Here do not put .fr or .en in the name of the markdown: the i18n plugin manage this for you
 
 nav:
-    - Home: index.md 
+    - Home: index.md
     - User guide:
         - Index: user_guide/index.md
         - Getting started: user_guide/getting_started.md
-        - Global overview: user_guide/global_overview.md
-        - Menus and toolbars: user_guide/tools.md
-        - Syntax help: user_guide/syntax_help.md
     - Technical guides:
         - Index: technical_guides/index.md
         - Administration:
@@ -130,4 +127,3 @@ plugins:
 
   - git-revision-date-localized:
       enable_creation_date: true
-
