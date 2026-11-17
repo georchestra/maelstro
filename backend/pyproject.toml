@@ -9,27 +9,27 @@ readme = "README.md"
 requires-python = ">=3.12, <4.0"
 dependencies = [
     "fastapi[standard] (>=0.162.2,<0.163.0)",
-    "requests (>=2.32.3,<3.0.0)",
-    "types-pyyaml (>=6.0.12.20241230,<7.0.0.0)",
+    "requests (>=2.34.2,<3.0.0)",
+    "types-pyyaml (>=6.0.12.20261103,<7.0.0.0)",
     "geonetwork @ git+https://github.com/camptocamp/python-geonetwork@b3a1efbe2c036fce8e44042b62b3844b805dc939",
-    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@6defa49bf959d91883ecd43ed1e2e976566e9495",
-    "sqlalchemy (>=2.0.37,<3.0.0)",
-    "psycopg2-binary (>=2.9.10,<3.0.0)",
-    "saxonche (>=12.9.0,<13.0.0)"
+    "geoservercloud @ git+https://github.com/camptocamp/python-geoservercloud@5ccdff446b0c59e10f68b2a43f3eb88264af72e8",
+    "sqlalchemy (>=2.1.1,<3.0.0)",
+    "psycopg2-binary (>=2.9.13,<3.0.0)",
+    "saxonche (>=13.1.1,<14.0.0)"
 ]
 
 [tool.poetry.group.check]
 optional = true
 
 [tool.poetry.group.check.dependencies]
-mypy=">=1.14.1,<2.0.0"
-types-requests=">=2.32.0.20241016,<3.0.0.0"
+mypy=">=2.4.1,<3.0.0"
+types-requests=">=2.33.0.20261030,<3.0.0.0"
 pylint=">=4.1.3,<4.2.0"
-pyflakes=">=3.2.0,<4.0.0"
+pyflakes=">=4.1.0,<5.0.0"
 black=">=26.10.1,<26.11.0"
-pytest = "^9.0.0"
+pytest = "^9.1.1"
 requests_mock = "^1.12.1"
-pytest-cov = "^6.0.0"
+pytest-cov = "^7.1.0"
 
 [tool.poetry.scripts]
 health_check = "maelstro.scripts.health_check:check"

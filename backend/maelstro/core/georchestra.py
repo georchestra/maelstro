@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import json
+import logging
 from typing import Any, Iterator
 from geonetwork import GnApi
 from geonetwork.gn_logger import logger as gn_logger
@@ -9,6 +10,8 @@ from geoservercloud.services.restlogger import gs_logger as gs_logger  # type: i
 from maelstro.config import ConfigError, app_config as config
 from .operations import LogCollectionHandler
 from maelstro.common.exceptions import ParamError, AuthError
+
+gs_logger.setLevel(logging.INFO)
 
 
 class GeorchestraHandler:

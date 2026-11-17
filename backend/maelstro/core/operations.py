@@ -58,7 +58,7 @@ class LogCollectionHandler(Handler):
             record_class = ApiRecord
             if record.name == "GN Session":
                 record_class = GnApiRecord
-            elif record.name == "GS Session":
+            elif record.name in {"GS Session", "geoservercloud"}:
                 record_class = GsApiRecord
 
             api_record = record_class(
@@ -71,7 +71,7 @@ class LogCollectionHandler(Handler):
         except AttributeError:
             self.responses.append(
                 InfoRecord(
-                    message=record.message,
+                    message=record.getMessage(),
                     detail={"src": "generic logger"},
                 )
             )
