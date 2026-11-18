@@ -98,6 +98,9 @@ def log_request_to_db(
             except:
                 # ignore if errors
                 pass
+        else:
+            # last resort if sec-user is not enable in gateway config
+            firstname = request.headers.get("sec-username")
 
     record = {
         "start_time": properties.get("start_time"),
