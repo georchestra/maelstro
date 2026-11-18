@@ -57,7 +57,7 @@ class CopyManager:
         include_meta: bool,
         include_layers: bool,
         include_styles: bool,
-        copy_data: bool = False,
+        include_datafeeder: bool = False,
     ) -> CopyPreview:
         self.include_meta = include_meta
         self.include_layers = include_layers
@@ -123,7 +123,7 @@ class CopyManager:
                     }
                 )
 
-        if copy_data:
+        if include_datafeeder:
             preview["datafeeder"] = DatafeederManager(
                 self.src_name, self.dst_name, self.geo_hnd.log_handler
             ).preview(self.uuid)[0]
@@ -135,7 +135,7 @@ class CopyManager:
         include_meta: bool,
         include_layers: bool,
         include_styles: bool,
-        copy_data: bool = False,
+        include_datafeeder: bool = False,
     ) -> str:
         self.include_meta = include_meta
         self.include_layers = include_layers
@@ -206,7 +206,7 @@ class CopyManager:
             summary = f"{results['msg']} ({uuid})"
         else:
             summary = "copy_successful"
-        if copy_data:
+        if include_datafeeder:
             datafeeder_summary = DatafeederManager(
                 self.src_name, self.dst_name, self.geo_hnd.log_handler
             ).copy(self.uuid)
