@@ -42,6 +42,8 @@ environment variables. Credentials should not be committed to the repository.
 The **Import with Datafeeder** toggle controls the `copy_data` option sent to
 the backend.
 
+- The toggle is shown only when the selected source has a matching entry in
+  `datafeeder_instances`.
 - Selecting another source dataset clears the previous Datafeeder result and
   disables `copy_data`.
 - While availability is being checked, the toggle is disabled.
@@ -53,10 +55,10 @@ the backend.
 - Disabling Datafeeder makes all three synchronization options editable again;
   they keep their current values.
 
-The current frontend uses a temporary Datafeeder discovery mock to control the
-initial visibility and availability message. The authoritative validation is
-performed by the backend during preview and copy. This mock must be replaced by
-backend configuration discovery before considering the UI integration final.
+The source configuration returned by the backend controls the toggle visibility.
+When a dataset is selected, the frontend asks Maelstro to query the configured
+source Datafeeder by metadata UUID. The result controls the availability message
+and whether the toggle can be enabled.
 
 ## Preview
 

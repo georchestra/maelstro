@@ -44,6 +44,8 @@ commités dans le dépôt.
 Le bouton **Import with Datafeeder** contrôle l'option `copy_data` envoyée au
 backend.
 
+- Le bouton est affiché uniquement lorsque la source sélectionnée possède une
+  entrée correspondante dans `datafeeder_instances`.
 - Le choix d'une autre métadonnée efface le résultat Datafeeder précédent et
   désactive `copy_data`.
 - Pendant la vérification de disponibilité, le bouton est désactivé.
@@ -54,11 +56,10 @@ backend.
 - Sa désactivation rend les trois options de synchronisation à nouveau
   modifiables ; leurs valeurs courantes sont conservées.
 
-Le frontend utilise actuellement un mock temporaire pour la découverte initiale
-de Datafeeder et le message de disponibilité. La validation de référence est
-réalisée par le backend pendant le preview et la copie. Ce mock devra être
-remplacé par la découverte de configuration du backend avant de considérer
-l'intégration UI comme finalisée.
+La configuration des sources renvoyée par le backend contrôle la visibilité du
+bouton. Lorsqu'un jeu de données est sélectionné, le frontend demande à Maelstro
+d'interroger le Datafeeder source configuré avec l'UUID de la métadonnée. Le
+résultat contrôle le message de disponibilité et l'activation du bouton.
 
 ## Preview
 
