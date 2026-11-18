@@ -15,13 +15,13 @@
     "vue-i18n-extract": "vue-i18n-extract report --add --remove --vueFiles './src/**/*.?(ts|vue)' --languageFiles './src/locales/*.?(json|yml|yaml|js)'"
   },
   "dependencies": {
-    "@primeuix/styles": "^3.0.0",
-    "@primevue/forms": "^5.0.0",
+    "@primeuix/styles": "2.0.3",
+    "@primevue/forms": "4.5.5",
     "@primevue/themes": "^4.2.5",
     "pinia": "^4.0.0",
-    "primeicons": "^8.0.0",
+    "primeicons": "7.0.0",
     "primelocale": "^2.0.0",
-    "primevue": "^5.0.0",
+    "primevue": "4.5.5",
     "vue": "^3.5.13",
     "vue-i18n": "^11.2.8",
     "vue-router": "^5.0.0"

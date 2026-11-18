@@ -3,5 +3,22 @@
   "extends": [
     "config:recommended",
     "group:all"
+  ],
+  "packageRules": [
+    {
+      "description": "Keep PrimeVue on MIT-licensed releases",
+      "matchPackageNames": ["primevue", "@primevue/forms"],
+      "allowedVersions": "<=4.5.5"
+    },
+    {
+      "description": "Keep PrimeUI styles on MIT-licensed releases",
+      "matchPackageNames": ["@primeuix/styles"],
+      "allowedVersions": "<=2.0.3"
+    },
+    {
+      "description": "Keep PrimeIcons on MIT-licensed releases",
+      "matchPackageNames": ["primeicons"],
+      "allowedVersions": "<=7.0.0"
+    }
   ]
 }
