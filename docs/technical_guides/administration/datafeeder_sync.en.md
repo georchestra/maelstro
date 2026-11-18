@@ -47,12 +47,11 @@ the backend.
 - While availability is being checked, the toggle is disabled.
 - The toggle remains disabled when the selected metadata UUID is not found in
   Datafeeder.
-- Enabling the toggle forces **Metadata** on and disables its toggle because a
-  Datafeeder import requires the metadata record.
-- Enabling it initially sets **Layers** and **Styles** off. Both toggles remain
-  editable, so the user can explicitly enable their legacy copy operations.
-- Disabling Datafeeder makes **Metadata** editable again. Layers and styles
-  keep their current values.
+- Enabling the toggle forces **Metadata**, **Layers** and **Styles** on and
+  disables all three toggles because every synchronization option is mandatory
+  for a Datafeeder import.
+- Disabling Datafeeder makes all three synchronization options editable again;
+  they keep their current values.
 
 The current frontend uses a temporary Datafeeder discovery mock to control the
 initial visibility and availability message. The authoritative validation is

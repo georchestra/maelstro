@@ -48,13 +48,11 @@ backend.
   désactive `copy_data`.
 - Pendant la vérification de disponibilité, le bouton est désactivé.
 - Il reste désactivé si l'UUID sélectionné n'est pas trouvé dans Datafeeder.
-- Son activation force **Metadata** et verrouille ce bouton, car l'import
-  Datafeeder nécessite la métadonnée.
-- Son activation positionne initialement **Layers** et **Styles** à off. Ces
-  deux boutons restent modifiables afin de permettre explicitement la copie
-  historique de ces ressources.
-- Sa désactivation rend **Metadata** de nouveau modifiable. Les valeurs de
-  Layers et Styles sont conservées.
+- Son activation force **Metadata**, **Layers** et **Styles** à on et verrouille
+  les trois boutons, car toutes les options de synchronisation sont obligatoires
+  pour un import Datafeeder.
+- Sa désactivation rend les trois options de synchronisation à nouveau
+  modifiables ; leurs valeurs courantes sont conservées.
 
 Le frontend utilise actuellement un mock temporaire pour la découverte initiale
 de Datafeeder et le message de disponibilité. La validation de référence est
