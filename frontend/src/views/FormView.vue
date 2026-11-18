@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import LogsReport from '@/components/LogsReport.vue'
-import {
-  datafeederService,
-  type DatafeederInstance,
-  type DatafeederIntegrityLink,
-} from '@/services/datafeeder.service'
+import { datafeederService, type DatafeederIntegrityLink } from '@/services/datafeeder.service'
 import type { SearchResult } from '@/services/geonetworkSearch.service'
 import {
   synchronizeService,
@@ -26,7 +22,7 @@ import {
   ToggleSwitch,
   type AutoCompleteCompleteEvent,
 } from 'primevue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const includeHarvested = ref(false)
@@ -47,13 +43,8 @@ const onComplete = (event: AutoCompleteCompleteEvent) => {
   }
 }
 const selectedDataset = ref<SearchResult | null>(null)
-const datafeederInstances = ref<DatafeederInstance[]>([])
 const datafeederIntegrityLink = ref<DatafeederIntegrityLink | null>(null)
 const checkingDatafeeder = ref(false)
-
-onMounted(async () => {
-  datafeederInstances.value = await datafeederService.getInstances()
-})
 
 const parameters = ref({
   src_name: source.value ? source.value.name : '',
@@ -65,17 +56,24 @@ const parameters = ref({
   dry_run: false,
 })
 
-watch(selectedDataset, async (dataset) => {
+const sourceHasDatafeeder = computed(
+  () => configStore.getSourceByName(parameters.value.src_name)?.has_datafeeder === true,
+)
+
+watch([selectedDataset, () => parameters.value.src_name], async ([dataset, sourceName]) => {
   parameters.value.copy_data = false
   datafeederIntegrityLink.value = null
 
-  if (!dataset?.uuid || datafeederInstances.value.length === 0) {
+  if (!dataset?.uuid || !sourceHasDatafeeder.value) {
     return
   }
 
   checkingDatafeeder.value = true
   try {
-    datafeederIntegrityLink.value = await datafeederService.findByMetadataUuid(dataset.uuid)
+    datafeederIntegrityLink.value = await datafeederService.findByMetadataUuid(
+      sourceName,
+      dataset.uuid,
+    )
   } finally {
     checkingDatafeeder.value = false
   }
@@ -289,7 +287,7 @@ const success = computed(
           />
         </FormField>
         <FormField
-          v-if="datafeederInstances.length > 0"
+          v-if="sourceHasDatafeeder"
           name="copy_data"
           class="flex gap-5 items-center"
         >

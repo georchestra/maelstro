@@ -8,7 +8,9 @@ import { nextTick } from 'vue'
 describe('FormView', () => {
   beforeEach(() => {
     const configStore = useConfigStore()
-    configStore.sources = [{ name: 'src', url: 'https://localhost/geonetwork/' }]
+    configStore.sources = [
+      { name: 'src', url: 'https://localhost/geonetwork/', has_datafeeder: true },
+    ]
     configStore.destinations = [
       {
         name: 'dest',
@@ -21,6 +23,15 @@ describe('FormView', () => {
   it('renders properly', () => {
     const wrapper = mount(FormView)
     expect(wrapper.text()).toContain('Synchronization of datasets between platforms')
+  })
+
+  it('hides the Datafeeder option when the source has no Datafeeder configuration', () => {
+    const configStore = useConfigStore()
+    configStore.sources[0].has_datafeeder = false
+
+    const wrapper = mount(FormView)
+
+    expect(wrapper.text()).not.toContain('Import with Datafeeder')
   })
 
   it('requires and locks all synchronization options when Datafeeder is enabled', async () => {

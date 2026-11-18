@@ -1,39 +1,22 @@
-export type DatafeederInstance = {
-  name: string
-  url: string
-}
-
 export type DatafeederIntegrityLink = {
-  metadataUuid: string
-  datafeederId: string
-  instance: string
-  status: string
+  configured: boolean
+  found: boolean
+  integrity_link_id: string | null
 }
-
-// Temporary frontend mock for the API contract planned in GSMEL-1349.
-// Replace these methods with Maelstro backend calls once they are available.
-const mockInstances: DatafeederInstance[] = [
-  {
-    name: 'Local Datafeeder',
-    url: '/datafeeder-backend',
-  },
-]
 
 export const datafeederService = {
-  async getInstances(): Promise<DatafeederInstance[]> {
-    return Promise.resolve(mockInstances)
-  },
-
-  async findByMetadataUuid(metadataUuid: string): Promise<DatafeederIntegrityLink | null> {
-    if (!metadataUuid || metadataUuid.startsWith('missing-')) {
-      return Promise.resolve(null)
+  async findByMetadataUuid(
+    sourceName: string,
+    metadataUuid: string,
+  ): Promise<DatafeederIntegrityLink | null> {
+    const response = await fetch(
+      `/maelstro-backend/sources/${encodeURIComponent(sourceName)}/datafeeder/${encodeURIComponent(metadataUuid)}`,
+    )
+    if (!response.ok) {
+      throw new Error(`Datafeeder lookup failed with HTTP ${response.status}`)
     }
 
-    return Promise.resolve({
-      metadataUuid,
-      datafeederId: `mock-${metadataUuid}`,
-      instance: mockInstances[0].name,
-      status: 'available',
-    })
+    const availability = (await response.json()) as DatafeederIntegrityLink
+    return availability.found ? availability : null
   },
 }
