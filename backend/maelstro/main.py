@@ -19,6 +19,7 @@ from fastapi.responses import PlainTextResponse
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CopyManager
+from maelstro.core.datafeeder import ADMIN_PATH, DatafeederClient
 from maelstro.middleware import setup_middleware
 from maelstro.logging.psql_logger import (
     setup_db_logging,
@@ -33,6 +34,7 @@ from maelstro.common.models import (
     UserResponse,
     user_response_description,
     SourcesResponseElement,
+    DatafeederAvailability,
     DestinationsResponseElement,
     RegisteredTransformation,
     LinkedLayer,
@@ -166,6 +168,36 @@ def get_sources() -> list[SourcesResponseElement]:
     List all the geonetwork source servers registered in the config file
     """
     return config.get_gn_sources()
+
+
+@app.get("/sources/{src_name}/datafeeder/{metadata_uuid}")
+def get_source_datafeeder_availability(
+    request: Request,
+    src_name: Annotated[str, Path(description="Name of the source platform")],
+    metadata_uuid: Annotated[
+        str, Path(description="UUID which references the dataset")
+    ],
+) -> DatafeederAvailability:
+    """Check whether a source metadata record is managed by Datafeeder."""
+    info = config.get_datafeeder_access_info(True, src_name)
+    if info is None:
+        return DatafeederAvailability(configured=False, found=False)
+
+    response = DatafeederClient(
+        info, request.state.geo_handler.log_handler
+    ).request(
+        "GET",
+        f"{ADMIN_PATH}/by-metadata/{metadata_uuid}",
+        allow_not_found=True,
+    )
+    if response.status_code == 404:
+        return DatafeederAvailability(configured=True, found=False)
+
+    return DatafeederAvailability(
+        configured=True,
+        found=True,
+        integrity_link_id=str(response.json()["id"]),
+    )
 
 
 @app.get(

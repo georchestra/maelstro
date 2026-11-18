@@ -45,6 +45,13 @@ class UserResponse(BaseModel):
 class SourcesResponseElement(BaseModel):
     name: str
     url: str
+    has_datafeeder: bool = False
+
+
+class DatafeederAvailability(BaseModel):
+    configured: bool
+    found: bool
+    integrity_link_id: str | None = None
 
 
 class DestinationsResponseElement(BaseModel):

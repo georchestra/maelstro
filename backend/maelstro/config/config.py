@@ -89,8 +89,16 @@ class Config:
         }
 
     def get_gn_sources(self) -> list[SourcesResponseElement]:
+        datafeeder_sources = {
+            instance["name"]
+            for instance in self.config["sources"].get("datafeeder_instances", [])
+        }
         return [
-            SourcesResponseElement(name=gn["name"], url=gn["api_url"])
+            SourcesResponseElement(
+                name=gn["name"],
+                url=gn["api_url"],
+                has_datafeeder=gn["name"] in datafeeder_sources,
+            )
             for gn in self.config["sources"]["geonetwork_instances"]
         ]
 
