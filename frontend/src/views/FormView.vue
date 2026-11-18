@@ -86,8 +86,8 @@ watch(
   (enabled) => {
     if (enabled) {
       parameters.value.copy_meta = true
-      parameters.value.copy_layers = false
-      parameters.value.copy_styles = false
+      parameters.value.copy_layers = true
+      parameters.value.copy_styles = true
     }
   },
 )
@@ -272,11 +272,21 @@ const success = computed(
         </FormField>
         <FormField name="copy_layers" class="flex gap-5 items-center">
           <label for="copy_layers" class="w-36">{{ $t('Layers') }}</label>
-          <ToggleSwitch id="copy_layers" placeholder="" v-model="parameters.copy_layers" />
+          <ToggleSwitch
+            id="copy_layers"
+            placeholder=""
+            v-model="parameters.copy_layers"
+            :disabled="parameters.copy_data"
+          />
         </FormField>
         <FormField name="copy_styles" class="flex gap-5 items-center">
           <label for="copy_styles" class="w-36">{{ $t('Styles') }}</label>
-          <ToggleSwitch id="copy_styles" placeholder="" v-model="parameters.copy_styles" />
+          <ToggleSwitch
+            id="copy_styles"
+            placeholder=""
+            v-model="parameters.copy_styles"
+            :disabled="parameters.copy_data"
+          />
         </FormField>
         <FormField
           v-if="datafeederInstances.length > 0"
