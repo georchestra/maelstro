@@ -294,7 +294,7 @@ const success = computed(
             {{ $t('Dataset not found in Datafeeder') }}
           </Message>
         </FormField>
-        <div class="mt-3 flex flex-col gap-3" :class="{ 'ml-5': parameters.copy_data }">
+        <div class="mt-3 flex flex-col gap-3">
           <FormField name="copy_meta" class="flex gap-5 items-center">
             <label for="copy_meta" class="w-36">{{ $t('Metadata') }}</label>
             <ToggleSwitch
