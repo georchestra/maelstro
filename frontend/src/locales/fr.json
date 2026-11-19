@@ -38,6 +38,7 @@
   "Checking Datafeeder availability": "Vérification de la disponibilité dans Datafeeder",
   "Dataset found in Datafeeder": "Jeu de données trouvé dans Datafeeder",
   "Dataset not found in Datafeeder": "Jeu de données introuvable dans Datafeeder",
+  "Datafeeder is not configured for the selected destination": "Datafeeder n'est pas configuré pour la destination sélectionnée",
   "Datafeeder preview": "Aperçu Datafeeder",
   "Instance:": "Instance :",
   "Integrity link:": "Lien d'intégrité :",

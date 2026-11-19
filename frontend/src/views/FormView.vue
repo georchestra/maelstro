@@ -59,6 +59,11 @@ const parameters = ref({
 const sourceHasDatafeeder = computed(
   () => configStore.getSourceByName(parameters.value.src_name)?.has_datafeeder === true,
 )
+const destinationHasDatafeeder = computed(
+  () =>
+    configStore.destinations.find((destination) => destination.name === parameters.value.dst_name)
+      ?.has_datafeeder === true,
+)
 
 watch([selectedDataset, () => parameters.value.src_name], async ([dataset, sourceName]) => {
   parameters.value.copy_data = false
@@ -78,6 +83,15 @@ watch([selectedDataset, () => parameters.value.src_name], async ([dataset, sourc
     checkingDatafeeder.value = false
   }
 })
+
+watch(
+  () => parameters.value.dst_name,
+  () => {
+    if (!destinationHasDatafeeder.value) {
+      parameters.value.copy_data = false
+    }
+  },
+)
 
 watch(
   () => parameters.value.copy_data,
@@ -259,46 +273,18 @@ const success = computed(
           />
           <Message v-if="errors.dst_name" severity="error">{{ errors.dst_name }}</Message>
         </div>
-        <FormField name="copy_meta" class="flex gap-5 items-center">
-          <label for="copy_meta" class="w-36">{{ $t('Metadata') }}</label>
-          <ToggleSwitch
-            id="copy_meta"
-            placeholder=""
-            v-model="parameters.copy_meta"
-            :disabled="parameters.copy_data"
-          />
-        </FormField>
-        <FormField name="copy_layers" class="flex gap-5 items-center">
-          <label for="copy_layers" class="w-36">{{ $t('Layers') }}</label>
-          <ToggleSwitch
-            id="copy_layers"
-            placeholder=""
-            v-model="parameters.copy_layers"
-            :disabled="parameters.copy_data"
-          />
-        </FormField>
-        <FormField name="copy_styles" class="flex gap-5 items-center">
-          <label for="copy_styles" class="w-36">{{ $t('Styles') }}</label>
-          <ToggleSwitch
-            id="copy_styles"
-            placeholder=""
-            v-model="parameters.copy_styles"
-            :disabled="parameters.copy_data"
-          />
-        </FormField>
-        <FormField
-          v-if="sourceHasDatafeeder"
-          name="copy_data"
-          class="flex gap-5 items-center"
-        >
+        <FormField v-if="sourceHasDatafeeder" name="copy_data" class="flex gap-5 items-center mt-3">
           <label for="copy_data" class="w-36">{{ $t('Import with Datafeeder') }}</label>
           <ToggleSwitch
             id="copy_data"
             placeholder=""
             v-model="parameters.copy_data"
-            :disabled="checkingDatafeeder || !datafeederIntegrityLink"
+            :disabled="checkingDatafeeder || !destinationHasDatafeeder || !datafeederIntegrityLink"
           />
-          <Message v-if="checkingDatafeeder" severity="secondary">
+          <Message v-if="!destinationHasDatafeeder" severity="warn">
+            {{ $t('Datafeeder is not configured for the selected destination') }}
+          </Message>
+          <Message v-else-if="checkingDatafeeder" severity="secondary">
             {{ $t('Checking Datafeeder availability') }}
           </Message>
           <Message v-else-if="datafeederIntegrityLink" severity="success">
@@ -308,6 +294,35 @@ const success = computed(
             {{ $t('Dataset not found in Datafeeder') }}
           </Message>
         </FormField>
+        <div class="mt-3 flex flex-col gap-3" :class="{ 'ml-5': parameters.copy_data }">
+          <FormField name="copy_meta" class="flex gap-5 items-center">
+            <label for="copy_meta" class="w-36">{{ $t('Metadata') }}</label>
+            <ToggleSwitch
+              id="copy_meta"
+              placeholder=""
+              v-model="parameters.copy_meta"
+              :readonly="parameters.copy_data"
+            />
+          </FormField>
+          <FormField name="copy_layers" class="flex gap-5 items-center">
+            <label for="copy_layers" class="w-36">{{ $t('Layers') }}</label>
+            <ToggleSwitch
+              id="copy_layers"
+              placeholder=""
+              v-model="parameters.copy_layers"
+              :readonly="parameters.copy_data"
+            />
+          </FormField>
+          <FormField name="copy_styles" class="flex gap-5 items-center">
+            <label for="copy_styles" class="w-36">{{ $t('Styles') }}</label>
+            <ToggleSwitch
+              id="copy_styles"
+              placeholder=""
+              v-model="parameters.copy_styles"
+              :readonly="parameters.copy_data"
+            />
+          </FormField>
+        </div>
         <Button type="submit" :label="$t('Synchronize')" class="mt-5" />
       </Form>
     </div>

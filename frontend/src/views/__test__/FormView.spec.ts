@@ -16,6 +16,7 @@ describe('FormView', () => {
         name: 'dest',
         gs_url: 'https://localhost/geoserver/',
         gn_url: 'https://localhost/geonetwork/',
+        has_datafeeder: true,
       },
     ]
   })
@@ -57,7 +58,19 @@ describe('FormView', () => {
       copy_styles: true,
       copy_data: true,
     })
-    const synchronizationOptions = wrapper.findAllComponents(ToggleSwitch).slice(0, 3)
-    expect(synchronizationOptions.every((option) => option.props('disabled'))).toBe(true)
+    const synchronizationOptions = wrapper.findAllComponents(ToggleSwitch).slice(1, 4)
+    expect(synchronizationOptions.every((option) => option.props('readonly'))).toBe(true)
+    expect(synchronizationOptions.every((option) => !option.props('disabled'))).toBe(true)
+  })
+
+  it('disables Datafeeder when the destination has no Datafeeder configuration', () => {
+    const configStore = useConfigStore()
+    configStore.destinations[0].has_datafeeder = false
+
+    const wrapper = mount(FormView)
+    const datafeederToggle = wrapper.findAllComponents(ToggleSwitch)[0]
+
+    expect(datafeederToggle.props('disabled')).toBe(true)
+    expect(wrapper.text()).toContain('Datafeeder is not configured for the selected destination')
   })
 })
