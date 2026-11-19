@@ -58,6 +58,7 @@ class DestinationsResponseElement(BaseModel):
     name: str
     gn_url: str
     gs_url: str
+    has_datafeeder: bool = False
 
 
 class RegisteredTransformation(BaseModel):

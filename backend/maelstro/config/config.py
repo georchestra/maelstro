@@ -111,6 +111,7 @@ class Config:
                 name=k,
                 gn_url=v["geonetwork"]["api_url"],
                 gs_url=v["geoserver"]["url"],
+                has_datafeeder=bool(v.get("datafeeder")),
             )
             for k, v in self.config["destinations"].items()
         ]
