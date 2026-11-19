@@ -44,5 +44,8 @@
   "Integrity link:": "Lien d'intégrité :",
   "Import type:": "Type d'import :",
   "Table:": "Table :",
-  "Planned action:": "Action prévue :"
+  "Planned action:": "Action prévue :",
+  "Synchronization completed successfully": "Synchronisation terminée avec succès",
+  "Synchronization failed": "Échec de la synchronisation",
+  "Unexpected synchronization error": "Erreur de synchronisation inattendue"
 }

@@ -49,8 +49,11 @@ export type CopyPreview = {
 }
 
 export type CopyResponse = {
-  info: { [k: string]: string }
+  summary: string
+  info?: { [k: string]: unknown }
   operations: LogDetail[]
+  successful: boolean
+  status_code: number
 }
 
 function toSynchronizeParams(params: SynchronizeParams): URLSearchParams {
@@ -77,7 +80,11 @@ export const synchronizeService = {
         'Content-Type': 'application/json',
       },
     })
-    if (!response.ok) throw new Error(`Synchronization failed with HTTP ${response.status}`)
-    return await response.json()
+    const payload = (await response.json()) as Omit<CopyResponse, 'successful' | 'status_code'>
+    return {
+      ...payload,
+      successful: response.ok,
+      status_code: response.status,
+    }
   },
 }

@@ -141,9 +141,12 @@ const onFormSubmit = async () => {
 }
 
 const isRunning = ref(false)
+const synchronizationError = ref<string | null>(null)
 
 const confirm = async () => {
   isRunning.value = true
+  copyResponse.value = null
+  synchronizationError.value = null
   const params = {
     ...parameters.value,
     metadataUuid: selectedDataset.value?.uuid,
@@ -153,12 +156,29 @@ const confirm = async () => {
     copyResponse.value = await synchronizeService.synchronize(params)
   } catch (error) {
     console.error(error)
+    synchronizationError.value =
+      error instanceof Error ? error.message : t('Unexpected synchronization error')
   } finally {
     isRunning.value = false
   }
 }
 
-const logs = computed(() => copyPreview.value.operations || copyResponse.value?.operations || [])
+const logs = computed(() => copyResponse.value?.operations || copyPreview.value.operations || [])
+
+const synchronizationMessage = computed(() => {
+  if (synchronizationError.value) {
+    return `${t('Synchronization failed')}: ${synchronizationError.value}`
+  }
+  if (!copyResponse.value) {
+    return null
+  }
+  if (copyResponse.value.successful) {
+    return t('Synchronization completed successfully')
+  }
+  const info = copyResponse.value.info
+  const detail = info?.err || info?.message || copyResponse.value.summary
+  return `${t('Synchronization failed')} [HTTP ${copyResponse.value.status_code}]: ${String(detail)}`
+})
 
 const backToForm = () => {
   confirmation.value = false
@@ -190,16 +210,20 @@ const hasStyles = computed(() =>
   copyPreview.value.geoserver_resources?.some((gs) => gs.styles.length > 0),
 )
 
-const success = computed(
-  () =>
+const success = computed(() => {
+  if (copyResponse.value) {
+    return copyResponse.value.successful
+  }
+  return (
     (metaSuccessful.value ||
       layerSuccessful.value ||
       styleSuccessful.value ||
       datafeederSuccessful.value) &&
     (!hasMeta.value || metaSuccessful.value) &&
     (!hasLayers.value || layerSuccessful.value) &&
-    (!hasStyles.value || styleSuccessful.value),
-)
+    (!hasStyles.value || styleSuccessful.value)
+  )
+})
 </script>
 
 <template>
@@ -408,6 +432,14 @@ const success = computed(
           <ProgressSpinner v-if="isRunning" class="w-8 h-8" strokeWidth="8" fill="transparent" />
           <Button :label="$t('Confirm')" @click.stop="confirm" :disabled="isRunning" />
         </div>
+        <Message
+          v-if="synchronizationMessage"
+          class="mt-4"
+          :severity="copyResponse?.successful ? 'success' : 'error'"
+          :closable="false"
+        >
+          {{ synchronizationMessage }}
+        </Message>
       </div>
 
       <div class="mt-5" v-if="logs.length">
@@ -421,8 +453,8 @@ const success = computed(
               {{ copyPreview.info?.server }}
             </div>
             <div v-else>
-              {{ copyResponse?.info.err }} [{{ copyResponse?.info.status_code }}]<br />
-              {{ copyResponse?.info.server }}
+              {{ copyResponse?.info?.err }} [{{ copyResponse?.status_code }}]<br />
+              {{ copyResponse?.info?.server }}
             </div>
           </div>
           <LogsReport :logs="logs"></LogsReport>
