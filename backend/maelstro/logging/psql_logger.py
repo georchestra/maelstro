@@ -181,7 +181,7 @@ def format_logs(size: int, offset: int) -> list[str]:
 
 def build_url(db_config: DbConfig) -> str:
     return (
-        f"postgresql://{db_config.login}:{db_config.password}@{db_config.host}:"
+        f"postgresql+psycopg2://{db_config.login}:{db_config.password}@{db_config.host}:"
         f"{db_config.port}/{db_config.database}"
     )
 
