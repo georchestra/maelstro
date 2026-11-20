@@ -166,7 +166,7 @@ class DatafeederManager:
             result = self.target.json(
                 "POST",
                 f"{ADMIN_PATH}/import",
-                json={"link": exported, "copy_recurrence": True},
+                json={"link": exported, "copy_recurrence": False},
                 timeout=UPLOAD_TIMEOUT,
             )
             self.log_handler.log_info(

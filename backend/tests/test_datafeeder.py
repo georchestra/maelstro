@@ -23,6 +23,8 @@ def test_preview_and_streamed_copy(monkeypatch, requests_mock):
         "source_import_type": "file",
         "final_table_name": "roads",
         "integrity_organization": "PSC",
+        "integrity_transformation": {"steps": [{"name": "normalize"}]},
+        "schedule": "0 3 * * *",
     }
     requests_mock.get(f"{source_url}/{ADMIN_PATH}/by-metadata/metadata-id", json=link)
     requests_mock.get(f"{source_url}/{ADMIN_PATH}/link-id/export", json=exported)
@@ -54,6 +56,13 @@ def test_preview_and_streamed_copy(monkeypatch, requests_mock):
     assert preview.action == "copy_table"
     assert manager.copy("metadata-id") == "Datafeeder dataset imported (target-link-id)"
     assert uploaded["body"] == b"streamed table"
+    import_request = next(
+        request for request in requests_mock.request_history if request.method == "POST"
+    )
+    assert import_request.json() == {
+        "link": exported,
+        "copy_recurrence": False,
+    }
 
 
 def test_copy_is_resumable_when_dataset_was_already_imported(
