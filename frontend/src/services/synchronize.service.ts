@@ -7,6 +7,7 @@ export type SynchronizeParams = {
   copy_meta: boolean
   copy_layers: boolean
   copy_styles: boolean
+  copy_data: boolean
   dry_run: boolean
 }
 
@@ -27,16 +28,32 @@ export type CopyPreviewGeoserver = {
   styles: string[]
 }
 
+export type DatafeederPreview = {
+  configured: boolean
+  found: boolean
+  integrity_link_id?: string
+  import_type?: string
+  table_name?: string
+  action?:
+    'no_dataset' | 'no_table' | 'copy_table' | 'reuse_table' | 'conflict' | 'already_imported'
+  table_exists: boolean
+  used_by?: string
+}
+
 export type CopyPreview = {
   geonetwork_resources?: CopyPreviewGeonetwork[]
   geoserver_resources?: CopyPreviewGeoserver[]
-  info?: {[k: string]: string}
+  datafeeder?: DatafeederPreview
+  info?: { [k: string]: string }
   operations?: LogDetail[]
 }
 
 export type CopyResponse = {
-  info:  {[k: string]: string}
+  summary: string
+  info?: { [k: string]: unknown }
   operations: LogDetail[]
+  successful: boolean
+  status_code: number
 }
 
 function toSynchronizeParams(params: SynchronizeParams): URLSearchParams {
@@ -51,6 +68,7 @@ export const synchronizeService = {
     const response = await fetch('/maelstro-backend/copy_preview?' + toSynchronizeParams(params), {
       method: 'GET',
     })
+    if (!response.ok) throw new Error(`Preview failed with HTTP ${response.status}`)
     return await response.json()
   },
 
@@ -62,6 +80,11 @@ export const synchronizeService = {
         'Content-Type': 'application/json',
       },
     })
-    return await response.json()
+    const payload = (await response.json()) as Omit<CopyResponse, 'successful' | 'status_code'>
+    return {
+      ...payload,
+      successful: response.ok,
+      status_code: response.status,
+    }
   },
 }

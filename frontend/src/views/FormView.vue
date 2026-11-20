@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LogsReport from '@/components/LogsReport.vue'
+import { datafeederService, type DatafeederIntegrityLink } from '@/services/datafeeder.service'
 import type { SearchResult } from '@/services/geonetworkSearch.service'
 import {
   synchronizeService,
@@ -21,7 +22,7 @@ import {
   ToggleSwitch,
   type AutoCompleteCompleteEvent,
 } from 'primevue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const includeHarvested = ref(false)
@@ -42,6 +43,8 @@ const onComplete = (event: AutoCompleteCompleteEvent) => {
   }
 }
 const selectedDataset = ref<SearchResult | null>(null)
+const datafeederIntegrityLink = ref<DatafeederIntegrityLink | null>(null)
+const checkingDatafeeder = ref(false)
 
 const parameters = ref({
   src_name: source.value ? source.value.name : '',
@@ -49,8 +52,57 @@ const parameters = ref({
   copy_meta: true,
   copy_layers: true,
   copy_styles: true,
+  copy_data: false,
   dry_run: false,
 })
+
+const sourceHasDatafeeder = computed(
+  () => configStore.getSourceByName(parameters.value.src_name)?.has_datafeeder === true,
+)
+const destinationHasDatafeeder = computed(
+  () =>
+    configStore.destinations.find((destination) => destination.name === parameters.value.dst_name)
+      ?.has_datafeeder === true,
+)
+
+watch([selectedDataset, () => parameters.value.src_name], async ([dataset, sourceName]) => {
+  parameters.value.copy_data = false
+  datafeederIntegrityLink.value = null
+
+  if (!dataset?.uuid || !sourceHasDatafeeder.value) {
+    return
+  }
+
+  checkingDatafeeder.value = true
+  try {
+    datafeederIntegrityLink.value = await datafeederService.findByMetadataUuid(
+      sourceName,
+      dataset.uuid,
+    )
+  } finally {
+    checkingDatafeeder.value = false
+  }
+})
+
+watch(
+  () => parameters.value.dst_name,
+  () => {
+    if (!destinationHasDatafeeder.value) {
+      parameters.value.copy_data = false
+    }
+  },
+)
+
+watch(
+  () => parameters.value.copy_data,
+  (enabled) => {
+    if (enabled) {
+      parameters.value.copy_meta = true
+      parameters.value.copy_layers = true
+      parameters.value.copy_styles = true
+    }
+  },
+)
 
 const copyPreview = ref<CopyPreview>({
   geonetwork_resources: [],
@@ -89,9 +141,12 @@ const onFormSubmit = async () => {
 }
 
 const isRunning = ref(false)
+const synchronizationError = ref<string | null>(null)
 
 const confirm = async () => {
   isRunning.value = true
+  copyResponse.value = null
+  synchronizationError.value = null
   const params = {
     ...parameters.value,
     metadataUuid: selectedDataset.value?.uuid,
@@ -101,12 +156,29 @@ const confirm = async () => {
     copyResponse.value = await synchronizeService.synchronize(params)
   } catch (error) {
     console.error(error)
+    synchronizationError.value =
+      error instanceof Error ? error.message : t('Unexpected synchronization error')
   } finally {
     isRunning.value = false
   }
 }
 
-const logs = computed(() => copyPreview.value.operations || copyResponse.value?.operations || [])
+const logs = computed(() => copyResponse.value?.operations || copyPreview.value.operations || [])
+
+const synchronizationMessage = computed(() => {
+  if (synchronizationError.value) {
+    return `${t('Synchronization failed')}: ${synchronizationError.value}`
+  }
+  if (!copyResponse.value) {
+    return null
+  }
+  if (copyResponse.value.successful) {
+    return t('Synchronization completed successfully')
+  }
+  const info = copyResponse.value.info
+  const detail = info?.err || info?.message || copyResponse.value.summary
+  return `${t('Synchronization failed')} [HTTP ${copyResponse.value.status_code}]: ${String(detail)}`
+})
 
 const backToForm = () => {
   confirmation.value = false
@@ -118,10 +190,12 @@ const metaLogs = computed(() => logs.value.filter((l) => l.data_type == 'Meta'))
 const layerLogs = computed(() => logs.value.filter((l) => l.data_type == 'Layer'))
 
 const styleLogs = computed(() => logs.value.filter((l) => l.data_type == 'Style'))
+const datafeederLogs = computed(() => logs.value.filter((l) => l.data_type == 'Datafeeder'))
 
 const metaSuccessful = computed(() => metaLogs.value.some((l) => l.status == 'OK'))
 const layerSuccessful = computed(() => layerLogs.value.some((l) => l.status == 'OK'))
 const styleSuccessful = computed(() => styleLogs.value.some((l) => l.status == 'OK'))
+const datafeederSuccessful = computed(() => datafeederLogs.value.some((l) => l.status == 'OK'))
 const metaFailed = computed(() => metaLogs.value.some((l) => l.status != 'OK'))
 const layerFailed = computed(() => layerLogs.value.some((l) => l.status != 'OK'))
 const styleFailed = computed(() => styleLogs.value.some((l) => l.status != 'OK'))
@@ -136,13 +210,20 @@ const hasStyles = computed(() =>
   copyPreview.value.geoserver_resources?.some((gs) => gs.styles.length > 0),
 )
 
-const success = computed(
-  () =>
-    (metaSuccessful.value || layerSuccessful.value || styleSuccessful.value) &&
+const success = computed(() => {
+  if (copyResponse.value) {
+    return copyResponse.value.successful
+  }
+  return (
+    (metaSuccessful.value ||
+      layerSuccessful.value ||
+      styleSuccessful.value ||
+      datafeederSuccessful.value) &&
     (!hasMeta.value || metaSuccessful.value) &&
     (!hasLayers.value || layerSuccessful.value) &&
-    (!hasStyles.value || styleSuccessful.value),
-)
+    (!hasStyles.value || styleSuccessful.value)
+  )
+})
 </script>
 
 <template>
@@ -216,18 +297,56 @@ const success = computed(
           />
           <Message v-if="errors.dst_name" severity="error">{{ errors.dst_name }}</Message>
         </div>
-        <FormField name="copy_meta" class="flex gap-5 items-center">
-          <label for="copy_meta" class="w-36">{{ $t('Metadata') }}</label>
-          <ToggleSwitch id="copy_meta" placeholder="" v-model="parameters.copy_meta" />
+        <FormField v-if="sourceHasDatafeeder" name="copy_data" class="flex gap-5 items-center mt-3">
+          <label for="copy_data" class="w-36">{{ $t('Import with Datafeeder') }}</label>
+          <ToggleSwitch
+            id="copy_data"
+            placeholder=""
+            v-model="parameters.copy_data"
+            :disabled="checkingDatafeeder || !destinationHasDatafeeder || !datafeederIntegrityLink"
+          />
+          <Message v-if="!destinationHasDatafeeder" severity="warn">
+            {{ $t('Datafeeder is not configured for the selected destination') }}
+          </Message>
+          <Message v-else-if="checkingDatafeeder" severity="secondary">
+            {{ $t('Checking Datafeeder availability') }}
+          </Message>
+          <Message v-else-if="datafeederIntegrityLink" severity="success">
+            {{ $t('Dataset found in Datafeeder') }}
+          </Message>
+          <Message v-else-if="selectedDataset" severity="warn">
+            {{ $t('Dataset not found in Datafeeder') }}
+          </Message>
         </FormField>
-        <FormField name="copy_layers" class="flex gap-5 items-center">
-          <label for="copy_layers" class="w-36">{{ $t('Layers') }}</label>
-          <ToggleSwitch id="copy_layers" placeholder="" v-model="parameters.copy_layers" />
-        </FormField>
-        <FormField name="copy_styles" class="flex gap-5 items-center">
-          <label for="copy_styles" class="w-36">{{ $t('Styles') }}</label>
-          <ToggleSwitch id="copy_styles" placeholder="" v-model="parameters.copy_styles" />
-        </FormField>
+        <div class="mt-3 flex flex-col gap-3">
+          <FormField name="copy_meta" class="flex gap-5 items-center">
+            <label for="copy_meta" class="w-36">{{ $t('Metadata') }}</label>
+            <ToggleSwitch
+              id="copy_meta"
+              placeholder=""
+              v-model="parameters.copy_meta"
+              :readonly="parameters.copy_data"
+            />
+          </FormField>
+          <FormField name="copy_layers" class="flex gap-5 items-center">
+            <label for="copy_layers" class="w-36">{{ $t('Layers') }}</label>
+            <ToggleSwitch
+              id="copy_layers"
+              placeholder=""
+              v-model="parameters.copy_layers"
+              :readonly="parameters.copy_data"
+            />
+          </FormField>
+          <FormField name="copy_styles" class="flex gap-5 items-center">
+            <label for="copy_styles" class="w-36">{{ $t('Styles') }}</label>
+            <ToggleSwitch
+              id="copy_styles"
+              placeholder=""
+              v-model="parameters.copy_styles"
+              :readonly="parameters.copy_data"
+            />
+          </FormField>
+        </div>
         <Button type="submit" :label="$t('Synchronize')" class="mt-5" />
       </Form>
     </div>
@@ -236,6 +355,20 @@ const success = computed(
       <div>
         <div class="mt-4 font-semibold">
           {{ $t('Following data and metadata will be copied:') }}
+        </div>
+
+        <div
+          v-if="parameters.copy_data && copyPreview.datafeeder"
+          class="mt-4 p-4 border rounded shadow"
+        >
+          <div class="font-semibold">{{ $t('Datafeeder preview') }}</div>
+          <div class="my-1">
+            {{ $t('Integrity link:') }} {{ copyPreview.datafeeder.integrity_link_id }}
+          </div>
+          <div class="my-1">{{ $t('Import type:') }} {{ copyPreview.datafeeder.import_type }}</div>
+          <div class="my-1">{{ $t('Table:') }} {{ copyPreview.datafeeder.table_name || '-' }}</div>
+          <div class="my-1">{{ $t('Planned action:') }} {{ copyPreview.datafeeder.action }}</div>
+          <LogsReport v-if="datafeederLogs.length" :logs="datafeederLogs"></LogsReport>
         </div>
 
         <div v-for="(geonetwork, index) in copyPreview.geonetwork_resources || []" :key="index">
@@ -299,6 +432,14 @@ const success = computed(
           <ProgressSpinner v-if="isRunning" class="w-8 h-8" strokeWidth="8" fill="transparent" />
           <Button :label="$t('Confirm')" @click.stop="confirm" :disabled="isRunning" />
         </div>
+        <Message
+          v-if="synchronizationMessage"
+          class="mt-4"
+          :severity="copyResponse?.successful ? 'success' : 'error'"
+          :closable="false"
+        >
+          {{ synchronizationMessage }}
+        </Message>
       </div>
 
       <div class="mt-5" v-if="logs.length">
@@ -312,8 +453,8 @@ const success = computed(
               {{ copyPreview.info?.server }}
             </div>
             <div v-else>
-              {{ copyResponse?.info.err }} [{{ copyResponse?.info.status_code }}]<br />
-              {{ copyResponse?.info.server }}
+              {{ copyResponse?.info?.err }} [{{ copyResponse?.status_code }}]<br />
+              {{ copyResponse?.info?.server }}
             </div>
           </div>
           <LogsReport :logs="logs"></LogsReport>

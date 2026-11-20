@@ -1,12 +1,14 @@
 export type Source = {
   name: string
   url: string
+  has_datafeeder: boolean
 }
 
 export type Destination = {
   name: string
   gn_url: string
   gs_url: string
+  has_datafeeder: boolean
 }
 
 export const configService = {
