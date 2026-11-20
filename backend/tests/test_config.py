@@ -94,6 +94,30 @@ def test_subst_env():
     conf.config["destinations"]["CompoLocale"]["geonetwork"]["password"] == "test"
 
 
+def test_sources_report_datafeeder_configuration():
+    conf = Config("CONFIG_PATH")
+    conf.config["sources"]["datafeeder_instances"] = [
+        {"name": "GeonetworkMaster", "url": "https://datafeeder.example"}
+    ]
+
+    sources = conf.get_gn_sources()
+
+    assert sources[0].has_datafeeder is True
+    assert sources[1].has_datafeeder is False
+
+
+def test_destinations_report_datafeeder_configuration():
+    conf = Config("CONFIG_PATH")
+    conf.config["destinations"]["CompoLocale"]["datafeeder"] = {
+        "url": "https://datafeeder.example"
+    }
+
+    destinations = conf.get_destinations()
+
+    assert destinations[0].has_datafeeder is True
+    assert destinations[1].has_datafeeder is False
+
+
 def test_subst_url_from_env():
     os.environ["SERVICE_URL"] = "https://destination.example/api"
     instance = {"url": "${SERVICE_URL}"}

@@ -19,6 +19,7 @@ from fastapi.responses import PlainTextResponse
 from maelstro.config import app_config as config
 from maelstro.metadata import Meta
 from maelstro.core import CopyManager
+from maelstro.core.datafeeder import ADMIN_PATH, DatafeederClient
 from maelstro.middleware import setup_middleware
 from maelstro.logging.psql_logger import (
     setup_db_logging,
@@ -33,6 +34,7 @@ from maelstro.common.models import (
     UserResponse,
     user_response_description,
     SourcesResponseElement,
+    DatafeederAvailability,
     DestinationsResponseElement,
     RegisteredTransformation,
     LinkedLayer,
@@ -168,6 +170,36 @@ def get_sources() -> list[SourcesResponseElement]:
     return config.get_gn_sources()
 
 
+@app.get("/sources/{src_name}/datafeeder/{metadata_uuid}")
+def get_source_datafeeder_availability(
+    request: Request,
+    src_name: Annotated[str, Path(description="Name of the source platform")],
+    metadata_uuid: Annotated[
+        str, Path(description="UUID which references the dataset")
+    ],
+) -> DatafeederAvailability:
+    """Check whether a source metadata record is managed by Datafeeder."""
+    info = config.get_datafeeder_access_info(True, src_name)
+    if info is None:
+        return DatafeederAvailability(configured=False, found=False)
+
+    response = DatafeederClient(
+        info, request.state.geo_handler.log_handler
+    ).request(
+        "GET",
+        f"{ADMIN_PATH}/by-metadata/{metadata_uuid}",
+        allow_not_found=True,
+    )
+    if response.status_code == 404:
+        return DatafeederAvailability(configured=True, found=False)
+
+    return DatafeederAvailability(
+        configured=True,
+        found=True,
+        integrity_link_id=str(response.json()["id"]),
+    )
+
+
 @app.get(
     "/destinations",
     response_description="A list of destinations with name, URL of geonetwork server and URL of geoserver for each",
@@ -267,9 +299,14 @@ def get_copy_preview(
             description="Enable copying styles of linked layers to destination Geoserver"
         ),
     ] = True,
+    copy_data: Annotated[
+        bool, Query(description="Copy the dataset managed by Datafeeder")
+    ] = False,
 ) -> CopyPreview:
+    if copy_data:
+        copy_meta = True
     copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
-    return copy_mgr.copy_preview(copy_meta, copy_layers, copy_styles)
+    return copy_mgr.copy_preview(copy_meta, copy_layers, copy_styles, copy_data)
 
 
 @app.put(
@@ -317,6 +354,9 @@ def put_dataset_copy(
             description="Enable copying styles of linked layers to destination Geoserver"
         ),
     ] = True,
+    copy_data: Annotated[
+        bool, Query(description="Copy the dataset managed by Datafeeder")
+    ] = False,
     accept: Annotated[str, Header(include_in_schema=False)] = "text/plain",
 ) -> DetailedResponse | PlainTextResponse:
     """
@@ -331,8 +371,10 @@ def put_dataset_copy(
             f"Unsupported media type: {accept}. "
             'Accepts "text/plain" or "application/json"',
         )
+    if copy_data:
+        copy_meta = True
     copy_mgr = CopyManager(src_name, dst_name, metadataUuid, request.state.geo_handler)
-    success = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles)
+    success = copy_mgr.copy_dataset(copy_meta, copy_layers, copy_styles, copy_data)
     operations = request.state.geo_handler.log_handler.get_json_responses()
     log_request_to_db(
         200,
