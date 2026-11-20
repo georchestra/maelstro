@@ -62,6 +62,8 @@ nav:
         - Getting started: user_guide/getting_started.md
     - Technical guides:
         - Index: technical_guides/index.md
+        - Administration:
+            - Datafeeder synchronization: technical_guides/administration/datafeeder_sync.md
         - Installation:
             - technical_guides/installation/index.md
             - technical_guides/installation/prerequisites.md
