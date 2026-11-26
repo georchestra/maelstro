@@ -45,12 +45,20 @@ class UserResponse(BaseModel):
 class SourcesResponseElement(BaseModel):
     name: str
     url: str
+    has_datafeeder: bool = False
+
+
+class DatafeederAvailability(BaseModel):
+    configured: bool
+    found: bool
+    integrity_link_id: str | None = None
 
 
 class DestinationsResponseElement(BaseModel):
     name: str
     gn_url: str
     gs_url: str
+    has_datafeeder: bool = False
 
 
 class RegisteredTransformation(BaseModel):
@@ -94,12 +102,24 @@ class PreviewGS(BaseModel):
     styles: list[str]
 
 
+class DatafeederPreview(BaseModel):
+    configured: bool = False
+    found: bool = False
+    integrity_link_id: str | None = None
+    import_type: str | None = None
+    table_name: str | None = None
+    action: str | None = None
+    table_exists: bool = False
+    used_by: str | None = None
+
+
 class CopyPreview(BaseModel):
     geonetwork_resources: list[PreviewGN]
     geoserver_resources: list[PreviewGS]
+    datafeeder: DatafeederPreview | None = None
 
 
-context_type = Literal["General", "Meta", "Layer", "Style"]
+context_type = Literal["General", "Meta", "Layer", "Style", "Datafeeder"]
 
 
 class OperationsRecord(BaseModel):

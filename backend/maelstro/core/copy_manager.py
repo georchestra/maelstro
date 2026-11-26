@@ -13,6 +13,7 @@ from maelstro.common.models import CopyPreview, InfoRecord, SuccessRecord
 from maelstro.common.exceptions import ParamError
 from requests import HTTPError
 from .georchestra import GeorchestraHandler
+from .datafeeder import DatafeederManager
 from .operations import raise_for_status
 from saxonche import PySaxonProcessor  # type: ignore
 
@@ -56,6 +57,7 @@ class CopyManager:
         include_meta: bool,
         include_layers: bool,
         include_styles: bool,
+        include_datafeeder: bool = False,
     ) -> CopyPreview:
         self.include_meta = include_meta
         self.include_layers = include_layers
@@ -64,7 +66,7 @@ class CopyManager:
         zipdata = self.gn_src.get_record_zip(self.uuid).read()
         self.meta = Meta(zipdata)
 
-        preview: dict[str, list[dict[str, Any]]] = {
+        preview: dict[str, Any] = {
             "geonetwork_resources": [],
             "geoserver_resources": [],
         }
@@ -121,6 +123,11 @@ class CopyManager:
                     }
                 )
 
+        if include_datafeeder:
+            preview["datafeeder"] = DatafeederManager(
+                self.src_name, self.dst_name, self.geo_hnd.log_handler
+            ).preview(self.uuid)[0]
+
         return CopyPreview(**preview)  # type: ignore
 
     def copy_dataset(
@@ -128,6 +135,7 @@ class CopyManager:
         include_meta: bool,
         include_layers: bool,
         include_styles: bool,
+        include_datafeeder: bool = False,
     ) -> str:
         self.include_meta = include_meta
         self.include_layers = include_layers
@@ -195,8 +203,15 @@ class CopyManager:
                         detail={"info": results["detail"]},
                     )
                 )
-            return f"{results['msg']} ({uuid})"
-        return "copy_successful"
+            summary = f"{results['msg']} ({uuid})"
+        else:
+            summary = "copy_successful"
+        if include_datafeeder:
+            datafeeder_summary = DatafeederManager(
+                self.src_name, self.dst_name, self.geo_hnd.log_handler
+            ).copy(self.uuid)
+            summary = f"{summary}; {datafeeder_summary}"
+        return summary
 
     def copy_layers(self) -> None:
         server_layers = self.meta.get_gs_layers(config.get_gs_sources())
