@@ -25,6 +25,13 @@ def test_preview_and_streamed_copy(monkeypatch, requests_mock):
         "integrity_organization": "PSC",
         "integrity_transformation": {"steps": [{"name": "normalize"}]},
         "schedule": "0 3 * * *",
+        "rules": [
+            {
+                "rule_type": "DATA",
+                "rule_value": "READ",
+                "group_name": "EDITORS",
+            }
+        ],
     }
     requests_mock.get(f"{source_url}/{ADMIN_PATH}/by-metadata/metadata-id", json=link)
     requests_mock.get(f"{source_url}/{ADMIN_PATH}/link-id/export", json=exported)
@@ -62,6 +69,7 @@ def test_preview_and_streamed_copy(monkeypatch, requests_mock):
     assert import_request.json() == {
         "link": exported,
         "copy_recurrence": False,
+        "copy_rules": True,
     }
 
 
