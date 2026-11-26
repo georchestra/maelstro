@@ -5,7 +5,7 @@ volumes:
 
 services:
   database:
-    image: postgres:18
+    image: postgres:19
     env_file:
       - .envs-database
     ports:
